@@ -1,0 +1,3 @@
+For a real library you would find the documentation here. Whether this is
+a simple textfile a PDF, Markdown or HTML depends on the library author's
+personal habits and preferences.

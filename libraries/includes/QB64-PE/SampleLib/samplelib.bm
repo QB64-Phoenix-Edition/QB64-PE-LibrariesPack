@@ -1,0 +1,13 @@
+'=====================================================
+'The functional part of a library (.bm file),
+'this is where all the SUBs and FUNCTIONs of the library are placed.
+'-----------------------------------------------------
+$INCLUDEONCE
+
+SUB SampleLib_Sub
+    ON ERROR GOTO _NEWHANDLER SampleLib_Handler
+    ERROR 7
+    ON ERROR GOTO _LASTHANDLER
+END SUB
+'=====================================================
+

@@ -1,0 +1,7 @@
+'library.png' taken from:
+    Library icons created by zero_wing - Flaticon (https://www.flaticon.com/free-icons/library)
+
+'libsmall.png' and 'library.ico' for use as title/exeicon were generated from
+the 'library.png' image using:
+    Greenfish Icon Editor Pro (https://greenfishsoftware.org/gfie.php)
+
