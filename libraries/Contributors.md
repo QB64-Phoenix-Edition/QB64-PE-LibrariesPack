@@ -38,11 +38,11 @@ To avoid rejection of a library the following things are considered mandatory:
 3. At least one example must be provided. All examples must work from both possible compile locations, the QB64-PE main folder and its source folder if "Output EXE to Source Folder" is used.
 4. The library code itself must follow the **Library coding standards** outlined below. The library code may consist of 3 general parts/files, the **AtTop**, the **AfterMain** and the **AtBottom** parts, take a closer look to the `QB64-PE/SampleLib` and its examples to learn what must go in which part.
 5. One of the library parts/files must contain the code below to enforce **QB64-PE v4.3.0 or up** for use of the Libraries Pack. It's best to place it in the first part/file included to give the error as soon as possible.
-
-
+    ```vb
     $IF VERSION < 4.3.0 THEN
         $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
     $END IF
+    ```
 
 ### Library coding standards
 - Every library part/file must have the $INCLUDEONCE metacommand in it to avoid accidental multiple inclusions.
