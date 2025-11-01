@@ -6,8 +6,9 @@
 
 OPTION _EXPLICIT
 
-$USELIBRARY:'a740g/IniManager'
+$USELIBRARY:'FellippeHeitor/IniManager'
 $USELIBRARY:'QB64-PE/SampleLib'
 $USELIBRARY:'RhoSigma/Imageprocess'
 $USELIBRARY:'RhoSigma/Simplebuffer'
+$USELIBRARY:'TerryRitchie/MenuLib'
 
