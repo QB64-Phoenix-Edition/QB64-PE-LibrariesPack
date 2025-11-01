@@ -5,18 +5,20 @@
 ': https://github.com/a740g/InForm-PE
 '-----------------------------------------------------------
 SUB __UI_LoadForm
+    __UI_BeforeInit
 
     DIM __UI_NewID AS LONG, __UI_RegisterResult AS LONG
 
     __UI_NewID = __UI_NewControl(__UI_Type_Form, "LibraryExplorer", 630, 430, 0, 0, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "The QB64-PE Library Explorer"
-    Control(__UI_NewID).Font = SetFont("segoeui.ttf?arial.ttf?Arial.ttf?Helvetica.ttc?Geneva.ttf?truetype/liberation/LiberationSans-Regular.ttf?TTF/arial.ttf?InForm/resources/NotoMono-Regular.ttf?cour.ttf?Courier.ttc", 14)
+    Control(__UI_NewID).Font = SetFont("PublicSans-Regular.ttf", 14)
     Control(__UI_NewID).HasBorder = False
 
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "AuthorsListLB", 130, 25, 10, 10, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Authors List"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).Align = __UI_Center
     Control(__UI_NewID).VAlign = __UI_Middle
@@ -30,6 +32,7 @@ SUB __UI_LoadForm
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "LibrariesListLB", 130, 25, 10, 220, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Libraries List"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).Align = __UI_Center
     Control(__UI_NewID).VAlign = __UI_Middle
@@ -43,6 +46,7 @@ SUB __UI_LoadForm
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "ShortDescLB", 470, 25, 150, 220, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Short Library Description"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).Align = __UI_Center
     Control(__UI_NewID).VAlign = __UI_Middle
@@ -56,6 +60,7 @@ SUB __UI_LoadForm
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "FullNameLB", 105, 25, 150, 10, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Library Name"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).Align = __UI_Right
     Control(__UI_NewID).VAlign = __UI_Middle
@@ -70,6 +75,7 @@ SUB __UI_LoadForm
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "VersionLB", 105, 25, 150, 45, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Library Version"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).Align = __UI_Right
     Control(__UI_NewID).VAlign = __UI_Middle
@@ -84,6 +90,7 @@ SUB __UI_LoadForm
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "LicenseLB", 105, 25, 150, 80, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "License"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).Align = __UI_Right
     Control(__UI_NewID).VAlign = __UI_Middle
@@ -98,6 +105,7 @@ SUB __UI_LoadForm
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "AuthorLB", 105, 25, 150, 115, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Author"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).Align = __UI_Right
     Control(__UI_NewID).VAlign = __UI_Middle
@@ -112,6 +120,7 @@ SUB __UI_LoadForm
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "FullDocsLB", 105, 25, 150, 150, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Documentation"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).Align = __UI_Right
     Control(__UI_NewID).VAlign = __UI_Middle
@@ -126,12 +135,14 @@ SUB __UI_LoadForm
     __UI_NewID = __UI_NewControl(__UI_Type_Button, "ShowDocs", 85, 25, 520, 150, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Show Docs"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).CanHaveFocus = True
 
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "IncludeLB", 105, 25, 150, 185, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Include Call"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).Align = __UI_Right
     Control(__UI_NewID).VAlign = __UI_Middle
@@ -146,6 +157,7 @@ SUB __UI_LoadForm
     __UI_NewID = __UI_NewControl(__UI_Type_Button, "CopyInc", 85, 25, 520, 185, 0)
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "Copy Line"
+    Control(__UI_NewID).Font = SetFont("PublicSans-Bold.ttf", 14)
     Control(__UI_NewID).HasBorder = False
     Control(__UI_NewID).CanHaveFocus = True
 

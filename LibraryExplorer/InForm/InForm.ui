@@ -218,10 +218,10 @@ END SUB
 
 '---------------------------------------------------------------------------------
 SUB SetFrameRate (FPS AS _UNSIGNED INTEGER)
-    IF FPS >= 30 THEN
+    IF FPS >= 25 THEN
         __UI_FrameRate = 1 / FPS
     ELSE
-        __UI_FrameRate = 1 / 30
+        __UI_FrameRate = 1 / 25
     END IF
 
     IF __UI_RefreshTimer = 0 THEN
@@ -310,7 +310,7 @@ SUB __UI_Init
     __UI_OnLoad
 
     __UI_EventsTimer = _FREETIMER
-    ON TIMER(__UI_EventsTimer, .02) __UI_DoEvents
+    ON TIMER(__UI_EventsTimer, .025) __UI_DoEvents
     TIMER(__UI_EventsTimer) ON
     TIMER(__UI_RefreshTimer) ON
 

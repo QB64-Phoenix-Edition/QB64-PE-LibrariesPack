@@ -10,19 +10,23 @@ $END IF
 
 $IF WIN THEN
     $EXEICON:'LibraryExplorer/icon/library.ico'
-    $VERSIONINFO:FILEVERSION#=1,0,0,0
-    $VERSIONINFO:PRODUCTVERSION#=1,0,0,0
     $VERSIONINFO:CompanyName='QB64 Phoenix Edition'
-    $VERSIONINFO:FileDescription='The QB64-PE Library Explorer'
-    $VERSIONINFO:InternalName='LibraryExplorer.bas'
+    '--------------------------------------------------
+    $VERSIONINFO:ProductName='The QB64-PE Libraries Pack'
+    $VERSIONINFO:PRODUCTVERSION#=0,2,0,0
     $VERSIONINFO:LegalCopyright='MIT License'
     $VERSIONINFO:LegalTrademarks=''
+    '--------------------------------------------------
+    $VERSIONINFO:FileDescription='The QB64-PE Library Explorer'
+    $VERSIONINFO:FILEVERSION#=1,1,0,0
+    $VERSIONINFO:Comments='The Library Explorer can be used to easily browse through the pack and get an idea what libraries are available.'
+    $VERSIONINFO:InternalName='LibraryExplorer.bas'
     $VERSIONINFO:OriginalFilename='LibraryExplorer.exe'
-    $VERSIONINFO:ProductName='The QB64-PE Libraries Pack'
-    $VERSIONINFO:Comments='The Library Explorer can be used to easily browse through the collection and get an idea what libraries are available.'
 $ELSE
     $EMBED:'LibraryExplorer/icon/libsmall.png','titleIcon'
 $END IF
+$EMBED:'LibraryExplorer/font/PublicSans-Regular.ttf','reguFont'
+$EMBED:'LibraryExplorer/font/PublicSans-Bold.ttf','boldFont'
 
 ': Controls' IDs: ------------------------------------------------------------------
 DIM SHARED LibraryExplorer AS LONG
@@ -49,7 +53,7 @@ DIM SHARED CopyInc AS LONG
 DIM SHARED Avatar AS LONG
 
 ': External modules: ---------------------------------------------------------------
-$USELIBRARY:'a740g/IniManager'
+$USELIBRARY:'FellippeHeitor/IniManager'
 '$INCLUDE:'InForm/InForm.bi'
 '$INCLUDE:'InForm/xp.uitheme'
 '$INCLUDE:'LibraryExplorer.frm'
@@ -65,24 +69,14 @@ SUB __UI_BeforeInit
             SYSTEM
         END IF
     END IF
+    IF NOT _FILEEXISTS("PublicSans-Regular.ttf") THEN _WRITEFILE "PublicSans-Regular.ttf", _EMBEDDED$("reguFont")
+    IF NOT _FILEEXISTS("PublicSans-Bold.ttf") THEN _WRITEFILE "PublicSans-Bold.ttf", _EMBEDDED$("boldFont")
 
 END SUB
 
 SUB __UI_OnLoad
 
-    $IF WIN THEN
-        Control(AuthorsListLB).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(LibrariesListLB).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(ShortDescLB).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(FullNameLB).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(VersionLB).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(LicenseLB).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(AuthorLB).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(FullDocsLB).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(ShowDocs).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(IncludeLB).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-        Control(CopyInc).Font = SetFont("C:\Windows\Fonts\segoeuib.ttf", 14)
-    $ELSE
+    $IF WIN = 0 THEN
         titIco& = _LOADIMAGE(_EMBEDDED$("titleIcon"), 32, "memory")
         IF titIco& < -1 THEN _ICON titIco&: _FREEIMAGE titIco&
     $END IF
@@ -104,6 +98,10 @@ SUB __UI_OnLoad
     Control(AuthorsList).Value = 1
     Control(LibrariesList).Value = 1
     SetFocus AuthorsList
+
+    IF _FILEEXISTS("PublicSans-Regular.ttf") THEN KILL "PublicSans-Regular.ttf"
+    IF _FILEEXISTS("PublicSans-Bold.ttf") THEN KILL "PublicSans-Bold.ttf"
+    SetFrameRate 25
 
 END SUB
 
