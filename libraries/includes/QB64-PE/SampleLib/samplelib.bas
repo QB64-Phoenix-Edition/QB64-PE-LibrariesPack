@@ -22,6 +22,7 @@ RESUME NEXT
 
 SampleLib_Gosub:
 'slg_pcnt = print count (so to say an input parameter to the GOSUB)
+'all variables used in this part must be declared in the .bi file already
 FOR slg_i = 1 TO slg_pcnt
     PRINT "Library GOSUB",
 NEXT slg_i

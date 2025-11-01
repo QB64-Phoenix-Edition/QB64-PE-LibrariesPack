@@ -6,11 +6,11 @@
 'if the file doesn't exist, it'll be created.
 '----------------------------------------------------------------
 
-$USELIBRARY:'a740g/IniManager'
+$USELIBRARY:'FellippeHeitor/IniManager'
 
 'set the program's work directory.
 IF _FILEEXISTS("qb64.exe") _ORELSE _FILEEXISTS("qb64") _ORELSE _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
-    CHDIR "libraries\examples\a740g\IniManager"
+    CHDIR "libraries\examples\FellippeHeitor\IniManager"
 END IF
 
 '(brackets in section names are optional; will be added automatically anyway)
