@@ -12,16 +12,16 @@ $IF WIN THEN
     $EXEICON:'LibraryExplorer/icon/library.ico'
     $VERSIONINFO:CompanyName='QB64 Phoenix Edition'
     '--------------------------------------------------
-    $VERSIONINFO:ProductName='The QB64-PE Libraries Pack'
-    $VERSIONINFO:PRODUCTVERSION#=0,2,0,0
-    $VERSIONINFO:LegalCopyright='MIT License'
-    $VERSIONINFO:LegalTrademarks=''
+    '$INCLUDE:'../libraries/ProductInfo.bas'
     '--------------------------------------------------
     $VERSIONINFO:FileDescription='The QB64-PE Library Explorer'
-    $VERSIONINFO:FILEVERSION#=1,1,0,0
+    $VERSIONINFO:FILEVERSION#=1,2,0,0
     $VERSIONINFO:Comments='The Library Explorer can be used to easily browse through the pack and get an idea what libraries are available.'
     $VERSIONINFO:InternalName='LibraryExplorer.bas'
     $VERSIONINFO:OriginalFilename='LibraryExplorer.exe'
+    '--------------------------------------------------
+    $VERSIONINFO:LegalCopyright='MIT License'
+    $VERSIONINFO:LegalTrademarks=''
 $ELSE
     $EMBED:'LibraryExplorer/icon/libsmall.png','titleIcon'
 $END IF
@@ -80,6 +80,14 @@ SUB __UI_OnLoad
         titIco& = _LOADIMAGE(_EMBEDDED$("titleIcon"), 32, "memory")
         IF titIco& < -1 THEN _ICON titIco&: _FREEIMAGE titIco&
     $END IF
+
+    pack$ = UCASE$(_READFILE$("ProductInfo.bas"))
+    pack$ = MID$(pack$, INSTR(pack$, "PRODUCTVERSION#=") + 16)
+    pack$ = LEFT$(pack$, _INSTRREV(pack$, _CHR_COMMA) - 1)
+    FOR i& = 1 TO LEN(pack$)
+        IF ASC(pack$, i&) = _ASC_COMMA THEN ASC(pack$, i&) = _ASC_FULLSTOP
+    NEXT i&
+    SetCaption LibraryExplorer, "The QB64-PE Library Explorer (Pack Version v" + pack$ + ")"
 
     ResetList AuthorsList
     ResetList LibrariesList
