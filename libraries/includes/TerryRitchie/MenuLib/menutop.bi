@@ -60,6 +60,7 @@ TYPE MENUSETTINGS
     width AS INTEGER '                the width of all the main menu entries combined in top bar
     height AS INTEGER '               the height of each menu entry
     font AS LONG '                    the font currently in use by the menu
+    oldfont AS LONG '                 the old font after SETMENUFONT(), freeing deferred until MAKEMENU() when all images using it are freed
     spacing AS INTEGER '              the space to the right and left of menu entries
     centered AS INTEGER '             the center location of menu text
     indent AS INTEGER '               the master indent value for the entire menu

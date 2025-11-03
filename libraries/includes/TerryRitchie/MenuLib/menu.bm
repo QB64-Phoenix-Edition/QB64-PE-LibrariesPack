@@ -143,8 +143,7 @@ SUB SETMENUSHADOW (height%)
 
 SHARED Mset AS MENUSETTINGS
 
-IF height% < 0 THEN height% = 0 '                                              height must be no less than 0
-Mset.shadow = height% '                                                        set the submenu shadow height
+Mset.shadow = _IIF(height% < 0, 0, height%) '                                  set the submenu shadow height >= 0
 IF (Mset.called AND 1024) = 0 THEN Mset.called = Mset.called + 1024 '          remember that this subroutine has been called
 
 END SUB
@@ -180,8 +179,7 @@ SUB SETMENUSPACING (spacing%)
 
 SHARED Mset AS MENUSETTINGS
 
-IF spacing% < 0 THEN spacing% = 0 '                                            spacing must be no less than 0
-Mset.spacing = spacing% '                                                      set the menu spacing amount
+Mset.spacing = _IIF(spacing% < 0, 0, spacing%) '                               set the menu spacing amount >= 0
 IF (Mset.called AND 32) = 0 THEN Mset.called = Mset.called + 32 '              remember that this subroutine has been called
 
 END SUB
@@ -321,8 +319,7 @@ SUB SETMENUINDENT (Indent%)
 
 SHARED Mset AS MENUSETTINGS
 
-IF Indent% < 0 THEN Indent% = 0 '                                              must be 0 or higher
-Mset.indent = Indent% '                                                        set amount of menu indention
+Mset.indent = _IIF(Indent% < 0, 0, Indent%) '                                  set amount of menu indention >= 0
 IF (Mset.called AND 64) = 0 THEN Mset.called = Mset.called + 64 '              remember that this subroutine has been called
 
 END SUB
@@ -339,8 +336,7 @@ SUB SETMENUHEIGHT (Height%)
 
 SHARED Mset AS MENUSETTINGS
 
-IF Height% < 10 THEN Height% = 10 '                                            height of menu can't be less than 10 pixels
-Mset.height = Height% '                                                        set the menu height
+Mset.height = _IIF(Height% < 10, 10, Height%) '                                set the menu height min. 10
 IF (Mset.called AND 16) = 0 THEN Mset.called = Mset.called + 16 '              remember that this subroutine has been called
 
 END SUB
@@ -371,18 +367,33 @@ SUB SETMENUFONT (FontName$, FontSize%, IsData%)
 '*                                                                            *
 '******************************************************************************
 
+DIM prevFont&, freeFontHere&
 SHARED Mset AS MENUSETTINGS
 
-IF FontSize% < 1 THEN FontSize% = 1 '                                          font size must be 1 or higher
+IF INSTR(",0,8,9,14,15,16,17,", "," + _TOSTR$(Mset.font) + ",") = 0 THEN 'is current a custom font?
+    IF Mset.oldfont = 0 THEN '               if prev old font is already freed, then
+        Mset.oldfont = Mset.font '           remember current font for deferred freeing,
+    ELSE '                                   otherwise the last set font was never used
+        freeFontHere& = Mset.font '          and we can free it in this routine
+    END IF
+END IF
+
+prevFont& = Mset.font '                                   for further flow control
 IF IsData% THEN
-    Mset.font = _LOADFONT(FontName$, FontSize%, "memory") '                    load font from memory
+    Mset.font = _LOADFONT(FontName$, _IIF(FontSize% < 1, 1, FontSize%), "memory") ' load font from memory
 ELSE
-    Mset.font = _LOADFONT(FontName$, FontSize%) '                              load font from file
+    Mset.font = _LOADFONT(FontName$, _IIF(FontSize% < 1, 1, FontSize%)) '           load font from file
 END IF
-IF Mset.font = 0 THEN '                                                        on load failure
-    Mset.font = _FONT(0) '                                                     use default destination font
+IF Mset.font = 0 THEN  Mset.font = _FONT(0) '             on load failure use default destination font
+
+IF prevFont& <> 0 THEN '                                  do we had another font before?
+    IF Mset.height = _UFONTHEIGHT(prevFont&) + 8 THEN '   and was menu height based on that font?
+        SETMENUHEIGHT _UFONTHEIGHT(Mset.font) + 8 '       yes: update menu height to new font
+    END IF
 END IF
-IF (Mset.called AND 1) = 0 THEN Mset.called = Mset.called + 1 '                remember that this subroutine has been called
+IF freeFontHere& <> 0 THEN _FREEFONT freeFontHere& '             free unused font
+
+IF (Mset.called AND 1) = 0 THEN Mset.called = Mset.called + 1 '  remember that this subroutine has been called
 
 END SUB
 
@@ -1397,6 +1408,10 @@ REDIM Menu(0 TO 1, 0 TO 1) AS MENU '   reset Menu() array
 Mset.mainmenu = 0 '                    reset current mainmenu entry value
 Mset.oldmainmenu = 0 '                 reset previous mainmenu entry value
 Mset.width = 0 '                       reset width of all the main menu entries
+IF Mset.oldfont <> 0 THEN
+    _FREEFONT Mset.oldfont '           deferred font freeing
+    Mset.oldfont = 0 '                 reset for next font change
+END IF
 
 '******************************************************************************
 '* Set default values if not set by programmer. These defaults will set up a  *
