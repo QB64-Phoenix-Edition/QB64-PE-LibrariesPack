@@ -48,7 +48,7 @@ To avoid rejection of a library the following things are considered mandatory:
 ### Library coding standards
 - **Every library part/file must have the $INCLUDEONCE metacommand in it to avoid accidental multiple inclusions.**
 
-- **A library shall not change global settings, instead a library must adapt to the settings the user chose to use in his program or make sure everything works with either setting. The library may not count on any defaults, once a library is shared publicly, it may be used by somebody who has the options set completely backwards of what the library assumed was standard. Some examples:**
+- **A library shall not change global settings, instead a library must adapt to the settings the user chose to use in his program or make sure everything works with either setting. The library may not count on any defaults, once a library is shared publicly, it may be used by someone who has the options set completely backwards of what the library assumed was standard. Some examples:**
   - $DYNAMIC/$STATIC, negligible, the library must simply use REDIM/ERASE for dynamic arrays.
   - DEFINT, DEFLNG etc., negligible, variables must be declared with the "AS type" syntax or generally using type suffixes instead.
   - OPTION _EXPLICIT, the library must always declare all variables, it won't hurt if it's not used, but avoids errors if it's used. Note that variables used in the **AfterMain** part must already be declared in the **AtTop** part, i.e. the variables are already known in the user code and the user can't use the same names for his own code.

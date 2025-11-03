@@ -1,0 +1,2 @@
+    $VERSIONINFO:ProductName='The QB64-PE Libraries Pack'
+    $VERSIONINFO:PRODUCTVERSION#=0,2,1,0
