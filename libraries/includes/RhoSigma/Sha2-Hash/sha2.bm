@@ -1,0 +1,41 @@
+'+---------------+---------------------------------------------------+
+'| ###### ###### |     .--. .         .-.                            |
+'| ##  ## ##   # |     |   )|        (   ) o                         |
+'| ##  ##  ##    |     |--' |--. .-.  `-.  .  .-...--.--. .-.        |
+'| ######   ##   |     |  \ |  |(   )(   ) | (   ||  |  |(   )       |
+'| ##      ##    |     '   `'  `-`-'  `-'-' `-`-`|'  '  `-`-'`-      |
+'| ##     ##   # |                            ._.'                   |
+'| ##     ###### |  Sources & Documents placed in the Public Domain. |
+'+---------------+---------------------------------------------------+
+'|                                                                   |
+'| === sha2.bm ===                                                   |
+'|                                                                   |
+'| == The FUNCTIONs to compute the SHA2 Message-Digest in QB64 from  |
+'| == either a single string message or a complete file.             |
+'|                                                                   |
+'+-------------------------------------------------------------------+
+'| Done by RhoSigma, R.Heyder, provided AS IS, use at your own risk. |
+'| Find me in the QB64 Forum or mail to support@rhosigma-cw.net for  |
+'| any questions or suggestions. Thanx for your interest in my work. |
+'+-------------------------------------------------------------------+
+
+$INCLUDEONCE
+
+'--- docs\GetFileSHA2.html
+'---------------------------------------------------------------------
+FUNCTION GetFileSHA2$ (FileSpec$)
+GetFileSHA2$ = FileSHA2$(FileSpec$ + CHR$(0))
+END FUNCTION
+
+'--- docs\GetStringSHA2.html
+'---------------------------------------------------------------------
+FUNCTION GetStringSHA2$ (MsgData$)
+GetStringSHA2$ = StringSHA2$(MsgData$ + CHR$(0), LEN(MsgData$))
+END FUNCTION
+
+'--- undocumented - for internal use only
+'---------------------------------------------------------------------
+FUNCTION VersionSha2$
+VersionSha2$ = MID$("$VER: sha2.bm 1.1 (15-Sep-2021) by RhoSigma :END$", 7, 37)
+END FUNCTION
+

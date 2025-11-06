@@ -1,0 +1,31 @@
+# Generally ignore everything
+# ---------------------------
+*
+
+# But descend into directories
+# ----------------------------
+!*/
+
+# Take the main repo files
+# ------------------------
+!LICENSE
+!.gitattributes
+!.gitignore
+!README.md
+
+# And recursively allow files here
+# --------------------------------
+!/libraries/**
+!/LibraryExplorer/**
+
+# But not the following
+# ---------------------
+*.bin
+*.Bin
+*.BIN
+*.dat
+*.Dat
+*.DAT
+*.exe
+*.Exe
+*.EXE

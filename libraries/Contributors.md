@@ -6,7 +6,7 @@ When you're sure everything is ready for inclusion, then follow the steps below:
 2. In your forked repository make a new folder for the `author` inside each of the four sub-folders `descriptors`, `documents`, `examples` and `includes` if the author is not already in the list.
 3. Inside the `author` folders make a sub-folder for the `libraryname`, but only in the `documents`, `examples` and `includes` branches this time.
 4. In the `author` folder of the `descriptors` branch create a new INI file `libraryname.ini` and fill it with the respective data. The easiest is probably to copy the INI of another library, rename it accordingly and exchange its information.
-5. If the new author is a known forum member, then get his avatar picture and also save it in the new `descriptors/author` folder along with the INI files.
+5. If the new author is a known forum member, then get his avatar picture and also save it in the new `descriptors/author` folder and specify it in the INI file. If no personalized avatar is available, then leave the INI entry empty.
 6. Open a **Pull Request** in your forked repository to request a merge of your made changes back into the parent repository.
 
 #### The Library Descriptor INI format is easy and straight forward:
@@ -17,7 +17,7 @@ When you're sure everything is ready for inclusion, then follow the steps below:
     License="license name (optional license link)"
     ShortDesc="A short description of the library, its purpose etc. (max. 450-500 chars)."
     FullDocs=full_documentation_filename
-    Author="User name, (optional real name)"
+    Author="User name, (optional real name) & optional other contributors"
     Avatar=optional_author_forum_avatar_filename
 
     [LIBRARY INCLUDES]
@@ -25,7 +25,7 @@ When you're sure everything is ready for inclusion, then follow the steps below:
     IncAfterMain=library_BAS_filename
     IncAtBottom=library_BM_filename
 
-Not used/required file entries just remain blank. Note that all file names are to be given without any path, as files are all in its defined known places and the paths are hardcoded inside QB64-PE and the Library Explorer application. However, make sure that the written cases of all created files and folders do exactly match and also the given file names in the INI file match that. That is because of the usual case sensitivity of Linux file systems, where a file called `Foo.ini` is a different file than `foo.ini` and `FOO.ini`, same is valid for folder names. Not paying enough attention here may lead to errors due to not found files or folders on Linux systems.
+Not used/required file entries just remain blank. Note that all file names are to be given without quotes (even if the file name has spaces) and also without any path specification, as files are all in its defined known places and the paths are hardcoded inside QB64-PE and the Library Explorer application. However, make sure that the written cases of all created files and folders do exactly match and also the given file names in the INI file match that. That is because of the usual case sensitivity of Linux file systems, where a file called `Foo.ini` is a different file than `foo.ini` and `FOO.ini`, same is valid for folder names. Not paying enough attention here may lead to errors due to not found files or folders on Linux systems.
 
 Why is a hardcoded folder layout enforced here, wouldn't it be better to allow more freedom here and rather providing full path info in the INI files instead?
 - Just like QB64-PE's `internal` folder, also the `libraries` folder has its defined layout, so that the compiler knows where to look for the required files and data.

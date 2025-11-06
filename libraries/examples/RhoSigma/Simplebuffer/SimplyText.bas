@@ -35,12 +35,12 @@ COLOR 9: PRINT VersionSimplyText$: PRINT: COLOR 7
 
 '--- the usual file based read
 '-----
-COLOR 12: PRINT "reading lines from file (delayed 0.3 sec.) ...": PRINT: COLOR 7
+COLOR 12: PRINT "reading lines from file (delayed 0.2 sec.) ...": PRINT: COLOR 7
 OPEN root$ + "SimplyText.bas" FOR INPUT AS #1
 WHILE NOT EOF(1)
     LINE INPUT #1, l$
     PRINT l$
-    _DELAY 0.3
+    _DELAY 0.2
 WEND
 CLOSE #1
 COLOR 12: PRINT: PRINT "end of file, press any key...": SLEEP: COLOR 7
@@ -49,12 +49,12 @@ CLS
 '--- now let's use a buffer
 '-----
 COLOR 9: PRINT VersionSimplyText$: PRINT: COLOR 7
-COLOR 12: PRINT "reading lines from buffer (delayed 0.3 sec.) ...": PRINT: COLOR 7
+COLOR 12: PRINT "reading lines from buffer (delayed 0.2 sec.) ...": PRINT: COLOR 7
 bh% = FileToBuf%(root$ + "SimplyText.bas")
 ConvBufToNativeEol bh%
 WHILE NOT EndOfBuf%(bh%)
     PRINT ReadBufLine$(bh%)
-    _DELAY 0.3
+    _DELAY 0.2
 WEND
 DisposeBuf bh%
 COLOR 12: PRINT: PRINT "end of buffer, press any key...": SLEEP: COLOR 7
