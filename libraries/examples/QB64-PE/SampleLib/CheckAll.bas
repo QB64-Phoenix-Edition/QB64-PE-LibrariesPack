@@ -8,7 +8,10 @@ OPTION _EXPLICIT
 
 $USELIBRARY:'FellippeHeitor/IniManager'
 $USELIBRARY:'QB64-PE/SampleLib'
+$USELIBRARY:'RhoSigma/Charsets'
 $USELIBRARY:'RhoSigma/Imageprocess'
+$USELIBRARY:'RhoSigma/Polygons'
+$USELIBRARY:'RhoSigma/Sha2-Hash'
 $USELIBRARY:'RhoSigma/Simplebuffer'
 $USELIBRARY:'TerryRitchie/MenuLib'
 

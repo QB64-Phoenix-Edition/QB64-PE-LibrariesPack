@@ -27,6 +27,7 @@ $ELSE
 $END IF
 $EMBED:'LibraryExplorer/font/PublicSans-Regular.ttf','reguFont'
 $EMBED:'LibraryExplorer/font/PublicSans-Bold.ttf','boldFont'
+$EMBED:'LibraryExplorer/InForm/avatar.png','defAvatar'
 
 ': Controls' IDs: ------------------------------------------------------------------
 DIM SHARED LibraryExplorer AS LONG
@@ -544,7 +545,14 @@ SUB __UI_ValueChanged (id AS LONG)
             Text(Include) = "$UseLibrary:'" + usr$ + "/" + lib$ + "'"
             LoadImage Control(Avatar), ""
             avt$ = Ini_ReadSetting$(ini$, "[LIBRARY DETAILS]", "Avatar")
-            IF LEN(avt$) THEN LoadImage Control(Avatar), "descriptors/" + usr$ + "/" + avt$
+            IF LEN(avt$) = 0 THEN
+                IF NOT _FILEEXISTS("descriptors/" + usr$ + "/avatar.png") THEN
+                    _WRITEFILE "descriptors/" + usr$ + "/avatar.png", _EMBEDDED$("defAvatar")
+                END IF
+                avt$ = "avatar.png"
+            END IF
+            LoadImage Control(Avatar), "descriptors/" + usr$ + "/" + avt$
+            IF _FILEEXISTS("descriptors/" + usr$ + "/avatar.png") THEN KILL "descriptors/" + usr$ + "/avatar.png"
             ResetList ShortDesc
             txt$ = Ini_ReadSetting$(ini$, "[LIBRARY DETAILS]", "ShortDesc")
             IF LEN(txt$) > 0 THEN
