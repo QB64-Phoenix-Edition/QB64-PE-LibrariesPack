@@ -2,12 +2,12 @@
 Perfect, as said earlier dropping in more library files should be easy enough, once you understood the layout of the `libraries` folder. The much harder part is to make sure the library meets the requirements for inclusion into the Pack first, for that check out the sections below. You should also be familiar with GitHub and its related tools.
 
 When you're sure everything is ready for inclusion, then follow the steps below:
-1. Make yourself a fork of our [QB64-PE Libraries Pack](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack) repository.
-2. In your forked repository make a new folder for the `author` inside each of the four sub-folders `descriptors`, `documents`, `examples` and `includes` if the author is not already in the list.
+1. Make yourself a clone/fork of our [QB64-PE Libraries Pack](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack) repository.
+2. In your cloned/forked repository make a new folder for the `author` inside each of the four sub-folders `descriptors`, `documents`, `examples` and `includes` if the author is not already in the list.
 3. Inside the `author` folders make a sub-folder for the `libraryname`, but only in the `documents`, `examples` and `includes` branches this time.
 4. In the `author` folder of the `descriptors` branch create a new INI file `libraryname.ini` and fill it with the respective data. The easiest is probably to copy the INI of another library, rename it accordingly and exchange its information.
 5. If the new author is a known forum member, then get his avatar picture and also save it in the new `descriptors/author` folder and specify it in the INI file. If no personalized avatar is available, then leave the INI entry empty.
-6. Open a **Pull Request** in your forked repository to request a merge of your made changes back into the parent repository.
+6. Open a **Pull Request** in your cloned/forked repository to request a merge of your made changes back into the parent repository.
 
 #### The Library Descriptor INI format is easy and straight forward:
 
@@ -37,7 +37,7 @@ To avoid rejection of a library the following things are considered mandatory:
 2. At least a rudimentary documentation must be provided. The simplest form should contain the syntax of all public functions with a brief overview of all arguments and at least one sentence of function description. The file format should be TXT, MD, PDF or HTML.
 3. At least one example must be provided. All examples must work from both possible compile locations, the QB64-PE main folder and its source folder if "Output EXE to Source Folder" is used.
 4. The library code itself must follow the **Library coding standards** outlined below. The library code may consist of 3 general parts/files, the **AtTop**, the **AfterMain** and the **AtBottom** parts, take a closer look to the `QB64-PE/SampleLib` and its examples to learn what must go in which part.
-5. One of the library parts/files must contain the code below to enforce **QB64-PE v4.3.0 or up** for use in the Libraries Pack. It's best to place it in the first part/file included to give the error as soon as possible.
+5. One of the library parts/files must contain the code below to enforce **QB64-PE v4.3.0 or up** for use in the Libraries Pack. It's best to place it in the first part/file included to give the error as soon as possible. Also every example should contain the same code right before the $USELIBRARY line.
     ```vb
     $IF VERSION < 4.3.0 THEN
         $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
