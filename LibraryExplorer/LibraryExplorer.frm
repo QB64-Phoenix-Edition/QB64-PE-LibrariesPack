@@ -13,6 +13,7 @@ SUB __UI_LoadForm
     __UI_RegisterResult = 0
     SetCaption __UI_NewID, "The QB64-PE Library Explorer"
     Control(__UI_NewID).Font = SetFont("PublicSans-Regular.ttf", 14)
+    Control(__UI_NewID).CenteredWindow = True
     Control(__UI_NewID).HasBorder = False
 
     __UI_NewID = __UI_NewControl(__UI_Type_Label, "AuthorsListLB", 130, 25, 10, 10, 0)

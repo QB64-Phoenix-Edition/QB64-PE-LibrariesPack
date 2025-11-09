@@ -16,7 +16,7 @@ $IF WIN THEN
     '--------------------------------------------------
     $VERSIONINFO:FileDescription='The QB64-PE Library Explorer'
     $VERSIONINFO:FILEVERSION#=1,2,0,0
-    $VERSIONINFO:Comments='The Library Explorer can be used to easily browse through the pack and get an idea what libraries are available.'
+    $VERSIONINFO:Comments='The Library Explorer can be used to easily browse through the Pack and get an idea what libraries are available.'
     $VERSIONINFO:InternalName='LibraryExplorer.bas'
     $VERSIONINFO:OriginalFilename='LibraryExplorer.exe'
     '--------------------------------------------------
