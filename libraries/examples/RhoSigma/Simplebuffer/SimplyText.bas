@@ -28,7 +28,7 @@ $USELIBRARY:'RhoSigma/Simplebuffer'
 
 '--- Find the root of the library's source folder.
 '-----
-IF _FILEEXISTS("qb64.exe") _ORELSE _FILEEXISTS("qb64") _ORELSE _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
+IF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
     root$ = "libraries\examples\RhoSigma\Simplebuffer\"
 END IF
 
