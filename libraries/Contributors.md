@@ -31,7 +31,7 @@ Why is a hardcoded folder layout enforced here, wouldn't it be better to allow m
 - Just like QB64-PE's `internal` folder, also the `libraries` folder has its defined layout, so that the compiler knows where to look for the required files and data.
 - The folder must remain maintainable, allowing personal freedom in the folder layout tends to make the place messy pretty quickly, as each user has his own habits and preferences.
 
-### What are the requirements for inclusion of library?
+### What are the requirements for inclusion of a library?
 To avoid rejection of a library the following things are considered mandatory:
 1. The author of the library must be known and also the license under which it was released, easy if it's your own library. A library should always be listed under the original author name, even if other people contributed to it or revised the library for inclusion.
 2. At least a rudimentary documentation must be provided. The simplest form should contain the syntax of all public functions with a brief overview of all arguments and at least one sentence of function description. The file format should be TXT, MD, PDF or HTML.
@@ -43,7 +43,7 @@ To avoid rejection of a library the following things are considered mandatory:
         $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
     $END IF
     ```
-6. After you dropped all files in place, perform a final check. The library can't have any name clashes with any of the other libraries in the Pack. Use the `examples/QB64-PE/SampleLib/CheckAll.bas` program, add the new library and you'll see if the IDE remains happy or starts throwing errors. Also save the `CheckAll.bas` program with the new added library.
+6. After you dropped all files in place, perform a final check. The library can't have any name clashes with any of the other libraries in the Pack. Use the `examples/QB64-PE/SampleLib/CheckAll.bas` program, add the new library and you'll see if the IDE remains happy or starts throwing errors. Also save the `CheckAll.bas` program with the new added library. If your code has platform or 32/64bits dependent code switched on/off by pre-compiler $IF..$ELSE..$ENDIF blocks, then make sure to perform the test on **all possible** platform/bits combinations.
 
 ### Library coding standards
 - **Every library part/file must have the $INCLUDEONCE metacommand in it to avoid accidental multiple inclusions.**

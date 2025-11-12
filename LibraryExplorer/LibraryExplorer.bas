@@ -62,7 +62,11 @@ $USELIBRARY:'FellippeHeitor/IniManager'
 ': Event procedures: ---------------------------------------------------------------
 SUB __UI_BeforeInit
 
-    IF _FILEEXISTS("qb64.exe") _ORELSE _FILEEXISTS("qb64") _ORELSE _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
+    IF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
+        IF NOT _DIREXISTS("libraries") THEN
+            _MESSAGEBOX "Library Explorer", "Missing the libraries sub-folder inside the QB64-PE main folder!", "error"
+            SYSTEM
+        END IF
         CHDIR "libraries"
     ELSE
         IF NOT _FILEEXISTS("descriptors/QB64-PE/SampleLib.ini") THEN

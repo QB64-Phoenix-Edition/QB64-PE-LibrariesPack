@@ -27,7 +27,7 @@ $USELIBRARY:'RhoSigma/Imageprocess'
 
 '--- Set the program's work directory.
 '-----
-IF _FILEEXISTS("qb64.exe") _ORELSE _FILEEXISTS("qb64") _ORELSE _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
+IF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
     CHDIR "libraries\examples\RhoSigma\Imageprocess"
 END IF
 
