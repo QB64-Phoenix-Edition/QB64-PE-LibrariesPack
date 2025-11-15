@@ -1,0 +1,509 @@
+'================================================================================
+' Pipecom - A Cross-Platform Process Capture Library for QB64
+' Version: 2.0 (Native Linux/Mac Implementation)
+' Author: Zachary Spriggs
+'
+' This library provides a single function, pipecom&, to execute a shell
+' command and capture its STDOUT, STDERR, and Exit Code on both
+' Windows and POSIX (Linux/Mac) systems.
+'
+' This version uses native POSIX calls on Linux/Mac, removing the
+' previous dependency on popen and temporary files for stderr.
+'================================================================================
+
+$INCLUDEONCE
+
+$IF VERSION < 4.3.0 THEN
+    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
+$END IF
+
+FUNCTION pipecom& (cmd AS STRING, stdout AS STRING, stderr AS STRING)
+    ' Initialize output strings
+    stdout = "": stderr = ""
+
+    '========================================================================
+    ' WINDOWS IMPLEMENTATION
+    '========================================================================
+    $IF WINDOWS THEN
+        ' --- Win32 API Type Definitions ---
+
+        ' https://learn.microsoft.com/en-us/windows/win32/api/wtypesbase/ns-wtypesbase-security_attributes
+        TYPE SECURITY_ATTRIBUTES
+            AS _UNSIGNED LONG nLength
+            $IF 64BIT THEN
+                AS STRING * 4 padding ' Align for 64-bit
+            $END IF
+            AS _OFFSET lpSecurityDescriptor
+            AS LONG bInheritHandle
+            $IF 64BIT THEN
+                AS STRING * 4 padding2 ' Align for 64-bit
+            $END IF
+        END TYPE
+
+        ' https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-startupinfoa
+        TYPE STARTUPINFO
+            AS LONG cb
+            $IF 64BIT THEN
+                AS STRING * 4 padding
+            $END IF
+            AS _OFFSET lpReserved, lpDesktop, lpTitle
+            AS _UNSIGNED LONG dwX, dwY, dwXSize, dwYSize, dwXCountChars, dwYCountChars, dwFillAttribute, dwFlags
+            AS _UNSIGNED INTEGER wShowWindow, cbReserved2
+            $IF 64BIT THEN
+                AS STRING * 4 padding2
+            $END IF
+            AS _OFFSET lpReserved2, hStdInput, hStdOutput, hStdError
+        END TYPE
+
+        ' https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/ns-processthreadsapi-process_information
+        TYPE PROCESS_INFORMATION
+            AS _OFFSET hProcess, hThread
+            AS _UNSIGNED LONG dwProcessId, dwThreadId
+        END TYPE
+
+        ' --- Win32 API Constants ---
+        CONST STARTF_USESTDHANDLES = &H00000100 ' Use hStdInput, hStdOutput, hStdError
+        CONST CREATE_NO_WINDOW = &H8000000 ' Don't create a console window
+        CONST INFINITE = 4294967295 ' Wait forever
+        CONST WAIT_FAILED = &HFFFFFFFF ' Return value for Wait error
+
+        ' --- Win32 API Function Declarations ---
+        DECLARE DYNAMIC LIBRARY "kernel32"
+            ' https://learn.microsoft.com/en-us/windows/win32/api/namedpipeapi/nf-namedpipeapi-createpipe
+            FUNCTION CreatePipe& (BYVAL hReadPipe AS _OFFSET, BYVAL hWritePipe AS _OFFSET, BYVAL lpPipeAttributes AS _OFFSET, BYVAL nSize AS _UNSIGNED LONG)
+
+            ' https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-createprocessa
+            FUNCTION CreateProcessA& (BYVAL lpApplicationName AS _OFFSET, BYVAL lpCommandLine AS _OFFSET, BYVAL lpProcessAttributes AS _OFFSET, BYVAL lpThreadAttributes AS _OFFSET, BYVAL bInheritHandles AS LONG, BYVAL dwCreationFlags AS _UNSIGNED LONG, BYVAL lpEnvironment AS _OFFSET, BYVAL lpCurrentDirectory AS _OFFSET, BYVAL lpStartupInfo AS _OFFSET, BYVAL lpProcessInformation AS _OFFSET)
+
+            ' https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-getexitcodeprocess
+            FUNCTION GetExitCodeProcess& (BYVAL hProcess AS _OFFSET, BYVAL lpExitCode AS _OFFSET)
+
+            ' https://learn.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-closehandle
+            SUB CloseHandle (BYVAL hObject AS _OFFSET)
+
+            ' https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-readfile
+            FUNCTION ReadFile& (BYVAL hFile AS _OFFSET, BYVAL lpBuffer AS _OFFSET, BYVAL nNumberOfBytesToRead AS _UNSIGNED LONG, BYVAL lpNumberOfBytesRead AS _OFFSET, BYVAL lpOverlapped AS _OFFSET)
+
+            ' https://learn.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-waitforsingleobject
+            FUNCTION WaitForSingleObject~& (BYVAL hHandle AS _OFFSET, BYVAL dwMilliseconds AS _UNSIGNED LONG)
+        END DECLARE
+
+        DIM AS LONG ok: ok = 1
+        DIM AS _OFFSET hStdOutPipeRead, hStdOutPipeWrite, hStdReadPipeError, hStdOutPipeError
+
+        ' Set up Security Attributes for inheritable pipe handles
+        DIM AS SECURITY_ATTRIBUTES sa
+        sa.nLength = LEN(sa): sa.lpSecurityDescriptor = 0: sa.bInheritHandle = 1
+
+        ' Create the pipe for STDOUT
+        IF CreatePipe(_OFFSET(hStdOutPipeRead), _OFFSET(hStdOutPipeWrite), _OFFSET(sa), 0) = 0 THEN
+            pipecom = -1
+            EXIT FUNCTION
+        END IF
+
+        ' Create the pipe for STDERR
+        IF CreatePipe(_OFFSET(hStdReadPipeError), _OFFSET(hStdOutPipeError), _OFFSET(sa), 0) = 0 THEN
+            pipecom = -1
+            EXIT FUNCTION
+        END IF
+
+        ' Set up STARTUPINFO to redirect the new process's std handles
+        DIM AS STARTUPINFO si
+        si.cb = LEN(si)
+        si.dwFlags = STARTF_USESTDHANDLES
+        si.hStdError = hStdOutPipeError ' Redirect stderr to our pipe
+        si.hStdOutput = hStdOutPipeWrite ' Redirect stdout to our pipe
+        si.hStdInput = 0
+
+        DIM AS PROCESS_INFORMATION procinfo
+        DIM AS _OFFSET lpApplicationName
+        DIM AS STRING lpCommandLine
+
+        ' Prepend "cmd /c " to execute the command in a shell
+        ' and add a null terminator for the C API.
+        lpCommandLine = "cmd /c " + cmd + CHR$(0)
+
+        DIM AS _OFFSET lpProcessAttributes, lpThreadAttributes
+        DIM AS LONG bInheritHandles: bInheritHandles = 1 ' Must be 1 to inherit pipes
+        DIM AS _UNSIGNED LONG dwCreationFlags: dwCreationFlags = CREATE_NO_WINDOW
+        DIM AS _OFFSET lpEnvironment, lpCurrentDirectory
+
+        ' Create the child process
+        ok = CreateProcessA(lpApplicationName, _OFFSET(lpCommandLine), lpProcessAttributes, lpThreadAttributes, bInheritHandles, dwCreationFlags, lpEnvironment, lpCurrentDirectory, _OFFSET(si), _OFFSET(procinfo))
+
+        IF ok = 0 THEN
+            pipecom = -1
+            EXIT FUNCTION
+        END IF
+
+        ' Close the "write" ends of the pipes in the parent process.
+        ' The child process now holds the only copies.
+        ' This is crucial, or ReadFile will never finish.
+        CloseHandle hStdOutPipeWrite
+        CloseHandle hStdOutPipeError
+
+        ' Read loop for STDOUT
+        DIM AS STRING buf: buf = SPACE$(4096 + 1)
+        DIM AS _UNSIGNED LONG dwRead
+        WHILE ReadFile(hStdOutPipeRead, _OFFSET(buf), 4096, _OFFSET(dwRead), 0) <> 0 AND dwRead > 0
+            buf = MID$(buf, 1, dwRead)
+            GOSUB RemoveChr13 ' Remove carriage returns
+            stdout = stdout + buf
+            buf = SPACE$(4096 + 1)
+        WEND
+
+        ' Read loop for STDERR
+        WHILE ReadFile(hStdReadPipeError, _OFFSET(buf), 4096, _OFFSET(dwRead), 0) <> 0 AND dwRead > 0
+            buf = MID$(buf, 1, dwRead)
+            GOSUB RemoveChr13 ' Remove carriage returns
+            stderr = stderr + buf
+            buf = SPACE$(4096 + 1)
+        WEND
+
+        ' Wait for the child process to terminate
+        DIM AS LONG exit_code, ex_stat
+        IF WaitForSingleObject(procinfo.hProcess, INFINITE) <> WAIT_FAILED THEN
+            ' Get the process's exit code
+            IF GetExitCodeProcess(procinfo.hProcess, _OFFSET(exit_code)) THEN
+                ex_stat = 1
+            END IF
+        END IF
+
+        ' Clean up remaining handles
+        CloseHandle hStdOutPipeRead
+        CloseHandle hStdReadPipeError
+
+        ' Return the exit code
+        IF ex_stat = 1 THEN
+            pipecom = exit_code
+        ELSE
+            pipecom = -1
+        END IF
+
+        EXIT FUNCTION
+
+        ' Helper routine to strip Chr$(13) for Windows
+        RemoveChr13:
+        DIM AS LONG j
+        j = INSTR(buf, CHR$(13))
+        DO WHILE j
+            buf = LEFT$(buf, j - 1) + MID$(buf, j + 1)
+            j = INSTR(buf, CHR$(13))
+        LOOP
+        RETURN
+
+        '========================================================================
+        ' POSIX (LINUX / MAC) IMPLEMENTATION
+        '========================================================================
+    $ELSE
+        ' --- POSIX API Function Declarations ---
+        DECLARE CUSTOMTYPE LIBRARY
+            ' https://man7.org/linux/man-pages/man2/pipe.2.html
+            FUNCTION pipe& (fildes AS _INTEGER64)
+
+            ' https://man7.org/linux/man-pages/man2/fork.2.html
+            FUNCTION fork%& ()
+
+            ' https://man7.org/linux/man-pages/man2/close.2.html
+            SUB __close ALIAS "close" (BYVAL fd AS LONG)
+
+            ' https://man7.org/linux/man-pages/man2/dup2.2.html
+            SUB dup2 (BYVAL oldfd AS LONG, BYVAL newfd AS LONG)
+
+            ' https://man7.org/linux/man-pages/man3/execl.3.html
+            SUB execl (path AS STRING, arg1 AS STRING, arg2 AS STRING, cmd AS STRING, BYVAL nul AS _OFFSET)
+
+            ' https://man7.org/linux/man-pages/man2/select.2.html
+            FUNCTION __select& ALIAS "select" (BYVAL nfds AS LONG, BYVAL readfds AS _OFFSET, BYVAL writefds AS _OFFSET, BYVAL exceptfds AS _OFFSET, BYVAL timeout AS _OFFSET)
+
+            ' https://man7.org/linux/man-pages/man2/read.2.html
+            FUNCTION __read%& ALIAS "read" (BYVAL fildes AS LONG, BYVAL buf AS _OFFSET, BYVAL nbyte AS _OFFSET)
+
+            ' https://man7.org/linux/man-pages/man2/waitpid.2.html
+            SUB waitpid (BYVAL pid AS _OFFSET, BYVAL status AS _OFFSET, BYVAL options AS LONG)
+        END DECLARE
+
+        ' https://man7.org/linux/man-pages/man3/wait.3.html
+        DECLARE LIBRARY "wait"
+            FUNCTION WIFEXITED& (BYVAL status AS LONG)
+            FUNCTION WEXITSTATUS& (BYVAL status AS LONG)
+        END DECLARE
+
+        ' Standard file descriptor numbers
+        CONST STDOUT_FILENO = 1
+        CONST STDERR_FILENO = 2
+
+        ' --- fd_set macro replication constants ---
+        $IF 64BIT THEN
+            CONST NFDBITS = 64
+        $ELSE
+            CONST NFDBITS = 32
+        $END IF
+        CONST FD_SETSIZE = 1024
+        CONST FD_SET_ARRAY_MAX_INDEX = (FD_SETSIZE / NFDBITS) - 1
+
+        ' QB64 doesn't have int[2] arrays as params, so we pack
+        ' [read_fd, write_fd] into a single _INTEGER64
+        DIM AS _INTEGER64 stdout_pipes, stderr_pipes
+        DIM AS _OFFSET pid
+
+        ' Create two pipes: one for stdout, one for stderr
+        IF pipe(stdout_pipes) = -1 OR pipe(stderr_pipes) = -1 THEN
+            _LOGERROR "An error with pipe has occurred"
+            pipecom = -1
+            EXIT FUNCTION
+        END IF
+
+        ' Create the child process
+        pid = fork
+        IF pid = -1 THEN
+            _LOGERROR "An error with fork has occurred"
+            pipecom = -1
+            EXIT FUNCTION
+        END IF
+
+        '========================
+        ' CHILD PROCESS
+        '========================
+        IF pid = 0 THEN
+            ' We are in the child process.
+            ' Close the READ ends of the pipes (child only writes)
+            __close GetLowLong(stdout_pipes)
+            __close GetLowLong(stderr_pipes)
+
+            ' Redirect child's STDOUT to the WRITE end of the stdout pipe
+            dup2 GetHighLong(stdout_pipes), STDOUT_FILENO
+            ' Redirect child's STDERR to the WRITE end of the stderr pipe
+            dup2 GetHighLong(stderr_pipes), STDERR_FILENO
+
+            ' Close the original WRITE end descriptors (now redundant)
+            __close GetHighLong(stdout_pipes)
+            __close GetHighLong(stderr_pipes)
+
+            ' Execute the command using /bin/sh -c "..."
+            ' We add CHR$(0) for C-string null termination
+            execl "/bin/sh" + CHR$(0), "sh" + CHR$(0), "-c" + CHR$(0), cmd + CHR$(0), 0
+
+            ' If execl returns, an error occurred. Exit with 127.
+            SYSTEM 127
+
+            '========================
+            ' PARENT PROCESS
+            '========================
+        ELSE
+            ' We are in the parent process.
+            ' Close the WRITE ends of the pipes (parent only reads)
+            __close GetHighLong(stdout_pipes)
+            __close GetHighLong(stderr_pipes)
+
+            pipecom = -1 ' Default exit code
+
+            ' Find the highest file descriptor number for select()
+            DIM AS LONG max_fd
+            IF GetLowLong(stdout_pipes) > GetLowLong(stderr_pipes) THEN
+                max_fd = GetLowLong(stdout_pipes)
+            ELSE
+                max_fd = GetLowLong(stderr_pipes)
+            END IF
+
+            ' This is our file descriptor set for select()
+            DIM AS _INTEGER64 read_fds(FD_SET_ARRAY_MAX_INDEX)
+
+            ' Main read loop:
+            ' We use select() to monitor both pipes at once.
+            WHILE 1
+                DIM AS STRING read_buf: read_buf = SPACE$(1024)
+                DIM AS _OFFSET bytes
+
+                ' Clear the fd_set
+                FD_ZERO read_fds()
+
+                ' Flag to track if any pipes are still open
+                DIM AS LONG fds_open: fds_open = 0
+
+                ' Add STDOUT pipe to set if it's not closed
+                ' (We flag closed pipes by setting their FD to -1)
+                IF GetLowLong(stdout_pipes) <> -1 THEN
+                    FD_SET GetLowLong(stdout_pipes), read_fds()
+                    fds_open = 1
+                END IF
+
+                ' Add STDERR pipe to set if it's not closed
+                IF GetLowLong(stderr_pipes) <> -1 THEN
+                    FD_SET GetLowLong(stderr_pipes), read_fds()
+                    fds_open = 1
+                END IF
+
+                ' If no pipes are left open, exit the read loop
+                IF fds_open = 0 THEN
+                    EXIT WHILE
+                END IF
+
+                ' Wait indefinitely until one or more pipes have data
+                IF __select(max_fd + 1, _OFFSET(read_fds()), 0, 0, 0) = -1 THEN
+                    _LOGERROR "An error with __select has occurred"
+                    EXIT WHILE
+                END IF
+
+                ' Check if STDOUT pipe has data
+                IF GetLowLong(stdout_pipes) <> -1 AND FD_ISSET(GetLowLong(stdout_pipes), read_fds()) = -1 THEN
+                    bytes = __read(GetLowLong(stdout_pipes), _OFFSET(read_buf), LEN(read_buf))
+                    IF bytes > 0 THEN
+                        ' Append data to stdout string
+                        stdout = stdout + MID$(read_buf, 1, bytes)
+                    ELSE
+                        ' 0 bytes means EOF. Close the pipe.
+                        __close GetLowLong(stdout_pipes)
+                        ' Flag it as closed by setting the FD to -1
+                        DIM AS LONG stdoutlow: stdoutlow = -1
+                        stdout_pipes = PackLongsToInteger64(stdoutlow, GetHighLong(stdout_pipes))
+                    END IF
+                END IF
+
+                ' Check if STDERR pipe has data
+                IF GetLowLong(stderr_pipes) <> -1 AND FD_ISSET(GetLowLong(stderr_pipes), read_fds()) = -1 THEN
+                    bytes = __read(GetLowLong(stderr_pipes), _OFFSET(read_buf), LEN(read_buf))
+                    IF bytes > 0 THEN
+                        ' Append data to stderr string
+                        stderr = stderr + MID$(read_buf, 1, bytes)
+                    ELSE
+                        ' 0 bytes means EOF. Close the pipe.
+                        __close GetLowLong(stderr_pipes)
+                        ' Flag it as closed by setting the FD to -1
+                        DIM AS LONG stderrlow: stderrlow = -1
+                        stderr_pipes = PackLongsToInteger64(stderrlow, GetHighLong(stderr_pipes))
+                    END IF
+                END IF
+            WEND
+
+            ' Wait for the child process to exit and get its status
+            DIM AS LONG status
+            waitpid pid, _OFFSET(status), 0
+
+            ' Check if the process exited normally
+            IF WIFEXITED(status) THEN
+                ' Get the actual exit code
+                pipecom = WEXITSTATUS(status)
+            ELSE
+                pipecom = -1 ' Process was killed or exited abnormally
+            END IF
+        END IF
+    $END IF
+END FUNCTION
+
+'============================================================================
+' HELPER FUNCTIONS (POSIX-only)
+'============================================================================
+
+' This section is skipped on Windows
+$IF WINDOWS THEN
+$ELSE
+    ' --- fd_set Macro Replications ---
+
+    SUB FD_ZERO (arr() AS _INTEGER64)
+        ' Replicates: FD_ZERO(fd_set *set)
+        ' Clears all bits in the set by zeroing the array.
+        DIM AS INTEGER i
+        FOR i = 0 TO UBOUND(arr)
+            arr(i) = 0
+        NEXT i
+    END SUB
+
+    SUB FD_SET (fd AS LONG, arr() AS _INTEGER64)
+        ' Replicates: FD_SET(int fd, fd_set *set)
+        ' Sets the specific bit for a file descriptor.
+        $IF 64BIT THEN
+            CONST NFDBITS = 64
+        $ELSE
+            CONST NFDBITS = 32
+        $END IF
+        DIM AS LONG index, bit_position
+        DIM AS _INTEGER64 bit_mask
+
+        ' Find which array element holds the bit
+        index = fd \ NFDBITS
+        ' Find the bit's position within that element
+        bit_position = fd MOD NFDBITS
+        ' Create a mask for that bit (1 << bit_position)
+        bit_mask = 2 ^ bit_position
+        ' Set the bit
+        arr(index) = arr(index) OR bit_mask
+    END SUB
+
+    FUNCTION FD_ISSET% (fd AS LONG, arr() AS _INTEGER64)
+        ' Replicates: int FD_ISSET(int fd, fd_set *set)
+        ' Checks if a specific bit for a file descriptor is set.
+        $IF 64BIT THEN
+            CONST NFDBITS = 64
+        $ELSE
+            CONST NFDBITS = 32
+        $END IF
+        DIM AS LONG index, bit_position
+        DIM AS _INTEGER64 bit_mask
+
+        index = fd \ NFDBITS
+        bit_position = fd MOD NFDBITS
+        bit_mask = 2 ^ bit_position
+
+        ' Check the bit. Returns -1 (True) or 0 (False).
+        IF (arr(index) AND bit_mask) <> 0 THEN
+            FD_ISSET = -1
+        ELSE
+            FD_ISSET = 0
+        END IF
+    END FUNCTION
+
+    ' --- 32/64-bit Packing Helper Functions ---
+    ' (Used to store two 32-bit FDs in one 64-bit _INTEGER64)
+
+    FUNCTION PackLongsToInteger64&& (lowLong AS LONG, highLong AS LONG)
+        ' Packs two 32-bit LONGs into one 64-bit _INTEGER64.
+        CONST LOMASK = &HFFFFFFFF
+
+        DIM AS _INTEGER64 high_shifted, low_masked
+        ' Shift high long into the upper 32 bits
+        high_shifted = _CAST(_INTEGER64, highLong) * (2 ^ 32)
+        ' Mask low long to 32 bits (to handle sign)
+        low_masked = _CAST(_INTEGER64, lowLong) AND LOMASK
+        ' Combine them
+        PackLongsToInteger64 = high_shifted OR low_masked
+    END FUNCTION
+
+    FUNCTION GetLowLong& (packedValue AS _INTEGER64)
+        ' Extracts the low 32-bit LONG (index 0)
+        CONST LOMASK = &HFFFFFFFF
+        GetLowLong = (packedValue AND LOMASK)
+    END FUNCTION
+
+    FUNCTION GetHighLong& (packedValue AS _INTEGER64)
+        ' Extracts the high 32-bit LONG (index 1)
+        GetHighLong = packedValue \ (2 ^ 32) ' Arithmetic shift right
+    END FUNCTION
+
+$END IF
+
+'============================================================================
+' LITE HELPER FUNCTIONS
+'============================================================================
+
+FUNCTION pipecom_lite$ (cmd AS STRING)
+    ' A simple wrapper that returns stderr if it exists,
+    ' otherwise returns stdout.
+    DIM AS LONG a
+    DIM AS STRING stdout, stderr
+    a = pipecom(cmd, stdout, stderr)
+    IF stderr <> "" THEN
+        pipecom_lite = stderr
+    ELSE
+        pipecom_lite = stdout
+    END IF
+END FUNCTION
+
+SUB pipecom_lite (cmd AS STRING)
+    ' A "fire-and-forget" version that runs the command
+    ' but doesn't return any output.
+    DIM AS LONG a
+    DIM AS STRING stdout, stderr
+    a = pipecom(cmd, stdout, stderr)
+END SUB
+

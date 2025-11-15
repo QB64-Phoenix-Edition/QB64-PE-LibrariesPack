@@ -17,5 +17,6 @@ $USELIBRARY:'RhoSigma/Imageprocess'
 $USELIBRARY:'RhoSigma/Polygons'
 $USELIBRARY:'RhoSigma/Sha2-Hash'
 $USELIBRARY:'RhoSigma/Simplebuffer'
+$USELIBRARY:'SpriggsySpriggs/PipeCom'
 $USELIBRARY:'TerryRitchie/MenuLib'
 
