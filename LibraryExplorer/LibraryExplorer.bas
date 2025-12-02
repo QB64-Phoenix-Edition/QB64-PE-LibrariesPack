@@ -15,7 +15,7 @@ $IF WIN THEN
     '$INCLUDE:'../libraries/ProductInfo.bas'
     '--------------------------------------------------
     $VERSIONINFO:FileDescription='The QB64-PE Library Explorer'
-    $VERSIONINFO:FILEVERSION#=1,2,0,0
+    $VERSIONINFO:FILEVERSION#=1,3,0,0
     $VERSIONINFO:Comments='The Library Explorer can be used to easily browse through the Pack and get an idea what libraries are available.'
     $VERSIONINFO:InternalName='LibraryExplorer.bas'
     $VERSIONINFO:OriginalFilename='LibraryExplorer.exe'
@@ -98,6 +98,7 @@ SUB __UI_OnLoad
     ResetList LibrariesList
     REDIM ListArr$(0)
     Disk.File.List "descriptors", "", 2, ListArr$()
+    StrQuickSort ListArr$(), 1, UBOUND(ListArr$), _TRUE
     FOR i& = 1 TO UBOUND(ListArr$)
         t$ = ListArr$(i&)
         IF LEFT$(t$, 1) <> "." THEN AddItem AuthorsList, LEFT$(t$, LEN(t$) - 1)
@@ -105,7 +106,12 @@ SUB __UI_OnLoad
     Disk.File.List "descriptors/" + GetItem$(AuthorsList, 1), "*.ini", 1, ListArr$()
     FOR i& = 1 TO UBOUND(ListArr$)
         t$ = ListArr$(i&)
-        IF LEFT$(t$, 1) <> "." THEN AddItem LibrariesList, LEFT$(t$, LEN(t$) - 4)
+        IF LEFT$(t$, 1) <> "." THEN ListArr$(i&) = LEFT$(t$, LEN(t$) - 4)
+    NEXT i&
+    StrQuickSort ListArr$(), 1, UBOUND(ListArr$), _TRUE
+    FOR i& = 1 TO UBOUND(ListArr$)
+        t$ = ListArr$(i&)
+        IF LEFT$(t$, 1) <> "." THEN AddItem LibrariesList, t$
     NEXT i&
     ERASE ListArr$
     Control(AuthorsList).Value = 1
@@ -511,7 +517,12 @@ SUB __UI_ValueChanged (id AS LONG)
             Disk.File.List "descriptors/" + GetItem$(AuthorsList, Control(AuthorsList).Value), "*.ini", 1, ListArr$()
             FOR i& = 1 TO UBOUND(ListArr$)
                 t$ = ListArr$(i&)
-                IF LEFT$(t$, 1) <> "." THEN AddItem LibrariesList, LEFT$(t$, LEN(t$) - 4)
+                IF LEFT$(t$, 1) <> "." THEN ListArr$(i&) = LEFT$(t$, LEN(t$) - 4)
+            NEXT i&
+            StrQuickSort ListArr$(), 1, UBOUND(ListArr$), _TRUE
+            FOR i& = 1 TO UBOUND(ListArr$)
+                t$ = ListArr$(i&)
+                IF LEFT$(t$, 1) <> "." THEN AddItem LibrariesList, t$
             NEXT i&
             ERASE ListArr$
             Control(LibrariesList).Value = 1
@@ -710,6 +721,43 @@ FUNCTION ParseLine& (inpLine$, sepChars$, quoChars$, outArray$(), minUB&)
     REDIM _PRESERVE outArray$(oalb& TO (ocnt& - 1))
     ParseLine& = ocnt& - 1
 END FUNCTION
+
+SUB StrQuickSort (StrArray$(), lb&, ub&, ic%) 'IgnoreCase: ic% = -1, else 0
+    'source: RhoSigma
+    lIdx& = lb&: rIdx& = ub&
+    IF (ub& - lb&) > 0 THEN
+        piv& = (lb& + ub&) / 2
+        WHILE (lIdx& <= piv&) AND (rIdx& >= piv&)
+            IF ic% THEN
+                WHILE (UCASE$(StrArray$(lIdx&)) < UCASE$(StrArray$(piv&))) AND (lIdx& <= piv&)
+                    lIdx& = lIdx& + 1
+                WEND
+                WHILE (UCASE$(StrArray$(rIdx&)) > UCASE$(StrArray$(piv&))) AND (rIdx& >= piv&)
+                    rIdx& = rIdx& - 1
+                WEND
+            ELSE
+                WHILE (StrArray$(lIdx&) < StrArray$(piv&)) AND (lIdx& <= piv&)
+                    lIdx& = lIdx& + 1
+                WEND
+                WHILE (StrArray$(rIdx&) > StrArray$(piv&)) AND (rIdx& >= piv&)
+                    rIdx& = rIdx& - 1
+                WEND
+            END IF
+            SWAP StrArray$(lIdx&), StrArray$(rIdx&)
+            lIdx& = lIdx& + 1
+            rIdx& = rIdx& - 1
+            IF (lIdx& - 1) = piv& THEN
+                rIdx& = rIdx& + 1
+                piv& = rIdx&
+            ELSEIF (rIdx& + 1) = piv& THEN
+                lIdx& = lIdx& - 1
+                piv& = lIdx&
+            END IF
+        WEND
+        StrQuickSort StrArray$(), lb&, piv& - 1, ic%
+        StrQuickSort StrArray$(), piv& + 1, ub&, ic%
+    END IF
+END SUB
 
 '$INCLUDE:'InForm/InForm.ui'
 

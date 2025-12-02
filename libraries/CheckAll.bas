@@ -1,8 +1,9 @@
 'Check all libraries,
 'this program does nothing, it's just to check all libraries against
-'each other for name conflicts. Just load it into the IDE, there should
-'be no errors, just the usual "..." and finally the "Ok" in the status.
-'=====================================================
+'each other for name conflicts and/or undeclared variables. Just load it
+'into the IDE, there should be no errors, just the usual "..." and after
+'the syntax check finishes the "Ok" message in the status area.
+'=======================================================================
 
 $IF VERSION < 4.3.0 THEN
     $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"

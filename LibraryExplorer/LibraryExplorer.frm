@@ -26,6 +26,7 @@ SUB __UI_LoadForm
 
     __UI_NewID = __UI_NewControl(__UI_Type_ListBox, "AuthorsList", 130, 175, 10, 35, 0)
     __UI_RegisterResult = 0
+    Control(__UI_NewID).Font = SetFont("PublicSans-Regular.ttf", 13)
     Control(__UI_NewID).HasBorder = True
     Control(__UI_NewID).CanHaveFocus = True
     Control(__UI_NewID).BorderSize = 1
@@ -40,6 +41,7 @@ SUB __UI_LoadForm
 
     __UI_NewID = __UI_NewControl(__UI_Type_ListBox, "LibrariesList", 130, 175, 10, 245, 0)
     __UI_RegisterResult = 0
+    Control(__UI_NewID).Font = SetFont("PublicSans-Regular.ttf", 13)
     Control(__UI_NewID).HasBorder = True
     Control(__UI_NewID).CanHaveFocus = True
     Control(__UI_NewID).BorderSize = 1

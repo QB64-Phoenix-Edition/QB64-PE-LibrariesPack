@@ -10,32 +10,32 @@ When you're sure everything is ready for inclusion, then follow the steps below:
 6. Open a **Pull Request** in your cloned/forked repository to request a merge of your made changes back into the parent repository.
 
 #### The Library Descriptor INI format is easy and straight forward:
+```ini
+[LIBRARY DETAILS]
+FullName="Full name/title of the library"
+Version="1.0 (optional DD-MMM-YYYY date)"
+License="license name (optional license link)"
+ShortDesc="A short description of the library, its purpose etc. (max. 450-500 chars)."
+FullDocs=full_documentation_filename
+Author="User name, (optional real name) & optional other contributors"
+Avatar=optional_author_forum_avatar_filename
 
-    [LIBRARY DETAILS]
-    FullName="Full name/title of the library"
-    Version="1.0 (optional DD-MMM-YYYY date)"
-    License="license name (optional license link)"
-    ShortDesc="A short description of the library, its purpose etc. (max. 450-500 chars)."
-    FullDocs=full_documentation_filename
-    Author="User name, (optional real name) & optional other contributors"
-    Avatar=optional_author_forum_avatar_filename
-
-    [LIBRARY INCLUDES]
-    IncAtTop=library_BI_filename
-    IncAfterMain=library_BAS_filename
-    IncAtBottom=library_BM_filename
-
+[LIBRARY INCLUDES]
+IncAtTop=library_BI_filename
+IncAfterMain=library_BAS_filename
+IncAtBottom=library_BM_filename
+```
 Not used/required file entries just remain blank. Note that all file names are to be given without quotes (even if the file name has spaces) and also without any path specification, as files are all in its defined known places and the paths are hardcoded inside QB64-PE and the Library Explorer application. However, make sure that the written cases of all created files and folders do exactly match and also the given file names in the INI file match that. That is because of the usual case sensitivity of Linux file systems, where a file called `Foo.ini` is a different file than `foo.ini` and `FOO.ini`, same is valid for folder names. Not paying enough attention here may lead to errors due to not found files or folders on Linux systems.
 
 Why is a hardcoded folder layout enforced here, wouldn't it be better to allow more freedom here and rather providing full path info in the INI files instead?
-- Just like QB64-PE's `internal` folder, also the `libraries` folder has its defined layout, so that the compiler knows where to look for the required files and data.
-- The folder must remain maintainable, allowing personal freedom in the folder layout tends to make the place messy pretty quickly, as each user has his own habits and preferences.
+- The `libraries` folder is treated just like QB64-PE's `internal` folder. It has its defined layout, so that the compiler knows where to look for files and data.
+- The folder must remain clean and machine maintainable. Allowing personal freedom in the folder layout tends to make the place messy pretty quickly, as each user has his own habits and preferences.
 
 ### What are the requirements for inclusion of a library?
 To avoid rejection of a library the following things are considered mandatory:
 1. The author of the library must be known and also the license under which it was released, easy if it's your own library. A library should always be listed under the original author name, even if other people contributed to it or revised the library for inclusion.
 2. At least a rudimentary documentation must be provided. The simplest form should contain the syntax of all public functions with a brief overview of all arguments and at least one sentence of function description. The file format should be TXT, MD, PDF or HTML.
-3. At least one example must be provided. All examples must work from both possible compile locations, the QB64-PE main folder and its source folder if "Output EXE to Source Folder" is used.
+3. At least one example must be provided. All examples must work from both possible compile locations, the QB64-PE main folder and the example's source folder if "Output EXE to Source Folder" is used.
 4. The library code itself must follow the **Library coding standards** outlined below. The library code may consist of 3 general parts/files, the **AtTop**, the **AfterMain** and the **AtBottom** parts, take a closer look to the `QB64-PE/SampleLib` and its examples to learn what must go in which part.
 5. One of the library parts/files must contain the code below to enforce **QB64-PE v4.3.0 or up** for use in the Libraries Pack. It's best to place it in the first part/file included to give the error as soon as possible. Also every example should contain the same code right before the $USELIBRARY line.
     ```vb
@@ -43,16 +43,17 @@ To avoid rejection of a library the following things are considered mandatory:
         $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
     $END IF
     ```
-6. After you dropped all files in place, perform a final check. The library can't have any name clashes with any of the other libraries in the Pack. Use the `examples/QB64-PE/SampleLib/CheckAll.bas` program, add the new library and you'll see if the IDE remains happy or starts throwing errors. Also save the `CheckAll.bas` program with the new added library. If your code has platform or 32/64bits dependent code switched on/off by pre-compiler $IF..$ELSE..$ENDIF blocks, then make sure to perform the test on **all possible** platform/bits combinations.
+6. After you dropped all files in place, perform a final check. The library can't have any name clashes with any of the other libraries in the Pack. Load the `libraries/CheckAll.bas` program into the IDE, add the new library and you'll see if the IDE remains happy or starts throwing errors. Also save the `CheckAll.bas` program with the new added library. If your code has platform or 32/64bits dependent code switched on/off by pre-compiler $IF..$ELSE..$ENDIF blocks, then make sure to perform the test on **all possible** platform/bits combinations.
 
 ### Library coding standards
 - **Every library part/file must have the $INCLUDEONCE metacommand in it to avoid accidental multiple inclusions.**
 
-- **A library shall not change global settings, instead a library must adapt to the settings the user chose to use in his program or make sure everything works with either setting. The library may not count on any defaults, once a library is shared publicly, it may be used by someone who has the options set completely backwards of what the library assumed was standard. Some examples:**
-  - $DYNAMIC/$STATIC, negligible, the library must simply use REDIM/ERASE for dynamic arrays.
-  - DEFINT, DEFLNG etc., negligible, variables must be declared with the "AS type" syntax or generally using type suffixes instead.
-  - OPTION _EXPLICIT, the library must always declare all variables, it won't hurt if it's not used, but avoids errors if it's used. Note that variables used in the **AfterMain** part must already be declared in the **AtTop** part, i.e. the variables are already known in the user code and the user can't use the same names for his own code.
-  - OPTION BASE 0/1, negligible, the library must simply hard index all arrays using the (RE)DIM myArr(lb TO ub) syntax.
+- **A library shall never change or enforce global settings, instead a library must adapt to the settings the user chose to use in his program or make sure everything works with either setting. The library may not count on any defaults, once a library is shared publicly, it may be used by someone who has the options set completely backwards of what the library assumed was standard. Some examples of what keywords should never appear in library code and how to easily work around:**
+  - $CONSOLE(:ONLY), the library can check the \_CONSOLE\_ pre-compiler flag to see if a console is available. If the library needs a console, but none is active, then the best the library can do is throwing a pre-compiler $RRROR to inform the user to activate it. Under no circumstances the library should activate a console by itself.
+  - $DYNAMIC/$STATIC, the library must always use REDIM and ERASE to deal with dynamic arrays instead.
+  - DEFINT, DEFLNG etc., variables must be declared with the "DIM var AS type" syntax or by using type suffixes instead.
+  - OPTION _EXPLICIT(ARRAY), the library must always declare all variables and arrays. It won't hurt if it's not active, but avoids errors if the user activates it. Note that variables used in the **AfterMain** part (e.g. in a library defined error handler) must already be declared in the **AtTop** part. That way the variables are already known in the user's main code and so the user can't use the same names for his own code.
+  - OPTION BASE 0/1, the library must simply hard index all arrays using the (RE)DIM myArr(lb TO ub) syntax.
 
 - **A Library should also directly use the available [compiler constants](https://qb64phoenix.com/qb64wiki/index.php/Constants) wherever possible, rather than defining its own CONSTs. This mainly concerns _TRUE and _FALSE, but generally everything what is already provided by the compiler can be used and isn't worth to get redefined.**
 

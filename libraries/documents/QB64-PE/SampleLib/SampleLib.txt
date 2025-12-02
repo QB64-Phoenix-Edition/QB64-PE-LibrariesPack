@@ -1,3 +1,8 @@
+Just a small example library to show how everything is organized in the new
+'libraries' folder. Library authors should check the examples to learn what
+library parts must go into which include files, the regular user learns how
+to use the libraries with the new $USELIBRARY metacommand.
+
 For a real library you would find the documentation here. Whether this is
 a simple textfile a PDF, Markdown or HTML depends on the library author's
 personal habits and preferences.
