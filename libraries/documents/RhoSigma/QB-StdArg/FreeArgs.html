@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>FreeArgs</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<p><em><a href="_Qbstdarg_Contents.html">back to Table of Contents</a></em></p>
+<hr />
+<h2>FreeArgs <em>(sub)</em></h2>
+<p>Free all resources of a va_list string, you should call this subroutine
+on any old va_list, which is not needed any longer. At least before your
+program quits it should free all remaining va_list strings, which is
+good programming style. However, there is also a simple auto-cleanup
+implemented on the C/C++ level (in file <strong>qbstdarg.h</strong>), which will free
+any va_list strings you forgot about, when your program ends.</p>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>SYNTAX:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<pre><code>FreeArgs vargs$
+</code></pre>
+
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>INPUTS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>This must be any previously initialized va_list string variable.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>RESULT:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>The freed and hence invalidated va_list (intended side effect on vargs$).</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>ERRORS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>If vargs$ is no valid (initialized) va_list string, then this subroutine
+will do nothing.</li>
+</ul>
+</blockquote>
+<hr />
+<p><em><a href="_Qbstdarg_Contents.html">back to Table of Contents</a></em></p>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->

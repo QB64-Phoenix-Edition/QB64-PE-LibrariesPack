@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>StrFCurrentTime</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<p><em><a href="_Qbtime_Contents.html">back to Table of Contents</a></em></p>
+<hr />
+<h2>StrFCurrentTime$ <em>(function)</em></h2>
+<p>Return formatted date/time output for the current system time, this
+function does emulate the C/C++ time function <a href="http://www.cplusplus.com/reference/ctime/strftime/">strftime()</a>, it takes the
+arguments required for formatting and returns the result in a new string.</p>
+<h1></h1>
+<blockquote>
+<h6><strong><em>Note that it works only for date/times in the following range:</em></strong></h6>
+<ul>
+<li>
+<h5><em>minimum (QB64 32/64-bit)</em></h5>
+<ul>
+<li>&lt;Tue Jan 01 00:00:00 1970 UTC&gt;</li>
+</ul>
+</li>
+<li>
+<h4><em>maximum (QB64 32-bit)</em></h4>
+<ul>
+<li>&lt;Tue Jan 19 03:14:07 2038 UTC&gt;</li>
+</ul>
+</li>
+<li>
+<h4><em>maximum (QB64 64-bit)</em></h4>
+<ul>
+<li>&lt;Thu Jan 01 07:59:59 3001 UTC&gt;</li>
+</ul>
+</li>
+</ul>
+<h1></h1>
+<h6><strong><em>these limitations are imposed by the strftime() implementation.</em></strong></h6>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>SYNTAX:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<pre><code>formatted$ = StrFCurrentTime$ (fmt$)
+</code></pre>
+
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>INPUTS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>fmt$ <em>(STRING)</em></h4>
+<ul>
+<li>Any string literal or variable, which can contain any escape
+sequences known to C/C++ and formatting tokens known to the
+standard library function <a href="http://www.cplusplus.com/reference/ctime/strftime/">strftime()</a>.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>RESULT:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>formatted$ <em>(STRING)</em></h4>
+<ul>
+<li>The new formatted string, ie. all formatting tokens in the given
+format string (fmt$) have been replaced with the respective data
+from the current system date/time.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>ERRORS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>If fmt$ is empty or contains unsupported formatting tokens, or if
+the date/time is out of the supported range, then this function will
+return an empty string.</li>
+</ul>
+</blockquote>
+<hr />
+<p><em><a href="_Qbtime_Contents.html">back to Table of Contents</a></em></p>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->

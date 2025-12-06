@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>IntArg</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<p><em><a href="_Qbstdarg_Contents.html">back to Table of Contents</a></em></p>
+<hr />
+<h2>IntArg <em>(sub)</em></h2>
+<p>Add a (16-bit) integer to the given va_list string, call this subroutine,
+if the C/C++ argument to add is of the type (int16_t), (short), (short int)
+or a similar 16 bits wide integer datatype, eg. for the %hd, %hi, %hu,
+%ho, %hx and %hX formatting tokens.</p>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>SYNTAX:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<pre><code>IntArg vargs$, value%
+</code></pre>
+
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>INPUTS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>This must be any previously initialized va_list string variable.</li>
+</ul>
+<h4>value% <em>((_UNSIGNED) INTEGER)</em></h4>
+<ul>
+<li>The number to add, may be a literal or variable, signed or unsigned.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>RESULT:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>Number added to va_list (intended side effect on vargs$).</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>ERRORS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>If vargs$ is no valid (initialized) va_list string, then this
+subroutine will panic with ERROR 97.</li>
+</ul>
+</blockquote>
+<hr />
+<p><em><a href="_Qbstdarg_Contents.html">back to Table of Contents</a></em></p>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->

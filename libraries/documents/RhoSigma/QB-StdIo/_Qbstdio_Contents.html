@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>_Qbstdio_Contents</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<pre><code>'+---------------+---------------------------------------------------+
+'| ###### ###### |     .--. .         .-.                            |
+'| ##  ## ##   # |     |   )|        (   ) o                         |
+'| ##  ##  ##    |     |--' |--. .-.  `-.  .  .-...--.--. .-.        |
+'| ######   ##   |     |  \ |  |(   )(   ) | (   ||  |  |(   )       |
+'| ##      ##    |     '   `'  `-`-'  `-'-' `-`-`|'  '  `-`-'`-      |
+'| ##     ##   # |                            ._.'                   |
+'| ##     ###### |  Sources &amp; Documents placed in the Public Domain. |
+'+---------------+---------------------------------------------------+
+'|                                                                   |
+'| === qbstdio.bm ===                                                |
+'|                                                                   |
+'| == The SUBs/FUNCTIONs to mimic C/C++ like stdio functions in QB64.|
+'|                                                                   |
+'+-------------------------------------------------------------------+
+'| Done by RhoSigma, R.Heyder, provided AS IS, use at your own risk. |
+'| Find me in the QB64 Forum or mail to support@rhosigma-cw.net for  |
+'| any questions or suggestions. Thanx for your interest in my work. |
+'+-------------------------------------------------------------------+
+</code></pre>
+
+<h1>Formatted output functions</h1>
+<hr />
+<blockquote>
+<p><em>These are QB64 synonyms for the most commonly used stdio functions
+for formatted output. They use the &quot;va_list&quot; strings provided via
+<strong>qbstdarg.bi/.bm</strong> to pass in the required arguments. The functions are
+using the formatting tokens known to the C/C++ function
+<a href="http://www.cplusplus.com/reference/cstdio/printf/">printf()</a> and its
+derivations.</em></p>
+<p><em>It is also possible to use the typical
+<a href="http://en.cppreference.com/w/cpp/language/escape">escape sequences</a>
+known to C/C++ in the given format string as well as in any argument
+strings passed in through the va_list (except the Unicode escape sequences).</em></p>
+</blockquote>
+<hr />
+<h3><u>Table of Contents</u></h3>
+<ul>
+<li>
+<a href="VPrintF.html">VPrintF</a>
+<ul>
+<li>print formatted output to the screen</li>
+</ul>
+</li>
+<li>
+<a href="VFPrintF.html">VFPrintF</a>
+<ul>
+<li>write formatted output into the given file</li>
+</ul>
+</li>
+<li>
+<a href="VSPrintF.html">VSPrintF$</a>
+<ul>
+<li>return formatted output as new string</li>
+</ul>
+</li>
+</ul>
+<h4>&nbsp;</h4>
+<h2></h2>
+<h2></h2>
+<h4>&nbsp;</h4>
+<h1>QB64 string support</h1>
+<hr />
+<blockquote>
+<p><em>A function to make escape sequences possible in regular strings.
+If you feel happy using those sequences in the argument and format
+strings, then you probably wish to use it in regular strings too.</em></p>
+</blockquote>
+<hr />
+<h3><u>Table of Contents</u></h3>
+<ul>
+<li>
+<a href="QB.html">QB$</a>
+<ul>
+<li>evaluate any escape sequences in the given string</li>
+</ul>
+</li>
+</ul>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->

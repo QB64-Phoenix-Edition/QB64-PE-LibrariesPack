@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>VSPrintF</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<p><em><a href="_Qbstdio_Contents.html">back to Table of Contents</a></em></p>
+<hr />
+<h2>VSPrintF$ <em>(function)</em></h2>
+<p>Return formatted output as new string, this function does emulate the
+C/C++ stdio function <a href="http://www.cplusplus.com/reference/cstdio/vsprintf/">vsprintf()</a>, it takes the arguments required for
+formatting, but returns the result in a string rather than printing it.
+You may use this function, if you need the resulting string prior to
+printing, eg. to calculate the position for justified output, or if
+you want to concatenate many strings using (semi)colons in one PRINT.</p>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>SYNTAX:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<pre><code>formatted$ = VSPrintF$ (fmt$, vargs$)
+</code></pre>
+
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>INPUTS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>fmt$ <em>(STRING)</em></h4>
+<ul>
+<li>Any string literal or variable, which can contain any escape
+sequences known to C/C++ and formatting tokens known to the
+standard library function <a href="http://www.cplusplus.com/reference/cstdio/printf/">printf()</a>.</li>
+</ul>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>A variable args string made with the SUBs/FUNCTIONs in <strong>qbstdarg.bm</strong>,
+which must contain all required arguments in the very same order as
+the respective formatting tokens appear in the given format string.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>RESULT:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>formatted$ <em>(STRING)</em></h4>
+<ul>
+<li>The new formatted string, ie. all formatting tokens in the given
+format string (fmt$) have been replaced with the respective argument
+from the variable args string (vargs$) and all escape sequences have
+been evaluated and replaced by the respective characters.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>ERRORS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>If fmt$ is empty or vargs$ is no valid va_list string, then this
+function will return an empty string.</li>
+</ul>
+</blockquote>
+<hr />
+<p><em><a href="_Qbstdio_Contents.html">back to Table of Contents</a></em></p>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->

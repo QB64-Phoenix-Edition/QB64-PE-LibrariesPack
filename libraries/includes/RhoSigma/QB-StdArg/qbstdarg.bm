@@ -1,0 +1,188 @@
+'+---------------+---------------------------------------------------+
+'| ###### ###### |     .--. .         .-.                            |
+'| ##  ## ##   # |     |   )|        (   ) o                         |
+'| ##  ##  ##    |     |--' |--. .-.  `-.  .  .-...--.--. .-.        |
+'| ######   ##   |     |  \ |  |(   )(   ) | (   ||  |  |(   )       |
+'| ##      ##    |     '   `'  `-`-'  `-'-' `-`-`|'  '  `-`-'`-      |
+'| ##     ##   # |                            ._.'                   |
+'| ##     ###### |  Sources & Documents placed in the Public Domain. |
+'+---------------+---------------------------------------------------+
+'|                                                                   |
+'| === qbstdarg.bm ===                                               |
+'|                                                                   |
+'| == The SUBs and FUNCTIONs to emulate a va_list in a QB64 string.  |
+'|                                                                   |
+'+-------------------------------------------------------------------+
+'| Done by RhoSigma, R.Heyder, provided AS IS, use at your own risk. |
+'| Find me in the QB64 Forum or mail to support@rhosigma-cw.net for  |
+'| any questions or suggestions. Thanx for your interest in my work. |
+'+-------------------------------------------------------------------+
+
+$INCLUDEONCE
+
+'--- docs\qbstdarg.bm\InitArgs.html
+'---------------------------------------------------------------------
+SUB InitArgs (vargs$)
+'--- option _explicit requirements ---
+DIM fmt&&
+'--- make initial debug format string ---
+fmt&& = OffToInt&&(MakeCString%&("args list content = {empty}" + CHR$(0), 27))
+'--- all data emulated in one string ---
+'--- [brain]+[debug format]+[args] ---
+IF INSTR(_OS$, "[32BIT]") THEN
+    vargs$ = _MK$(LONG, 0) + "|DFMT|" + _MK$(LONG, fmt&&) + "|ARGS|"
+ELSE
+    vargs$ = _MK$(_INTEGER64, 0) + "|DFMT|" + _MK$(_INTEGER64, fmt&&) + "|ARGS|"
+END IF
+END SUB
+
+'--- docs\qbstdarg.bm\FreeArgs.html
+'---------------------------------------------------------------------
+SUB FreeArgs (vargs$)
+'--- option _explicit requirements ---
+DIM i%, tmp%&, po&
+'--- check arguments ---
+IF INSTR(vargs$, "|ARGS|") = 0 THEN EXIT SUB
+'--- free strings in brain until zero termination is reached ---
+i% = 1
+IF INSTR(_OS$, "[32BIT]") THEN
+    tmp%& = _CV(LONG, MID$(vargs$, i%, 4))
+ELSE
+    tmp%& = _CV(_INTEGER64, MID$(vargs$, i%, 8))
+END IF
+WHILE tmp%& <> 0
+    FreeCString tmp%&
+    IF INSTR(_OS$, "[32BIT]") THEN
+        i% = i% + 4
+        tmp%& = _CV(LONG, MID$(vargs$, i%, 4))
+    ELSE
+        i% = i% + 8
+        tmp%& = _CV(_INTEGER64, MID$(vargs$, i%, 8))
+    END IF
+WEND
+'--- free debug format string ---
+po& = INSTR(vargs$, "|DFMT|")
+IF INSTR(_OS$, "[32BIT]") THEN
+    FreeCString _CV(LONG, MID$(vargs$, po& + 6, 4))
+ELSE
+    FreeCString _CV(_INTEGER64, MID$(vargs$, po& + 6, 8))
+END IF
+vargs$ = "" 'invalidate va_list
+END SUB
+
+'--- docs\qbstdarg.bm\StrArg.html
+'---------------------------------------------------------------------
+SUB StrArg (vargs$, value$)
+'--- option _explicit requirements ---
+DIM tmp&&
+'--- check arguments ---
+IF INSTR(vargs$, "|ARGS|") = 0 THEN ERROR 97 'uninitialized va_list (vargs$)
+'--- make string copy, add to brain and args ---
+tmp&& = OffToInt&&(MakeCString%&(value$ + CHR$(0), LEN(value$)))
+IF INSTR(_OS$, "[32BIT]") THEN
+    vargs$ = _MK$(LONG, tmp&&) + vargs$ + _MK$(LONG, tmp&&)
+ELSE
+    vargs$ = _MK$(_INTEGER64, tmp&&) + vargs$ + _MK$(_INTEGER64, tmp&&)
+END IF
+'--- update debug format ---
+AddFmtToken vargs$, "(STRING) %s"
+END SUB
+
+'--- docs\qbstdarg.bm\IntArg.html
+'---------------------------------------------------------------------
+SUB IntArg (vargs$, value%)
+'--- check arguments ---
+IF INSTR(vargs$, "|ARGS|") = 0 THEN ERROR 97 'uninitialized va_list (vargs$)
+'--- add to args ---
+IF INSTR(_OS$, "[32BIT]") THEN
+    vargs$ = vargs$ + MKI$(value%) + MKI$(0) 'MKI$(0) for padding
+ELSE
+    vargs$ = vargs$ + MKI$(value%) + MKI$(0) + MKL$(0) 'MKI$(0) + MKL$(0) for padding
+END IF
+'--- update debug format ---
+AddFmtToken vargs$, "(INTEGER) %hd"
+END SUB
+
+'--- docs\qbstdarg.bm\LongArg.html
+'---------------------------------------------------------------------
+SUB LongArg (vargs$, value&)
+'--- check arguments ---
+IF INSTR(vargs$, "|ARGS|") = 0 THEN ERROR 97 'uninitialized va_list (vargs$)
+'--- add to args ---
+IF INSTR(_OS$, "[32BIT]") THEN
+    vargs$ = vargs$ + MKL$(value&)
+ELSE
+    vargs$ = vargs$ + MKL$(value&) + MKL$(0) 'MKL$(0) for padding
+END IF
+'--- update debug format ---
+AddFmtToken vargs$, "(LONG) %ld"
+END SUB
+
+'--- docs\qbstdarg.bm\Int64Arg.html
+'---------------------------------------------------------------------
+SUB Int64Arg (vargs$, value&&)
+'--- check arguments ---
+IF INSTR(vargs$, "|ARGS|") = 0 THEN ERROR 97 'uninitialized va_list (vargs$)
+'--- add to args ---
+vargs$ = vargs$ + _MK$(_INTEGER64, value&&)
+'--- update debug format ---
+AddFmtToken vargs$, "(_INTEGER64) %lld"
+END SUB
+
+'--- docs\qbstdarg.bm\DoubleArg.html
+'---------------------------------------------------------------------
+SUB DoubleArg (vargs$, value#)
+'--- check arguments ---
+IF INSTR(vargs$, "|ARGS|") = 0 THEN ERROR 97 'uninitialized va_list (vargs$)
+'--- add to args ---
+vargs$ = vargs$ + MKD$(value#)
+'--- update debug format ---
+AddFmtToken vargs$, "(DOUBLE) %f"
+END SUB
+
+'--- docs\qbstdarg.bm\GetArgs.html
+'---------------------------------------------------------------------
+FUNCTION GetArgs$ (vargs$)
+'--- option _explicit requirements ---
+DIM po&
+'--- get args part ---
+po& = INSTR(vargs$, "|ARGS|")
+IF po& = 0 THEN
+    GetArgs$ = "invalid"
+ELSE
+    GetArgs$ = MID$(vargs$, po& + 6)
+END IF
+END FUNCTION
+
+'--- undocumented - for internal use only
+'---------------------------------------------------------------------
+SUB AddFmtToken (vargs$, tok$)
+'--- option _explicit requirements ---
+DIM po&, fmt%&, tmp$, fmt&&
+'--- get/free old debug format ---
+po& = INSTR(vargs$, "|DFMT|")
+IF INSTR(_OS$, "[32BIT]") THEN
+    fmt%& = _CV(LONG, MID$(vargs$, po& + 6, 4))
+ELSE
+    fmt%& = _CV(_INTEGER64, MID$(vargs$, po& + 6, 8))
+END IF
+tmp$ = ReadCString$(fmt%&)
+FreeCString fmt%&
+'--- update debug format ---
+IF tmp$ = "args list content = {empty}" THEN tmp$ = "args list content = ": ELSE tmp$ = tmp$ + ", "
+tmp$ = tmp$ + "{" + tok$ + "}"
+'--- set new debug format ---
+fmt&& = OffToInt&&(MakeCString%&(tmp$ + CHR$(0), LEN(tmp$)))
+IF INSTR(_OS$, "[32BIT]") THEN
+    MID$(vargs$, po& + 6, 4) = _MK$(LONG, fmt&&)
+ELSE
+    MID$(vargs$, po& + 6, 8) = _MK$(_INTEGER64, fmt&&)
+END IF
+END SUB
+
+'--- undocumented - for internal use only
+'---------------------------------------------------------------------
+FUNCTION VersionQbstdarg$
+VersionQbstdarg$ = MID$("$VER: qbstdarg.bm 1.0 (14-Mar-2013) by RhoSigma :END$", 7, 41)
+END FUNCTION
+

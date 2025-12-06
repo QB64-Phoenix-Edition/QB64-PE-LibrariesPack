@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>StrArg</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<p><em><a href="_Qbstdarg_Contents.html">back to Table of Contents</a></em></p>
+<hr />
+<h2>StrArg <em>(sub)</em></h2>
+<p>Add a string pointer to the given va_list string, call this subroutine,
+if the C/C++ argument to add is of the type (char*), eg. for the %s
+formatting token.</p>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>SYNTAX:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<pre><code>StrArg vargs$, value$
+</code></pre>
+
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>INPUTS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>This must be any previously initialized va_list string variable.</li>
+</ul>
+<h4>value$ <em>(STRING)</em></h4>
+<ul>
+<li>The string to add, may be a literal or variable of either variable
+or fixed length, you may safely re-use a passed in string variable,
+as its string is copied for internal use in the va_list.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>RESULT:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>String pointer added to va_list (intended side effect on vargs$).</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>ERRORS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>If vargs$ is no valid (initialized) va_list string, then this
+subroutine will panic with ERROR 97.</li>
+</ul>
+</blockquote>
+<hr />
+<p><em><a href="_Qbstdarg_Contents.html">back to Table of Contents</a></em></p>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->

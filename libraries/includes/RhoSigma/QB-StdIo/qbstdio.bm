@@ -1,0 +1,72 @@
+'+---------------+---------------------------------------------------+
+'| ###### ###### |     .--. .         .-.                            |
+'| ##  ## ##   # |     |   )|        (   ) o                         |
+'| ##  ##  ##    |     |--' |--. .-.  `-.  .  .-...--.--. .-.        |
+'| ######   ##   |     |  \ |  |(   )(   ) | (   ||  |  |(   )       |
+'| ##      ##    |     '   `'  `-`-'  `-'-' `-`-`|'  '  `-`-'`-      |
+'| ##     ##   # |                            ._.'                   |
+'| ##     ###### |  Sources & Documents placed in the Public Domain. |
+'+---------------+---------------------------------------------------+
+'|                                                                   |
+'| === qbstdio.bm ===                                                |
+'|                                                                   |
+'| == The SUBs/FUNCTIONs to mimic C/C++ like stdio functions in QB64.|
+'|                                                                   |
+'+-------------------------------------------------------------------+
+'| Done by RhoSigma, R.Heyder, provided AS IS, use at your own risk. |
+'| Find me in the QB64 Forum or mail to support@rhosigma-cw.net for  |
+'| any questions or suggestions. Thanx for your interest in my work. |
+'+-------------------------------------------------------------------+
+
+$INCLUDEONCE
+
+'--- docs\qbstdio.bm\VPrintF.html
+'---------------------------------------------------------------------
+SUB VPrintF (fmt$, vargs$)
+'--- get formatted string and print ---
+PRINT VSPrintF$(fmt$, vargs$)
+END SUB
+
+'--- docs\qbstdio.bm\VFPrintF.html
+'---------------------------------------------------------------------
+SUB VFPrintF (ch%, fmt$, vargs$)
+'--- get formatted string and write to file ---
+PRINT #ch%, VSPrintF$(fmt$, vargs$)
+END SUB
+
+'--- docs\qbstdio.bm\VSPrintF.html
+'---------------------------------------------------------------------
+FUNCTION VSPrintF$ (fmt$, vargs$)
+'--- option _explicit requirements ---
+DIM tmp%&, buf%&
+'--- check arguments ---
+IF (fmt$ = "") OR (GetArgs$(vargs$) = "invalid") THEN
+    VSPrintF$ = ""
+    EXIT FUNCTION
+END IF
+'--- call wrapper function ---
+tmp%& = MakeCString%&(fmt$ + CHR$(0), LEN(fmt$))
+buf%& = FormatToBuffer%&(tmp%&, GetArgs$(vargs$))
+FreeCString tmp%&
+'--- return result string & clenup ---
+VSPrintF$ = ReadCString$(buf%&)
+FreeCString buf%&
+END FUNCTION
+
+'--- docs\qbstdio.bm\QB.html
+'---------------------------------------------------------------------
+FUNCTION QB$ (any$)
+'--- option _explicit requirements ---
+DIM tmp%&
+'--- evaluate esc seq and read back ---
+tmp%& = MakeCString%&(any$ + CHR$(0), LEN(any$))
+QB$ = ReadCString$(tmp%&)
+FreeCString tmp%&
+END FUNCTION
+
+'--- undocumented - for internal use only
+'---------------------------------------------------------------------
+FUNCTION VersionQbstdio$
+VersionQbstdio$ = MID$("$VER: qbstdio.bm 1.0 (14-Mar-2013) by RhoSigma :END$", 7, 40)
+END FUNCTION
+
