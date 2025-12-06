@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>_Qbstdarg_Contents</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<pre><code>'+---------------+---------------------------------------------------+
+'| ###### ###### |     .--. .         .-.                            |
+'| ##  ## ##   # |     |   )|        (   ) o                         |
+'| ##  ##  ##    |     |--' |--. .-.  `-.  .  .-...--.--. .-.        |
+'| ######   ##   |     |  \ |  |(   )(   ) | (   ||  |  |(   )       |
+'| ##      ##    |     '   `'  `-`-'  `-'-' `-`-`|'  '  `-`-'`-      |
+'| ##     ##   # |                            ._.'                   |
+'| ##     ###### |  Sources &amp; Documents placed in the Public Domain. |
+'+---------------+---------------------------------------------------+
+'|                                                                   |
+'| === qbstdarg.bm ===                                               |
+'|                                                                   |
+'| == The SUBs and FUNCTIONs to emulate a va_list in a QB64 string.  |
+'|                                                                   |
+'+-------------------------------------------------------------------+
+'| Done by RhoSigma, R.Heyder, provided AS IS, use at your own risk. |
+'| Find me in the QB64 Forum or mail to support@rhosigma-cw.net for  |
+'| any questions or suggestions. Thanx for your interest in my work. |
+'+-------------------------------------------------------------------+
+</code></pre>
+
+<h1>Variable args building</h1>
+<hr />
+<blockquote>
+<p><em>The following routines do provide the interface to setup a variable
+arguments list (va_list) within a regular QB64 string. Such va_list
+parameters are used by many C/C++ functions (eg. stdio functions).</em></p>
+<p><em>Once setup, any va_list remains valid and keeps all its values until
+it is freed again, hence you don't need to deal with typical BASIC
+language issues such as strings moving in memory or temporary values.</em></p>
+</blockquote>
+<hr />
+<h3><u>Table of Contents</u></h3>
+<blockquote>
+<p><strong><em>INIT &amp; CLEANUP</em></strong></p>
+</blockquote>
+<ul>
+<li>
+<a href="InitArgs.html">InitArgs</a>
+<ul>
+<li>initialize a new va_list string for use, so you can add args to it</li>
+</ul>
+</li>
+<li>
+<a href="FreeArgs.html">FreeArgs</a>
+<ul>
+<li>free all resources of a (no longer needed) va_list string</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p><strong><em>ADD ARGUMENTS</em></strong></p>
+</blockquote>
+<ul>
+<li>
+<a href="StrArg.html">StrArg</a>
+<ul>
+<li>add a string pointer to the given va_list string</li>
+</ul>
+</li>
+<li>
+<a href="IntArg.html">IntArg</a>
+<ul>
+<li>add a (16-bit) integer to the given va_list string</li>
+</ul>
+</li>
+<li>
+<a href="LongArg.html">LongArg</a>
+<ul>
+<li>add a (32-bit) integer to the given va_list string</li>
+</ul>
+</li>
+<li>
+<a href="Int64Arg.html">Int64Arg</a>
+<ul>
+<li>add a (64-bit) integer to the given va_list string</li>
+</ul>
+</li>
+<li>
+<a href="DoubleArg.html">DoubleArg</a>
+<ul>
+<li>add a (64-bit) double to the given va_list string</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p><strong><em>GET ARGUMENT LIST</em></strong></p>
+</blockquote>
+<ul>
+<li>
+<a href="GetArgs.html">GetArgs$</a>
+<ul>
+<li>get the actual args for use as C/C++ va_list parameter</li>
+</ul>
+</li>
+</ul>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->

@@ -15,7 +15,7 @@
 '|                                                                   |
 '| == Note that this demo is considered "unfinished" yet, as there's |
 '| == no option to enter the F(x,y), you can just type it in here in |
-'| == the source file around line numbers 97-101.                    |
+'| == the source file around line numbers 101-105.                   |
 '|                                                                   |
 '+-------------------------------------------------------------------+
 '| Done by RhoSigma, R.Heyder, provided AS IS, use at your own risk. |

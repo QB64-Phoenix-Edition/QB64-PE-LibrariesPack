@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>VFPrintF</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<p><em><a href="_Qbstdio_Contents.html">back to Table of Contents</a></em></p>
+<hr />
+<h2>VFPrintF <em>(sub)</em></h2>
+<p>Write formatted output into the given file, this subroutine does emulate
+the C/C++ stdio function <a href="http://www.cplusplus.com/reference/cstdio/vfprintf/">vfprintf()</a>, additional to the arguments required
+for formatting, it also needs the channel number of the already opened
+file as first argument.</p>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>SYNTAX:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<pre><code>VFPrintF ch%, fmt$, vargs$
+</code></pre>
+
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>INPUTS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>ch% <em>(INTEGER)</em></h4>
+<ul>
+<li>The channel number of the file to write into. This file must be
+already opened for output/write access.</li>
+</ul>
+<h4>fmt$ <em>(STRING)</em></h4>
+<ul>
+<li>Any string literal or variable, which can contain any escape
+sequences known to C/C++ and formatting tokens known to the
+standard library function <a href="http://www.cplusplus.com/reference/cstdio/printf/">printf()</a>.</li>
+</ul>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>A variable args string made with the SUBs/FUNCTIONs in <strong>qbstdarg.bm</strong>,
+which must contain all required arguments in the very same order as
+the respective formatting tokens appear in the given format string.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>ERRORS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>If fmt$ is empty or vargs$ is no valid va_list string, then this
+function will write a blank line.</li>
+</ul>
+</blockquote>
+<hr />
+<p><em><a href="_Qbstdio_Contents.html">back to Table of Contents</a></em></p>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->

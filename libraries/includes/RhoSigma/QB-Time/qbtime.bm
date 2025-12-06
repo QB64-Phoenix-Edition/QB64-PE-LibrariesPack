@@ -1,0 +1,60 @@
+'+---------------+---------------------------------------------------+
+'| ###### ###### |     .--. .         .-.                            |
+'| ##  ## ##   # |     |   )|        (   ) o                         |
+'| ##  ##  ##    |     |--' |--. .-.  `-.  .  .-...--.--. .-.        |
+'| ######   ##   |     |  \ |  |(   )(   ) | (   ||  |  |(   )       |
+'| ##      ##    |     '   `'  `-`-'  `-'-' `-`-`|'  '  `-`-'`-      |
+'| ##     ##   # |                            ._.'                   |
+'| ##     ###### |  Sources & Documents placed in the Public Domain. |
+'+---------------+---------------------------------------------------+
+'|                                                                   |
+'| === qbtime.bm ===                                                 |
+'|                                                                   |
+'| == The SUBs/FUNCTIONs to mimic C/C++ like time formatting in QB64.|
+'|                                                                   |
+'+-------------------------------------------------------------------+
+'| Done by RhoSigma, R.Heyder, provided AS IS, use at your own risk. |
+'| Find me in the QB64 Forum or mail to support@rhosigma-cw.net for  |
+'| any questions or suggestions. Thanx for your interest in my work. |
+'+-------------------------------------------------------------------+
+
+$INCLUDEONCE
+
+'--- docs\qbtime.bm\StrFCurrentTime.html
+'---------------------------------------------------------------------
+FUNCTION StrFCurrentTime$ (fmt$)
+'--- option _explicit requirements ---
+DIM tmp%&, buf%&
+'--- call wrapper function ---
+tmp%& = MakeCString%&(fmt$ + CHR$(0), LEN(fmt$))
+buf%& = CurrentTimeToBuffer%&(tmp%&)
+FreeCString tmp%&
+'--- return result string & clenup ---
+StrFCurrentTime$ = ReadCString$(buf%&)
+FreeCString buf%&
+END FUNCTION
+
+'--- docs\qbtime.bm\StrFGivenTime.html
+'---------------------------------------------------------------------
+FUNCTION StrFGivenTime$ (fmt$, year%, month%, day%, hour%, minute%, second%)
+'--- option _explicit requirements ---
+DIM tm$, tmp%&, buf%&
+'--- make tm structure ---
+tm$ = MKL$(second%) + MKL$(minute%) + MKL$(hour%) +_
+      MKL$(day%) + MKL$(month% - 1) + MKL$(year% - 1900) +_
+      MKL$(-1) + MKL$(-1) + MKL$(-1)
+'--- call wrapper function ---
+tmp%& = MakeCString%&(fmt$ + CHR$(0), LEN(fmt$))
+buf%& = GivenTimeToBuffer%&(tmp%&, tm$)
+FreeCString tmp%&
+'--- return result string & clenup ---
+StrFGivenTime$ = ReadCString$(buf%&)
+FreeCString buf%&
+END FUNCTION
+
+'--- undocumented - for internal use only
+'---------------------------------------------------------------------
+FUNCTION VersionQbtime$
+VersionQbtime$ = MID$("$VER: qbtime.bm 1.0 (14-Mar-2013) by RhoSigma :END$", 7, 39)
+END FUNCTION
+

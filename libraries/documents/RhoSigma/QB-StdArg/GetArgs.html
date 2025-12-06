@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>GetArgs</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<p><em><a href="_Qbstdarg_Contents.html">back to Table of Contents</a></em></p>
+<hr />
+<h2>GetArgs$ <em>(function)</em></h2>
+<p>Get the actual args part for use as &quot;va_list&quot; parameter. As the vargs$
+combines more properties than just the variable args, you need to call
+this function to extract the actual args part, which is then passed to the
+C/C++ function.</p>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>SYNTAX:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<pre><code>args$ = GetArgs$ (vargs$)
+</code></pre>
+
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>INPUTS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>This must be any previously initialized va_list string variable.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>RESULT:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>args$ <em>(STRING)</em></h4>
+<ul>
+<li>The actual args part, which represents the va_list you will pass
+to the C/C++ function, or the string &quot;invalid&quot; on failure.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>ERRORS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>If vargs$ is no valid (initialized) va_list string, then this function
+returns the string &quot;invalid&quot;, you should check for this condition prior
+passing the args$ to the C/C++ function. Look at the function <font color="#3232e0">VSPrintF$()</font>
+in the <strong>qbstdio.bm</strong> file for an example.</li>
+<li>Note that the returned args$ may also be empty, if the passed in vargs$
+is initialized but no arguments were set up in it. This may also be an error
+condition, if the C/C++ function expects some arguments, so always make sure
+to properly setup the arguments as needed by the C/C++ function you intend
+to call with the va_list !!</li>
+</ul>
+</blockquote>
+<hr />
+<p><em><a href="_Qbstdarg_Contents.html">back to Table of Contents</a></em></p>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->

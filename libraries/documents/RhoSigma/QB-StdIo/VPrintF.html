@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>VPrintF</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* This file is deliberately empty. */
+</style>
+<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+<p><em><a href="_Qbstdio_Contents.html">back to Table of Contents</a></em></p>
+<hr />
+<h2>VPrintF <em>(sub)</em></h2>
+<p>Print formatted output to the screen, this subroutine does emulate the
+C/C++ stdio function <a href="http://www.cplusplus.com/reference/cstdio/vprintf/">vprintf()</a>, it takes a format string, which contains
+literal text and formatting tokens. Also a va_list string is passed,
+which must contain the variable arguments to be formatted.</p>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>SYNTAX:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<pre><code>VPrintF fmt$, vargs$
+</code></pre>
+
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>INPUTS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<h4>fmt$ <em>(STRING)</em></h4>
+<ul>
+<li>Any string literal or variable, which can contain any escape
+sequences known to C/C++ and formatting tokens known to the
+standard library function <a href="http://www.cplusplus.com/reference/cstdio/printf/">printf()</a>.</li>
+</ul>
+<h4>vargs$ <em>(STRING variable)</em></h4>
+<ul>
+<li>A variable args string made with the SUBs/FUNCTIONs in <strong>qbstdarg.bm</strong>,
+which must contain all required arguments in the very same order as
+the respective formatting tokens appear in the given format string.</li>
+</ul>
+</blockquote>
+<hr />
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p><strong><em>ERRORS:</em></strong></p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<ul>
+<li>If fmt$ is empty or vargs$ is no valid va_list string, then this
+function will print a blank line.</li>
+</ul>
+</blockquote>
+<hr />
+<p><em><a href="_Qbstdio_Contents.html">back to Table of Contents</a></em></p>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->
