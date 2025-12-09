@@ -20,7 +20,7 @@
 
 $INCLUDEONCE
 
-'--- docs\qbtime.bm\StrFCurrentTime.html
+'--- libraries\documents\RhoSigma\QB-Time\StrFCurrentTime.html
 '---------------------------------------------------------------------
 FUNCTION StrFCurrentTime$ (fmt$)
 '--- option _explicit requirements ---
@@ -34,7 +34,7 @@ StrFCurrentTime$ = ReadCString$(buf%&)
 FreeCString buf%&
 END FUNCTION
 
-'--- docs\qbtime.bm\StrFGivenTime.html
+'--- libraries\documents\RhoSigma\QB-Time\StrFGivenTime.html
 '---------------------------------------------------------------------
 FUNCTION StrFGivenTime$ (fmt$, year%, month%, day%, hour%, minute%, second%)
 '--- option _explicit requirements ---

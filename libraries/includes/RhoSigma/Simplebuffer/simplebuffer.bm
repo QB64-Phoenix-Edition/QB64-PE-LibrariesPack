@@ -20,7 +20,7 @@
 
 $INCLUDEONCE
 
-'--- docs\CreateBuf.html
+'--- libraries\documents\RhoSigma\Simplebuffer\CreateBuf.html
 '---------------------------------------------------------------------
 FUNCTION CreateBuf%
 '--- option _explicit requirements ---
@@ -51,7 +51,7 @@ NEXT idx% '                                            => note the +1/105 is res
 CreateBuf% = buf& \ 106
 END FUNCTION
 
-'--- docs\DisposeBuf.html
+'--- libraries\documents\RhoSigma\Simplebuffer\DisposeBuf.html
 '---------------------------------------------------------------------
 SUB DisposeBuf (handle%)
 '--- option _explicit requirements ---
@@ -74,7 +74,7 @@ WHILE aub& - 1059 > buf& + 105: aub& = aub& - 1060: WEND
 IF aub& < oub& THEN REDIM _PRESERVE simplebuffer_array$(0 TO aub&)
 END SUB
 
-'--- docs\FileToBuf.html
+'--- libraries\documents\RhoSigma\Simplebuffer\FileToBuf.html
 '---------------------------------------------------------------------
 FUNCTION FileToBuf% (fileSpec$)
 '--- option _explicit requirements ---
@@ -110,7 +110,7 @@ END IF
 FileToBuf% = han%
 END FUNCTION
 
-'--- docs\BufToFile.html
+'--- libraries\documents\RhoSigma\Simplebuffer\BufToFile.html
 '---------------------------------------------------------------------
 SUB BufToFile (handle%, fileSpec$)
 '--- option _explicit requirements ---
@@ -128,7 +128,7 @@ CLOSE ff%
 MID$(simplebuffer_array$(buf& + 1), 13, 4) = MKL$(0)
 END SUB
 
-'--- docs\CloneBuf.html
+'--- libraries\documents\RhoSigma\Simplebuffer\CloneBuf.html
 '---------------------------------------------------------------------
 FUNCTION CloneBuf% (handle%)
 '--- option _explicit requirements ---
@@ -149,7 +149,7 @@ END IF
 CloneBuf% = dhan%
 END FUNCTION
 
-'--- docs\BufInsertFile.html
+'--- libraries\documents\RhoSigma\Simplebuffer\BufInsertFile.html
 '---------------------------------------------------------------------
 SUB BufInsertFile (handle%, fileSpec$)
 '--- option _explicit requirements ---
@@ -165,7 +165,7 @@ IF than% >= 0 THEN
 END IF
 END SUB
 
-'--- docs\BufInsertBuf.html
+'--- libraries\documents\RhoSigma\Simplebuffer\BufInsertBuf.html
 '---------------------------------------------------------------------
 SUB BufInsertBuf (handle%, fromHandle%)
 '--- option _explicit requirements ---
@@ -178,7 +178,7 @@ fbuf& = fromHandle% * 106
 WriteBufRawData handle%, LEFT$(simplebuffer_array$(fbuf& + 0), GetBufLen&(fromHandle%))
 END SUB
 
-'--- docs\ReadBufLine.html
+'--- libraries\documents\RhoSigma\Simplebuffer\ReadBufLine.html
 '---------------------------------------------------------------------
 FUNCTION ReadBufLine$ (handle%)
 '--- option _explicit requirements ---
@@ -197,7 +197,7 @@ ReadBufLine$ = MID$(simplebuffer_array$(buf& + 0), cur&, eol& - cur&)
 MID$(simplebuffer_array$(buf& + 1), 1, 4) = MKL$(eol& + brl%)
 END FUNCTION
 
-'--- docs\WriteBufLine.html
+'--- libraries\documents\RhoSigma\Simplebuffer\WriteBufLine.html
 '---------------------------------------------------------------------
 SUB WriteBufLine (handle%, text$)
 '--- option _explicit requirements ---
@@ -238,7 +238,7 @@ ELSE
 END IF
 END SUB
 
-'--- docs\DeleteBufLine.html
+'--- libraries\documents\RhoSigma\Simplebuffer\DeleteBufLine.html
 '---------------------------------------------------------------------
 SUB DeleteBufLine (handle%)
 '--- option _explicit requirements ---
@@ -270,7 +270,7 @@ RecalcMarks handle%, cur&, -chg&
 RecalcFinds handle%, cur&, -chg&
 END SUB
 
-'--- docs\ReadBufRawData.html
+'--- libraries\documents\RhoSigma\Simplebuffer\ReadBufRawData.html
 '---------------------------------------------------------------------
 FUNCTION ReadBufRawData$ (handle%, size&) 'size change intended
 '--- option _explicit requirements ---
@@ -286,7 +286,7 @@ ReadBufRawData$ = MID$(simplebuffer_array$(buf& + 0), cur&, size&)
 MID$(simplebuffer_array$(buf& + 1), 1, 4) = MKL$(cur& + size&)
 END FUNCTION
 
-'--- docs\WriteBufRawData.html
+'--- libraries\documents\RhoSigma\Simplebuffer\WriteBufRawData.html
 '---------------------------------------------------------------------
 SUB WriteBufRawData (handle%, rawData$)
 '--- option _explicit requirements ---
@@ -326,7 +326,7 @@ ELSE
 END IF
 END SUB
 
-'--- docs\DeleteBufRawData.html
+'--- libraries\documents\RhoSigma\Simplebuffer\DeleteBufRawData.html
 '---------------------------------------------------------------------
 SUB DeleteBufRawData (handle%, size&) 'size change intended
 '--- option _explicit requirements ---
@@ -355,7 +355,7 @@ RecalcMarks handle%, cur&, -size&
 RecalcFinds handle%, cur&, -size&
 END SUB
 
-'--- docs\GetBufMemData.html
+'--- libraries\documents\RhoSigma\Simplebuffer\GetBufMemData.html
 '---------------------------------------------------------------------
 SUB GetBufMemData (handle%, memData AS _MEM)
 '--- option _explicit requirements ---
@@ -378,7 +378,7 @@ datStr$ = ReadBufRawData$(handle%, size&&)
 _MEMPUT memData, memData.OFFSET, datStr$
 END SUB
 
-'--- docs\PutBufMemData.html
+'--- libraries\documents\RhoSigma\Simplebuffer\PutBufMemData.html
 '---------------------------------------------------------------------
 SUB PutBufMemData (handle%, memData AS _MEM)
 '--- option _explicit requirements ---
@@ -402,7 +402,7 @@ _MEMGET memData, memData.OFFSET, datStr$
 WriteBufRawData handle%, datStr$
 END SUB
 
-'--- docs\SetBufMark.html
+'--- libraries\documents\RhoSigma\Simplebuffer\SetBufMark.html
 '---------------------------------------------------------------------
 FUNCTION SetBufMark% (handle%)
 '--- option _explicit requirements ---
@@ -417,7 +417,7 @@ IF fid% > 0 THEN MID$(simplebuffer_array$(buf& + 2), fid% * 4, 4) = MID$(simpleb
 SetBufMark% = fid%
 END FUNCTION
 
-'--- docs\RemoveBufMark.html
+'--- libraries\documents\RhoSigma\Simplebuffer\RemoveBufMark.html
 '---------------------------------------------------------------------
 FUNCTION RemoveBufMark% (handle%, markID%)
 '--- option _explicit requirements ---
@@ -433,7 +433,7 @@ MID$(simplebuffer_array$(buf& + 2), markID% * 4, 4) = MKL$(&HCAFEBABE)
 RemoveBufMark% = 0
 END FUNCTION
 
-'--- docs\GetBufMark.html
+'--- libraries\documents\RhoSigma\Simplebuffer\GetBufMark.html
 '---------------------------------------------------------------------
 FUNCTION GetBufMark& (handle%, markID%)
 '--- option _explicit requirements ---
@@ -453,7 +453,7 @@ SELECT CASE markPos&
 END SELECT
 END FUNCTION
 
-'--- docs\GotoBufMark.html
+'--- libraries\documents\RhoSigma\Simplebuffer\GotoBufMark.html
 '---------------------------------------------------------------------
 FUNCTION GotoBufMark% (handle%, markID%)
 '--- option _explicit requirements ---
@@ -471,7 +471,7 @@ ELSE
 END IF
 END FUNCTION
 
-'--- docs\SetBufFind.html
+'--- libraries\documents\RhoSigma\Simplebuffer\SetBufFind.html
 '---------------------------------------------------------------------
 FUNCTION SetBufFind% (handle%, find$)
 '--- option _explicit requirements ---
@@ -491,7 +491,7 @@ END IF
 SetBufFind% = fid%
 END FUNCTION
 
-'--- docs\RemoveBufFind.html
+'--- libraries\documents\RhoSigma\Simplebuffer\RemoveBufFind.html
 '---------------------------------------------------------------------
 FUNCTION RemoveBufFind% (handle%, findID%)
 '--- option _explicit requirements ---
@@ -509,7 +509,7 @@ simplebuffer_array$(buf& + findID% + 4) = ""
 RemoveBufFind% = 0
 END FUNCTION
 
-'--- docs\FindBufFR.html
+'--- libraries\documents\RhoSigma\Simplebuffer\FindBufFR.html
 '---------------------------------------------------------------------
 FUNCTION FindBufFwd& (handle%, findID%, method%, treat%)
 '--- option _explicit requirements ---
@@ -566,7 +566,7 @@ MID$(simplebuffer_array$(buf& + 3), findID% * 4, 4) = MKL$(cPos&)
 FindBufFwd& = cPos&
 END FUNCTION
 
-'--- docs\FindBufFR.html
+'--- libraries\documents\RhoSigma\Simplebuffer\FindBufFR.html
 '---------------------------------------------------------------------
 FUNCTION FindBufRev& (handle%, findID%, method%, treat%)
 '--- option _explicit requirements ---
@@ -623,7 +623,7 @@ MID$(simplebuffer_array$(buf& + 3), findID% * 4, 4) = MKL$(cPos&)
 FindBufRev& = cPos&
 END FUNCTION
 
-'--- docs\CopyBufBlock.html
+'--- libraries\documents\RhoSigma\Simplebuffer\CopyBufBlock.html
 '---------------------------------------------------------------------
 FUNCTION CopyBufBlock% (handle%, bound&)
 '--- option _explicit requirements ---
@@ -641,7 +641,7 @@ _CLIPBOARD$ = MID$(simplebuffer_array$(buf& + 0), sPo&, ePo& - sPo&)
 CopyBufBlock% = 0
 END FUNCTION
 
-'--- docs\CutBufBlock.html
+'--- libraries\documents\RhoSigma\Simplebuffer\CutBufBlock.html
 '---------------------------------------------------------------------
 FUNCTION CutBufBlock% (handle%, bound&)
 '--- option _explicit requirements ---
@@ -662,7 +662,7 @@ DeleteBufRawData handle%, ePo& - sPo&
 CutBufBlock% = 0
 END FUNCTION
 
-'--- docs\PasteBufBlock.html
+'--- libraries\documents\RhoSigma\Simplebuffer\PasteBufBlock.html
 '---------------------------------------------------------------------
 FUNCTION PasteBufBlock% (handle%, bound&)
 '--- option _explicit requirements ---
@@ -685,7 +685,7 @@ WriteBufRawData handle%, _CLIPBOARD$
 PasteBufBlock% = 0
 END FUNCTION
 
-'--- docs\SeekBuf.html
+'--- libraries\documents\RhoSigma\Simplebuffer\SeekBuf.html
 '---------------------------------------------------------------------
 FUNCTION SeekBuf& (handle%, displace&, mode%)
 '--- option _explicit requirements ---
@@ -742,7 +742,7 @@ ELSE
 END IF
 END FUNCTION
 
-'--- docs\GetBufPos.html
+'--- libraries\documents\RhoSigma\Simplebuffer\GetBufPos.html
 '---------------------------------------------------------------------
 FUNCTION GetBufPos& (handle%)
 '--- option _explicit requirements ---
@@ -754,7 +754,7 @@ buf& = handle% * 106
 GetBufPos& = CVL(MID$(simplebuffer_array$(buf& + 1), 1, 4))
 END FUNCTION
 
-'--- docs\GetBufLen.html
+'--- libraries\documents\RhoSigma\Simplebuffer\GetBufLen.html
 '---------------------------------------------------------------------
 FUNCTION GetBufLen& (handle%)
 '--- option _explicit requirements ---
@@ -766,7 +766,7 @@ buf& = handle% * 106
 GetBufLen& = CVL(MID$(simplebuffer_array$(buf& + 1), 5, 4))
 END FUNCTION
 
-'--- docs\EndOfBuf.html
+'--- libraries\documents\RhoSigma\Simplebuffer\EndOfBuf.html
 '---------------------------------------------------------------------
 FUNCTION EndOfBuf% (handle%)
 '--- check handle ---
@@ -775,7 +775,7 @@ IF NOT CheckHandle%(handle%) THEN ERROR 258: STOP 'invalid handle
 EndOfBuf% = (GetBufPos&(handle%) > GetBufLen&(handle%))
 END FUNCTION
 
-'--- docs\IsBufChanged.html
+'--- libraries\documents\RhoSigma\Simplebuffer\IsBufChanged.html
 '---------------------------------------------------------------------
 FUNCTION IsBufChanged% (handle%)
 '--- option _explicit requirements ---
@@ -787,7 +787,7 @@ buf& = handle% * 106
 IsBufChanged% = CVL(MID$(simplebuffer_array$(buf& + 1), 13, 4))
 END FUNCTION
 
-'--- docs\BufEolSeq.html
+'--- libraries\documents\RhoSigma\Simplebuffer\BufEolSeq.html
 '---------------------------------------------------------------------
 FUNCTION BufEolSeq$ (handle%)
 '--- option _explicit requirements ---
@@ -807,7 +807,7 @@ SELECT CASE MID$(simplebuffer_array$(buf& + 1), 9, 4)
 END SELECT
 END FUNCTION
 
-'--- docs\ConvBufToAnyEol.html
+'--- libraries\documents\RhoSigma\Simplebuffer\ConvBufToAnyEol.html
 '---------------------------------------------------------------------
 SUB ConvBufToNativeEol (handle%)
 '--- option _explicit requirements ---
@@ -824,7 +824,7 @@ END IF
 MID$(simplebuffer_array$(buf& + 1), 9, 4) = "EolN"
 END SUB
 
-'--- docs\ConvBufToAnyEol.html
+'--- libraries\documents\RhoSigma\Simplebuffer\ConvBufToAnyEol.html
 '---------------------------------------------------------------------
 SUB ConvBufToLnxMacEol (handle%)
 '--- option _explicit requirements ---
@@ -856,7 +856,7 @@ res& = RemoveBufMark%(handle%, 101)
 simplebuffer_array$(buf& + 1) = LEFT$(simplebuffer_array$(buf& + 1), 16)
 END SUB
 
-'--- docs\ConvBufToAnyEol.html
+'--- libraries\documents\RhoSigma\Simplebuffer\ConvBufToAnyEol.html
 '---------------------------------------------------------------------
 SUB ConvBufToWinEol (handle%)
 '--- option _explicit requirements ---

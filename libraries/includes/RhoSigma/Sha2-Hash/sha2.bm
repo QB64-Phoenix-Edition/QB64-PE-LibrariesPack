@@ -21,13 +21,13 @@
 
 $INCLUDEONCE
 
-'--- docs\GetFileSHA2.html
+'--- libraries\documents\RhoSigma\Sha2-Hash\GetFileSHA2.html
 '---------------------------------------------------------------------
 FUNCTION GetFileSHA2$ (FileSpec$)
 GetFileSHA2$ = FileSHA2$(FileSpec$ + CHR$(0))
 END FUNCTION
 
-'--- docs\GetStringSHA2.html
+'--- libraries\documents\RhoSigma\Sha2-Hash\GetStringSHA2.html
 '---------------------------------------------------------------------
 FUNCTION GetStringSHA2$ (MsgData$)
 GetStringSHA2$ = StringSHA2$(MsgData$ + CHR$(0), LEN(MsgData$))

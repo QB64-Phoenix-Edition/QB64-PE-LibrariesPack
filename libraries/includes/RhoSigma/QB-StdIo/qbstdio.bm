@@ -20,21 +20,21 @@
 
 $INCLUDEONCE
 
-'--- docs\qbstdio.bm\VPrintF.html
+'--- libraries\documents\RhoSigma\QB-StdIo\VPrintF.html
 '---------------------------------------------------------------------
 SUB VPrintF (fmt$, vargs$)
 '--- get formatted string and print ---
 PRINT VSPrintF$(fmt$, vargs$)
 END SUB
 
-'--- docs\qbstdio.bm\VFPrintF.html
+'--- libraries\documents\RhoSigma\QB-StdIo\VFPrintF.html
 '---------------------------------------------------------------------
 SUB VFPrintF (ch%, fmt$, vargs$)
 '--- get formatted string and write to file ---
 PRINT #ch%, VSPrintF$(fmt$, vargs$)
 END SUB
 
-'--- docs\qbstdio.bm\VSPrintF.html
+'--- libraries\documents\RhoSigma\QB-StdIo\VSPrintF.html
 '---------------------------------------------------------------------
 FUNCTION VSPrintF$ (fmt$, vargs$)
 '--- option _explicit requirements ---
@@ -53,7 +53,7 @@ VSPrintF$ = ReadCString$(buf%&)
 FreeCString buf%&
 END FUNCTION
 
-'--- docs\qbstdio.bm\QB.html
+'--- libraries\documents\RhoSigma\QB-StdIo\QB.html
 '---------------------------------------------------------------------
 FUNCTION QB$ (any$)
 '--- option _explicit requirements ---

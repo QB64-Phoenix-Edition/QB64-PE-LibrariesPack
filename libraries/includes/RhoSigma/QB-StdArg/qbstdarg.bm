@@ -20,7 +20,7 @@
 
 $INCLUDEONCE
 
-'--- docs\qbstdarg.bm\InitArgs.html
+'--- libraries\documents\RhoSigma\QB-StdArg\InitArgs.html
 '---------------------------------------------------------------------
 SUB InitArgs (vargs$)
 '--- option _explicit requirements ---
@@ -36,7 +36,7 @@ ELSE
 END IF
 END SUB
 
-'--- docs\qbstdarg.bm\FreeArgs.html
+'--- libraries\documents\RhoSigma\QB-StdArg\FreeArgs.html
 '---------------------------------------------------------------------
 SUB FreeArgs (vargs$)
 '--- option _explicit requirements ---
@@ -70,7 +70,7 @@ END IF
 vargs$ = "" 'invalidate va_list
 END SUB
 
-'--- docs\qbstdarg.bm\StrArg.html
+'--- libraries\documents\RhoSigma\QB-StdArg\StrArg.html
 '---------------------------------------------------------------------
 SUB StrArg (vargs$, value$)
 '--- option _explicit requirements ---
@@ -88,7 +88,7 @@ END IF
 AddFmtToken vargs$, "(STRING) %s"
 END SUB
 
-'--- docs\qbstdarg.bm\IntArg.html
+'--- libraries\documents\RhoSigma\QB-StdArg\IntArg.html
 '---------------------------------------------------------------------
 SUB IntArg (vargs$, value%)
 '--- check arguments ---
@@ -103,7 +103,7 @@ END IF
 AddFmtToken vargs$, "(INTEGER) %hd"
 END SUB
 
-'--- docs\qbstdarg.bm\LongArg.html
+'--- libraries\documents\RhoSigma\QB-StdArg\LongArg.html
 '---------------------------------------------------------------------
 SUB LongArg (vargs$, value&)
 '--- check arguments ---
@@ -118,7 +118,7 @@ END IF
 AddFmtToken vargs$, "(LONG) %ld"
 END SUB
 
-'--- docs\qbstdarg.bm\Int64Arg.html
+'--- libraries\documents\RhoSigma\QB-StdArg\Int64Arg.html
 '---------------------------------------------------------------------
 SUB Int64Arg (vargs$, value&&)
 '--- check arguments ---
@@ -129,7 +129,7 @@ vargs$ = vargs$ + _MK$(_INTEGER64, value&&)
 AddFmtToken vargs$, "(_INTEGER64) %lld"
 END SUB
 
-'--- docs\qbstdarg.bm\DoubleArg.html
+'--- libraries\documents\RhoSigma\QB-StdArg\DoubleArg.html
 '---------------------------------------------------------------------
 SUB DoubleArg (vargs$, value#)
 '--- check arguments ---
@@ -140,7 +140,7 @@ vargs$ = vargs$ + MKD$(value#)
 AddFmtToken vargs$, "(DOUBLE) %f"
 END SUB
 
-'--- docs\qbstdarg.bm\GetArgs.html
+'--- libraries\documents\RhoSigma\QB-StdArg\GetArgs.html
 '---------------------------------------------------------------------
 FUNCTION GetArgs$ (vargs$)
 '--- option _explicit requirements ---

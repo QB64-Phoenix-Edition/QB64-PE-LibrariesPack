@@ -69,6 +69,6 @@ DATA 64,1246,&H264C,230,&H2740
 '--- Function to define/return the program's version string.
 '-----
 FUNCTION VersionCharsetsTest$
-    VersionCharsetsTest$ = MID$("$VER: CharsetsTest 1.2 (15-Aug-2022) by RhoSigma :END$", 7, 42)
+    VersionCharsetsTest$ = MID$("$VER: CharsetsTest 1.2 (15-Aug-2025) by RhoSigma :END$", 7, 42)
 END FUNCTION
 

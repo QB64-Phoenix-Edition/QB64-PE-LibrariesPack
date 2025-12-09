@@ -25,6 +25,7 @@ $IF VERSION < 4.3.0 THEN
     $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
 $END IF
 
+'--- libraries\documents\RhoSigma\Charsets\SetAnsiCodepage.html
 '---------------------------------------------------------------------
 SUB SetAnsiCodepage (cpName$)
 '--- option _explicit requirements ---
@@ -69,6 +70,7 @@ IF valid% THEN
 END IF
 END SUB
 
+'--- libraries\documents\RhoSigma\Charsets\GetAnsiCodepage.html
 '---------------------------------------------------------------------
 FUNCTION GetAnsiCodepage$
 '--- option _explicit requirements ---
@@ -124,6 +126,7 @@ END IF
 GetAnsiCodepage$ = cp$
 END FUNCTION
 
+'--- libraries\documents\RhoSigma\Charsets\UnicodeToUtf8Char.html
 '---------------------------------------------------------------------
 FUNCTION UnicodeToUtf8Char$ (unicode&)
 '--- option _explicit requirements ---
@@ -148,6 +151,7 @@ ELSE
 END IF
 END FUNCTION
 
+'--- libraries\documents\RhoSigma\Charsets\Utf8CharLen.html
 '---------------------------------------------------------------------
 FUNCTION Utf8CharLen% (utf8Char$)
 '--- option _explicit requirements ---
@@ -204,6 +208,7 @@ done:
 Utf8CharLen% = ci%
 END FUNCTION
 
+'--- libraries\documents\RhoSigma\Charsets\UnicodeStringToUtf8Text.html
 '---------------------------------------------------------------------
 FUNCTION UnicodeStringToUtf8Text$ (ucStr$)
 '--- option _explicit requirements ---
@@ -218,6 +223,7 @@ WEND
 UnicodeStringToUtf8Text$ = utf$
 END FUNCTION
 
+'--- libraries\documents\RhoSigma\Charsets\UnicodeArrayToUtf8Text.html
 '---------------------------------------------------------------------
 FUNCTION UnicodeArrayToUtf8Text$ (ucArr&())
 '--- option _explicit requirements ---
@@ -230,6 +236,7 @@ NEXT uci&
 UnicodeArrayToUtf8Text$ = utf$
 END FUNCTION
 
+'--- libraries\documents\RhoSigma\Charsets\UnicodeDataToUtf8Text.html
 '---------------------------------------------------------------------
 FUNCTION UnicodeDataToUtf8Text$
 '--- option _explicit requirements ---
@@ -243,6 +250,7 @@ NEXT uci&
 UnicodeDataToUtf8Text$ = utf$
 END FUNCTION
 
+'--- libraries\documents\RhoSigma\Charsets\AnsiTextToUtf8Text.html
 '---------------------------------------------------------------------
 FUNCTION AnsiTextToUtf8Text$ (text$, cpName$)
 '--- option _explicit requirements ---

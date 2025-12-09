@@ -24,7 +24,7 @@ $IF VERSION < 4.3.0 THEN
     $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
 $END IF
 
-'--- docs\PointInPolygon.html
+'--- libraries\documents\RhoSigma\Polygons\PointInPolygon.html
 '---------------------------------------------------------------------
 FUNCTION PointInPolygon% (chkX%, chkY%, srcPolyX%(), srcPolyY%(), ic&&, oc&&)
 '--- option _explicit requirements ---
@@ -51,7 +51,7 @@ END IF
 PointInPolygon% = pip%
 END FUNCTION
 
-'--- docs\PolygonInPolygon.html
+'--- libraries\documents\RhoSigma\Polygons\PolygonInPolygon.html
 '---------------------------------------------------------------------
 FUNCTION PolygonInPolygon% (chkPolyX%(), chkPolyY%(), srcPolyX%(), srcPolyY%(), ic&&, oc&&, sc&&)
 '--- option _explicit requirements ---
@@ -122,7 +122,7 @@ END IF
 PolygonInPolygon% = INT((100 / aPix&) * iPix&)
 END FUNCTION
 
-'--- docs\FillPolygon.html
+'--- libraries\documents\RhoSigma\Polygons\FillPolygon.html
 '---------------------------------------------------------------------
 SUB FillPolygon (srcPolyX%(), srcPolyY%(), fc&&, sc&&)
 '--- option _explicit requirements ---
@@ -185,7 +185,7 @@ IF sc&& >= 0 THEN
 END IF
 END SUB
 
-'--- docs\OffsetPolygon.html
+'--- libraries\documents\RhoSigma\Polygons\OffsetPolygon.html
 '---------------------------------------------------------------------
 FUNCTION OffsetPolygon% (srcPolyX%(), srcPolyY%(), offPolyX%(), offPolyY%(), displace#)
 '--- option _explicit requirements ---
@@ -269,7 +269,7 @@ END IF
 RETURN
 END FUNCTION
 
-'--- docs\LineIntersection.html
+'--- libraries\documents\RhoSigma\Polygons\LineIntersection.html
 '---------------------------------------------------------------------
 FUNCTION LineIntersection% (Ax#, Ay#, Bx#, By#, Cx#, Cy#, Dx#, Dy#, Ix#, Iy#)
 '--- option _explicit requirements ---
