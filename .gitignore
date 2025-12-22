@@ -16,7 +16,7 @@
 # And recursively allow files here
 # --------------------------------
 !/libraries/**
-!/LibraryExplorer/**
+!/LibExpSource/**
 
 # But not the following
 # ---------------------

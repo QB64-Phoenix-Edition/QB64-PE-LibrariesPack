@@ -9,7 +9,7 @@ $IF VERSION < 4.3.0 THEN
 $END IF
 
 $IF WIN THEN
-    $EXEICON:'LibraryExplorer/icon/library.ico'
+    $EXEICON:'LibExpSource/icon/library.ico'
     $VERSIONINFO:CompanyName='QB64 Phoenix Edition'
     '--------------------------------------------------
     '$INCLUDE:'../libraries/ProductInfo.bas'
@@ -23,11 +23,11 @@ $IF WIN THEN
     $VERSIONINFO:LegalCopyright='MIT License'
     $VERSIONINFO:LegalTrademarks=''
 $ELSE
-    $EMBED:'LibraryExplorer/icon/libsmall.png','titleIcon'
+    $EMBED:'LibExpSource/icon/libsmall.png','titleIcon'
 $END IF
-$EMBED:'LibraryExplorer/font/PublicSans-Regular.ttf','reguFont'
-$EMBED:'LibraryExplorer/font/PublicSans-Bold.ttf','boldFont'
-$EMBED:'LibraryExplorer/InForm/avatar.png','defAvatar'
+$EMBED:'LibExpSource/font/PublicSans-Regular.ttf','reguFont'
+$EMBED:'LibExpSource/font/PublicSans-Bold.ttf','boldFont'
+$EMBED:'LibExpSource/InForm/avatar.png','defAvatar'
 
 ': Controls' IDs: ------------------------------------------------------------------
 DIM SHARED LibraryExplorer AS LONG
