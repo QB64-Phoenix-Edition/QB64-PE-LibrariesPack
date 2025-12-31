@@ -25,18 +25,29 @@ $END IF
 
 $USELIBRARY:'RhoSigma/Imageprocess'
 
-'--- Set the program's work directory.
+'--- Find the root path to the example's source folder.
 '-----
-IF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
-    CHDIR "libraries\examples\RhoSigma\Imageprocess"
+IF _FILEEXISTS("ImgProcDemo.bas") THEN
+    root$ = ""
+ELSEIF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
+    root$ = "libraries\examples\RhoSigma\Imageprocess\"
+ELSE
+    qbfo$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
+    IF LEN(qbfo$) > 0 _ANDALSO (_FILEEXISTS(qbfo$ + "\qb64pe.exe") _ORELSE _FILEEXISTS(qbfo$ + "\qb64pe")) THEN
+        root$ = qbfo$ + "\libraries\examples\RhoSigma\Imageprocess\"
+    ELSE
+        PRINT "Can't locate required assets, please run again and select"
+        PRINT "your QB64-PE folder when ask for it."
+        END
+    END IF
 END IF
 
 '--- Load the test (original) image.
 '-----
-oImg& = _LOADIMAGE("BeachGirl.jpg", 32)
+oImg& = _LOADIMAGE(root$ + "BeachGirl.jpg", 32)
 IF oImg& >= -1 THEN
-    PRINT "ERROR: Can't load the test Image, make sure it's in the working"
-    PRINT "       directory designated in the source file !!"
+    PRINT "ERROR: Can't load BeachGirl.jpg, make sure the image is in the"
+    PRINT "       same directory as this example's source file."
     END
 END IF
 

@@ -12,15 +12,27 @@ $END IF
 
 $USELIBRARY:'FellippeHeitor/IniManager'
 
-'set the program's work directory.
-IF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
-    CHDIR "libraries\examples\FellippeHeitor\IniManager"
+'--- Find the root path to the example's source folder.
+'-----
+IF _FILEEXISTS("IniDemo2.bas") THEN
+    root$ = ""
+ELSEIF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
+    root$ = "libraries\examples\FellippeHeitor\IniManager\"
+ELSE
+    qbfo$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
+    IF LEN(qbfo$) > 0 _ANDALSO (_FILEEXISTS(qbfo$ + "\qb64pe.exe") _ORELSE _FILEEXISTS(qbfo$ + "\qb64pe")) THEN
+        root$ = qbfo$ + "\libraries\examples\FellippeHeitor\IniManager\"
+    ELSE
+        PRINT "Can't locate required assets, please run again and select"
+        PRINT "your QB64-PE folder when ask for it."
+        END
+    END IF
 END IF
 
 COLOR 9
 PRINT "Fetch every key/value pair in the file:"
 DO
-    a$ = Ini_ReadSetting$("test.ini", "", "")
+    a$ = Ini_ReadSetting$(root$ + "test.ini", "", "")
 
     'NOTE: If you would check dot values of the __ini TYPE inside a SUB or FUNCTION,
     '      then remember to explicitly do a SHARED __ini in the respective routine.
@@ -46,7 +58,7 @@ PRINT
 COLOR 9
 PRINT "Fetch only section [contact]:"
 DO
-    a$ = Ini_ReadSetting$("test.ini", "contact", "")
+    a$ = Ini_ReadSetting$(root$ + "test.ini", "contact", "")
 
     'NOTE: If you would check dot values of the __ini TYPE inside a SUB or FUNCTION,
     '      then remember to explicitly do a SHARED __ini in the respective routine.

@@ -26,10 +26,21 @@ $END IF
 
 $USELIBRARY:'RhoSigma/Simplebuffer'
 
-'--- Find the root of the library's source folder.
+'--- Find the root path to the example's source folder.
 '-----
-IF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
+IF _FILEEXISTS("SimplyText.bas") THEN
+    root$ = ""
+ELSEIF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
     root$ = "libraries\examples\RhoSigma\Simplebuffer\"
+ELSE
+    qbfo$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
+    IF LEN(qbfo$) > 0 _ANDALSO (_FILEEXISTS(qbfo$ + "\qb64pe.exe") _ORELSE _FILEEXISTS(qbfo$ + "\qb64pe")) THEN
+        root$ = qbfo$ + "\libraries\examples\RhoSigma\Simplebuffer\"
+    ELSE
+        PRINT "Can't locate required assets, please run again and select"
+        PRINT "your QB64-PE folder when ask for it."
+        END
+    END IF
 END IF
 
 '--- Set title and print the program's version string.

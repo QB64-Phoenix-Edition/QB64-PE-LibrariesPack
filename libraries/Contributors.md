@@ -33,9 +33,9 @@ Why is a hardcoded folder layout enforced here, wouldn't it be better to allow m
 
 ### What are the requirements for inclusion of a library?
 To avoid rejection of a library the following things are considered mandatory:
-1. The author of the library must be known and also the license under which it was released, easy if it's your own library. A library should always be listed under the original author name, even if other people contributed to it or revised the library for inclusion.
+1. The author of the library must be known (username) and also the license under which it was released, easy if it's your own library. A library should always be listed under the original author name, even if other people contributed to it or revised the library for inclusion.
 2. At least a rudimentary documentation must be provided. The simplest form should contain the syntax of all public functions with a brief overview of all arguments and at least one sentence of function description. The file format should be TXT, MD, PDF or HTML.
-3. At least one example must be provided. All examples must work from both possible compile locations, the QB64-PE main folder and the example's source folder if "Output EXE to Source Folder" is used.
+3. At least one example must be provided. All examples must work from all possible compile locations, see `examples/QB64-PE/SampleLib/RootSample.bas` for an example how to do that.
 4. The library code itself must follow the **Library coding standards** outlined below. The library code may consist of 3 general parts/files, the **AtTop**, the **AfterMain** and the **AtBottom** parts, take a closer look to the `QB64-PE/SampleLib` and its examples to learn what must go in which part.
 5. One of the library parts/files must contain the code below to enforce **QB64-PE v4.3.0 or up** for use in the Libraries Pack. It's best to place it in the first part/file included to give the error as soon as possible. Also every example should contain the same code right before the $USELIBRARY line.
     ```vb

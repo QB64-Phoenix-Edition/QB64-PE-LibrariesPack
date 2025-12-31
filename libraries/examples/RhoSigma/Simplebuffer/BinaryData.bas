@@ -33,10 +33,21 @@ $USELIBRARY:'RhoSigma/Simplebuffer'
 
 _TITLE "Simplebuffers binary data handling"
 
-'--- Find the root of the library's source folder.
+'--- Find the root path to the example's source folder.
 '-----
-IF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
+IF _FILEEXISTS("BinaryData.bas") THEN
+    root$ = ""
+ELSEIF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
     root$ = "libraries\examples\RhoSigma\Simplebuffer\"
+ELSE
+    qbfo$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
+    IF LEN(qbfo$) > 0 _ANDALSO (_FILEEXISTS(qbfo$ + "\qb64pe.exe") _ORELSE _FILEEXISTS(qbfo$ + "\qb64pe")) THEN
+        root$ = qbfo$ + "\libraries\examples\RhoSigma\Simplebuffer\"
+    ELSE
+        PRINT "Can't locate required assets, please run again and select"
+        PRINT "your QB64-PE folder when ask for it."
+        END
+    END IF
 END IF
 
 '--- define an UDT and fill it with some nonsense
@@ -176,7 +187,7 @@ ERASE b% 'destroy array
 '--- that's all folks
 '-----
 PRINT: PRINT "You may also have a look in the created .dat files in the folder:"
-PRINT _CWD$ + root$
+PRINT _IIF(LEN(qbfo$) > 0, "", _CWD$) + root$
 PRINT: PRINT "done... (you may then safely delete the .dat files)"
 END
 
