@@ -1,0 +1,839 @@
+''$INCLUDE:'Keyboard Library.BI'
+
+
+SUB SetAltGr (Key1 AS INTEGER, Key2 AS INTEGER)
+    AltGr(0) = Key1 'any key from our index (0 says no key)
+    AltGr(1) = Key2 'PLUS any other key from our index (0 says no additional key)
+    'Using this, we can set AltGr to become several things.
+    'AltGr(0) = 165, AltGr(1) = 0 -- This would say we're using the RIGHT Alt key (alone) to simulate the AltGr key.  (Windows Onscreen Keyboard does this.)
+    'AltGr(0) = 17, AltGr(1) = 18 -- This would use any CTRL-ALT combo to simulate a AltGr keypress.
+    'Some useful values are listed for quick reference below
+    '0 = NoKey
+    '17 = ANY Ctrl
+    '18 = ANY Alt
+    '162 = Left Control
+    '163 = Right Control
+    '164 = Left Alt
+    '165 = Right Alt
+
+    'Default is for AltGr(0) = 165, AltGr(1) = 0, which uses Right-Alt alone as the AltGr key.
+    'Feel free to customize the setting to your personal preference/need.
+END SUB
+
+SUB KeyClear
+    _DELAY .05 'give time for a keyup event to log itself so we can clear it
+    DO: k = KeyHit: LOOP UNTIL k = 0
+END SUB
+
+FUNCTION KeyHit&
+    $IF WIN THEN
+        STATIC ReturnCount AS INTEGER
+        STATIC ReturnValues(30) AS LONG
+        SHARED AltGr, Alt, Shift, Ctrl
+        IF Keys(1).Index = 0 THEN Init_KeyCodes "US" 'if someone forgets to put the init routine in their code, be certain to initialize the codes before attempting to use them.
+
+
+        IF ReturnCount > 0 THEN 'If we generated a cue of values last pass, clear those up first, before getting new values.
+            'The only time we really see this is when we hit a shift, ctrl, alt key, usually.
+            KeyHit = ReturnValues(1)
+            FOR i = 1 TO ReturnCount - 1
+                ReturnValues(i) = ReturnValues(i + 1)
+            NEXT
+            ReturnCount = ReturnCount - 1
+            EXIT FUNCTION
+        END IF
+
+        IF Keys(16).Down THEN Shift = -1 ELSE Shift = 0
+        IF Keys(17).Down THEN Ctrl = -1 ELSE Ctrl = 0
+        IF Keys(18).Down THEN Alt = -1 ELSE Alt = 0
+        IF AltGr(0) <> 0 AND AltGr(1) <> 0 THEN
+            IF Keys(AltGr(0)).Down AND Keys(AltGr(1)).Down THEN AltGr = -1 ELSE AltGr = 0
+        ELSEIF AltGr(1) <> 0 THEN
+            IF Keys(AltGr(1)).Down THEN AltGr = -1 ELSE AltGr = 0
+        ELSEIF AltGr(0) <> 0 THEN
+            IF Keys(AltGr(0)).Down THEN AltGr = -1 ELSE AltGr = 0
+        ELSE
+            AltGr = 0
+        END IF
+
+        'until Ctrl or Alt status, if the key down was used to help generate AltGr as a modifier key
+        IF AltGr THEN
+            IF (AltGr(0) = 18 OR AltGr(1) = 18) THEN Alt = 0 'if we use both ALT keys to represent part of AltGr, when AltGr is active, Alt isn't.
+            IF (AltGr(0) = 164 OR AltGr(1) = 164) AND Keys(165).Down = 0 THEN Alt = 0 'if we use Left ALT keys to represent part of AltGr, when AltGr is active, Left Alt isn't.
+            IF (AltGr(0) = 165 OR AltGr(1) = 165) AND Keys(164).Down = 0 THEN Alt = 0 'if we use Right ALT keys to represent part of AltGr, when AltGr is active, Right Alt isn't.
+            IF (AltGr(0) = 17 OR AltGr(1) = 17) THEN Ctrl = 0 'if we use both CTRL keys to represent part of AltGr, when AltGr is active, Ctrl isn't.
+            IF (AltGr(0) = 162 OR AltGr(1) = 162) AND Keys(163).Down = 0 THEN Ctrl = 0 'if we use Left CTRL keys to represent part of AltGr, when AltGr is active, Left Ctrl isn't.
+            IF (AltGr(0) = 163 OR AltGr(1) = 163) AND Keys(162).Down = 0 THEN Ctrl = 0 'if we use Right CTRL keys to represent part of AltGr, when AltGr is active, Right Ctrl isn't.
+        END IF
+
+        IF Alt AND Shift THEN AltShift = -1 ELSE AltShift = 0
+        IF Alt AND Ctrl THEN AltCtrl = -1 ELSE AltCtrl = 0
+        IF Alt AND AltAltGR THEN AltAltGR = -1 ELSE AltAltGR = 0
+        IF Ctrl AND Shift THEN CtrlShift = -1 ELSE CtrlShift = 0
+        IF Shift AND AltGr THEN ShiftAltGr = -1 ELSE ShiftAltGr = 0
+        IF Ctrl AND Alt AND Shift THEN CtrlAltShift = -1 ELSE CtrlAltShift = 0
+
+        IF _WINDOWHASFOCUS THEN
+            FOR i = 1 TO 254
+
+                r = GetKeyState(Keys(i).Index) AND &H8000
+
+                IF r THEN 'the key is down
+
+
+                    IF Keys(i).LastHit THEN
+                        IF ExtendedTimer > Keys(i).LastHit THEN
+                            ReturnCount = ReturnCount + 1 'add one to the return buffer
+                            ReturnValues(ReturnCount) = Keys(i).Down 'and put the existing value back in the buffer, as a key repeat
+                        END IF
+                    ELSE
+
+                        IF Keys(i).Down = 0 THEN 'the key was up on the last pass.
+                            IF CtrlAltShift <> 0 AND Keys(i).CtrlAltShift <> 0 THEN 'return the CtrlAltShift value
+                                Keys(i).Down = Keys(i).CtrlAltShift
+                            ELSEIF AltAltGR <> 0 AND Keys(i).AltAltGr <> 0 THEN 'return the AltAltGr value
+                                Keys(i).Down = Keys(i).AltAltGr
+                            ELSEIF CtrlAltGr& <> 0 AND Keys(i).CtrlAltGr& <> 0 THEN 'return the CtrlAltGr& value
+                                Keys(i).Down = Keys(i).CtrlAltGr&
+                            ELSEIF ShiftAltGr <> 0 AND Keys(i).ShiftAltGr <> 0 THEN 'return the ShiftAltGr value
+                                Keys(i).Down = Keys(i).ShiftAltGr
+                            ELSEIF CtrlShift <> 0 AND Keys(i).CtrlShift <> 0 THEN 'return the CtrlShift value
+                                Keys(i).Down = Keys(i).CtrlShift
+                            ELSEIF AltCtrl <> 0 AND Keys(i).AltCtrl <> 0 THEN 'return the AltCtrl value
+                                Keys(i).Down = Keys(i).AltCtrl
+                            ELSEIF AltShift <> 0 AND Keys(i).AltShift <> 0 THEN 'return the AltShift value
+                                Keys(i).Down = Keys(i).AltShift
+                            ELSEIF AltGr <> 0 AND Keys(i).AltGr <> 0 THEN 'return the altgr value
+                                Keys(i).Down = Keys(i).AltGr
+                            ELSEIF Shift <> 0 AND Keys(i).Shift <> 0 THEN 'return the shift value
+                                Keys(i).Down = Keys(i).Shift
+                                IF _CAPSLOCK = 0 THEN 'caps lock basically reverses the behavior of the shift key with the letters A-Z and a-z
+                                    SELECT CASE i
+                                        CASE 65 TO 90: Keys(i).Down = Keys(i).ASCII
+                                    END SELECT
+                                END IF
+                            ELSEIF (Ctrl <> 0) AND (Keys(i).Ctrl <> 0) THEN 'return the ctrl value
+                                Keys(i).Down = Keys(i).Ctrl
+                            ELSEIF Alt <> 0 AND Keys(i).Alt <> 0 THEN 'return the alt value
+                                Keys(i).Down = Keys(i).Alt
+                            ELSE 'all that's left is to return the ASCII value
+                                Keys(i).Down = Keys(i).ASCII
+                                IF _CAPSLOCK = 0 THEN 'caps lock basically reverses the behavior of the shift key with the letters A-Z and a-z
+                                    SELECT CASE i
+                                        CASE 65 TO 90: Keys(i).Down = Keys(i).Shift
+                                    END SELECT
+                                END IF
+                            END IF
+                            ReturnCount = ReturnCount + 1 'add one to the return buffer
+                            ReturnValues(ReturnCount) = Keys(i).Down 'and store the value in the buffer
+
+                            IF Keys(i).Repeat = -1 THEN 'keys that are set to a -1 on repeat simply toggle state as on, or off.
+                                Keys(i).LastHit = 1E+1000 'such as SHIFT, CTRL, ALT...
+                            ELSE
+                                Keys(i).LastHit = ExtendedTimer + Keys(i).Repeat 'and record when we hit it for repeat purposes
+                            END IF
+                        END IF
+                    END IF
+                ELSE
+                    IF Keys(i).Down THEN 'the key was down on the last pass
+                        ReturnCount = ReturnCount + 1
+                        ReturnValues(ReturnCount) = -Keys(i).Down 'mark it as being up on this one
+                    END IF
+                    Keys(i).Down = 0 'and set it back down for future passes
+                    Keys(i).LastHit = 0 'once again, set it as being ready to be hit again
+                END IF
+            NEXT
+
+            IF ReturnCount > 0 THEN 'If we generated a cue of values last pass, clear those up first, before getting new values.
+                'The only time we really see this is when we hit a shift, ctrl, alt key, usually.
+                KeyHit = ReturnValues(1)
+                FOR i = 1 TO ReturnCount - 1
+                    ReturnValues(i) = ReturnValues(i + 1)
+                NEXT
+                ReturnCount = ReturnCount - 1
+                EXIT FUNCTION
+            END IF
+
+        END IF 'End of IF _WINDOWHASFOCUS
+    $ELSE
+        KeyHit = _KEYHIT
+    $END IF
+
+END FUNCTION
+
+
+SUB Remap_KeyCode (Which AS LONG, ASCII AS LONG, Ctrl AS LONG, Shift AS LONG, Alt AS LONG, AltGr AS LONG, Repeat AS _FLOAT)
+    DIM i AS LONG
+    i = Which
+    Keys(i).Index = i
+    Keys(i).ASCII = ASCII
+    Keys(i).Ctrl = Ctrl
+    Keys(i).Shift = Shift
+    Keys(i).Alt = Alt
+    Keys(i).AltGr = AltGr
+    Keys(i).Repeat = Repeat
+    Keys(i).LastHit = 0
+    Keys(i).Down = 0
+END SUB
+
+    SUB Remap_Extended_KeyCode (Which&, AltShift&, AltCtrl&, AltAltGr&, _
+    CtrlShift&, CtrlAltGr&, ShiftAltGr&, CtrlAltShift&)
+    Keys(Which&).AltShift = AltShift&
+    Keys(Which&).AltCtrl = AltCtrl&
+    Keys(Which&).AltAltGr = AltAltGr&
+    Keys(Which&).CtrlShift = CtrlShift&
+    Keys(Which&).CtrlAltGr = CtrlAltGr&
+    Keys(Which&).ShiftAltGr = ShiftAltGr&
+    Keys(Which&).CtrlAltShift = CtrlAltShift&
+END SUB
+
+FUNCTION KeyDown& (Code AS LONG)
+    IF Code <= 0 THEN EXIT FUNCTION
+    FOR i = 1 TO 254
+        IF GetAsyncKeyState(i) THEN 'first check for actual physical keys down
+            IF Keys(i).ASCII = Code THEN KeyDown = -1: EXIT FUNCTION 'then check to see if the code matches anything we've mapped it to.
+            IF Keys(i).Shift = Code THEN KeyDown = -1: EXIT FUNCTION
+            IF Keys(i).Alt = Code THEN KeyDown = -1: EXIT FUNCTION
+            IF Keys(i).AltGr = Code THEN KeyDown = -1: EXIT FUNCTION
+            IF Keys(i).AltShift = Code THEN KeyDown = -1: EXIT FUNCTION
+            IF Keys(i).AltCtrl = Code THEN KeyDown = -1: EXIT FUNCTION
+            IF Keys(i).AltAltGr = Code THEN KeyDown = -1: EXIT FUNCTION
+            IF Keys(i).CtrlShift = Code THEN KeyDown = -1: EXIT FUNCTION
+            IF Keys(i).CtrlAltGr = Code THEN KeyDown = -1: EXIT FUNCTION
+            IF Keys(i).ShiftAltGr = Code THEN KeyDown = -1: EXIT FUNCTION
+            IF Keys(i).CtrlAltShift = Code THEN KeyDown = -1: EXIT FUNCTION
+        END IF
+    NEXT
+    KeyDown& = 0
+END FUNCTION
+
+SUB Init_KeyCodes (Language AS STRING)
+    RESTORE default_keyboard_data
+    FOR i = 1 TO 254
+        READ Keys(i).Index, Keys(i).ASCII, Keys(i).Ctrl, Keys(i).Shift, Keys(i).Alt, Keys(i).AltGr, Keys(i).Repeat
+        Keys(i).LastHit = 0: Keys(i).Down = 0
+    NEXT
+
+    default_keyboard_data:
+    '   Index   Unmodified      Ctrl      Shift       Alt         AltGr     Repeat
+    DATA 1,900001,0,0,0,0,0.2: 'Left Mouse Button
+    DATA 2,900002,0,0,0,0,0.2: 'Right Mouse Button
+    DATA 3,900003,0,0,0,0,0.2: 'VK_Cancel
+    DATA 4,900004,0,0,0,0,0.2: 'Middle Mouse Button
+    DATA 5,900005,0,0,0,0,0.2: 'Mouse Button 4
+    DATA 6,900006,0,0,0,0,0.2: 'Mouse Button 5
+    DATA 7,900007,0,0,0,0,0.2: 'Undefined
+    DATA 8,8,0,0,0,0,0.2: 'Backspace
+    DATA 9,9,0,0,0,0,0.2: 'Tab
+    DATA 10,900010,0,0,0,0,0.2: 'Reserved
+    DATA 11,900011,0,0,0,0,0.2: 'Reserved
+    DATA 12,19456,0,0,0,0,0.2: 'Clear
+    DATA 13,13,0,0,0,0,0.2: 'Enter
+    DATA 14,900014,0,0,0,0,0.2: 'Undefined
+    DATA 15,900015,0,0,0,0,0.2: 'Undefined
+    DATA 16,100016,0,0,0,0,-1: 'Shift (Notice I set it to simple toddle and report UP/DOWN results for us)
+    DATA 17,100017,0,0,0,0,-1: 'Ctrl   (Same)
+    DATA 18,100018,0,0,0,0,-1: 'Alt     (Same)
+    DATA 19,100019,0,0,0,0,0.2: 'Pause
+    DATA 20,100301,0,0,0,0,-1: 'Caps Lock
+    DATA 21,900021,0,0,0,0,0.2: 'VK_Hangul
+    DATA 22,900022,0,0,0,0,0.2: 'Undefined
+    DATA 23,900023,0,0,0,0,0.2: 'VK_Junja
+    DATA 24,900024,0,0,0,0,0.2: 'VK_Final
+    DATA 25,900025,0,0,0,0,0.2: 'VK_Hanga//VK_Kanji
+    '   Index   Unmodified      Ctrl      Shift       Alt         AltGr     Repeat
+    DATA 26,900026,0,0,0,0,0.2: 'Undefined
+    DATA 27,27,0,0,0,0,0.2: 'ESC
+    DATA 28,900028,0,0,0,0,0.2: 'VK_Convert
+    DATA 29,900029,0,0,0,0,0.2: 'VK_NonConvert
+    DATA 30,900030,0,0,0,0,0.2: 'VK_Accept
+    DATA 31,900031,0,0,0,0,0.2: 'VK_ModeChange
+    DATA 32,32,0,0,0,0,0.2: 'VK_Space
+    DATA 33,18688,0,0,0,0,0.2: 'Page Up
+    DATA 34,20736,0,0,0,0,0.2: 'Page Down
+    DATA 35,20224,0,0,0,0,0.2: 'End
+    DATA 36,18176,0,0,0,0,0.2: 'Home
+    DATA 37,19200,0,0,0,0,0.2: 'Left Arrow
+    DATA 38,18432,0,0,0,0,0.2: 'Up Arrow
+    DATA 39,19712,0,0,0,0,0.2: 'Right Arrow
+    DATA 40,20480,0,0,0,0,0.2: 'Down Arrow
+    DATA 41,900041,0,0,0,0,-1: 'VK_SELECT
+    DATA 42,900042,0,0,0,0,-1: 'CK_PRINT
+    DATA 43,900043,0,0,0,0,-1: 'VK_EXECUTE
+    DATA 44,900044,0,0,0,0,-1: 'VK_SNAPSHOT
+    DATA 45,20992,0,0,0,0,0.2: 'INS
+    DATA 46,21248,0,0,0,0,0.2: 'DEL
+    DATA 47,900047,0,0,0,0,0.2: 'VK_HELP
+    DATA 48,48,0,41,0,0,0.2: '0
+    DATA 49,49,0,33,0,0,0.2: '1
+    DATA 50,50,0,64,0,0,0.2: '2
+    '   Index   Unmodified      Ctrl      Shift       Alt         AltGr     Repeat
+    DATA 51,51,0,35,0,0,0.2: '3
+    DATA 52,52,0,36,0,0,0.2: '4
+    DATA 53,53,0,37,0,0,0.2: '5
+    DATA 54,54,0,94,0,0,0.2: '6
+    DATA 55,55,0,38,0,0,0.2: '7
+    DATA 56,56,0,42,0,0,0.2: '8
+    DATA 57,57,0,40,0,0,0.2: '9
+    DATA 58,900058,0,0,0,0,0.2: 'Undefined
+    DATA 59,900059,0,0,0,0,0.2: 'Undefined
+    DATA 60,900060,0,0,0,0,0.2: 'Undefined
+    DATA 61,900061,0,0,0,0,0.2: 'Undefined
+    DATA 62,900062,0,0,0,0,0.2: 'Undefined
+    DATA 63,900063,0,0,0,0,0.2: 'Undefined
+    DATA 64,900064,0,0,0,0,0.2: 'Undefined
+    DATA 65,65,0,97,0,0,0.2: 'a
+    DATA 66,66,0,98,0,0,0.2: 'b
+    DATA 67,67,0,99,0,0,0.2: 'c
+    DATA 68,68,0,100,0,0,0.2: 'd
+    DATA 69,69,0,101,0,0,0.2: 'e
+    DATA 70,70,0,102,0,0,0.2: 'f
+    DATA 71,71,0,103,0,0,0.2: 'g
+    DATA 72,72,0,104,0,0,0.2: 'h
+    DATA 73,73,0,105,0,0,0.2: 'i
+    DATA 74,74,0,106,0,0,0.2: 'j
+    DATA 75,75,0,107,0,0,0.2: 'k
+    '   Index   Unmodified      Ctrl      Shift       Alt         AltGr     Repeat
+    DATA 76,76,0,108,0,0,0.2: 'l
+    DATA 77,77,0,109,0,0,0.2: 'm
+    DATA 78,78,0,110,0,0,0.2: 'n
+    DATA 79,79,0,111,0,0,0.2: 'o
+    DATA 80,80,0,112,0,0,0.2: 'p
+    DATA 81,81,0,113,0,0,0.2: 'q
+    DATA 82,82,0,114,0,0,0.2: 'r
+    DATA 83,83,0,115,0,0,0.2: 's
+    DATA 84,84,0,116,0,0,0.2: 't
+    DATA 85,85,0,117,0,0,0.2: 'u
+    DATA 86,86,0,118,0,0,0.2: 'v
+    DATA 87,87,0,119,0,0,0.2: 'w
+    DATA 88,88,0,120,0,0,0.2: 'x
+    DATA 89,89,0,121,0,0,0.2: 'y
+    DATA 90,90,0,122,0,0,0.2: 'z
+    DATA 91,100311,0,0,0,0,-1: 'Left WIN
+    DATA 92,100312,0,0,0,0,-1: 'Right WIN
+    DATA 93,100319,0,0,0,0,-1: 'Applications (Menu)
+    DATA 94,900094,0,0,0,0,0.2: 'Reserved
+    DATA 95,900095,0,0,0,0,0.2: 'VK_SLEEP
+    DATA 96,48,0,0,0,0,0.2: 'Numpad 0
+    DATA 97,49,0,0,0,0,0.2: 'Numpad 1
+    DATA 98,50,0,0,0,0,0.2: 'Numpad 2
+    DATA 99,51,0,0,0,0,0.2: 'Numpad 3
+    DATA 100,52,0,0,0,0,0.2: 'Numpad 4
+    '   Index   Unmodified      Ctrl      Shift       Alt         AltGr     Repeat
+    DATA 101,53,0,0,0,0,0.2: 'Numpad 5
+    DATA 102,54,0,0,0,0,0.2: 'Numpad 6
+    DATA 103,55,0,0,0,0,0.2: 'Numpad 7
+    DATA 104,56,0,0,0,0,0.2: 'Numpad 8
+    DATA 105,57,0,0,0,0,0.2: 'Numpad 9
+    DATA 106,42,0,0,0,0,0.2: 'Numpad *
+    DATA 107,43,0,0,0,0,0.2: 'Numpad +
+    DATA 108,900108,0,0,0,0,0.2: 'VK_SEPARATOR
+    DATA 109,51,0,0,0,0,0.2: 'Numpad -
+    DATA 110,52,0,0,0,0,0.2: 'Numpad .
+    DATA 111,53,0,0,0,0,0.2: 'Numpad /
+    DATA 112,15104,0,0,0,0,0.2: 'F1
+    DATA 113,15360,0,0,0,0,0.2: 'F2
+    DATA 114,15616,0,0,0,0,0.2: 'F3
+    DATA 115,15872,0,0,0,0,0.2: 'F4
+    DATA 116,16128,0,0,0,0,0.2: 'F5            /
+    DATA 117,16384,0,0,0,0,0.2: 'F6
+    DATA 118,16640,0,0,0,0,0.2: 'F7
+    DATA 119,16896,0,0,0,0,0.2: 'F8
+    DATA 120,17152,0,0,0,0,0.2: 'F9
+    DATA 121,17408,0,0,0,0,0.2: 'F10
+    DATA 122,34048,0,0,0,0,0.2: 'F11
+    DATA 123,34304,0,0,0,0,0.2: 'F12
+    DATA 124,900124,0,0,0,0,0.2: 'F13
+    DATA 125,900125,0,0,0,0,0.2: 'F14
+    '   Index   Unmodified      Ctrl      Shift       Alt         AltGr     Repeat
+    DATA 126,900126,0,0,0,0,0.2: 'F15
+    DATA 127,900127,0,0,0,0,0.2: 'F16
+    DATA 128,900128,0,0,0,0,0.2: 'F17
+    DATA 129,900129,0,0,0,0,0.2: 'F18
+    DATA 130,900130,0,0,0,0,0.2: 'F19
+    DATA 131,900131,0,0,0,0,0.2: 'F20
+    DATA 132,900132,0,0,0,0,0.2: 'F21
+    DATA 133,900133,0,0,0,0,0.2: 'F22
+    DATA 134,900134,0,0,0,0,0.2: 'F23
+    DATA 135,900135,0,0,0,0,0.2: 'F24
+    DATA 136,900136,0,0,0,0,0.2: 'Unassigned
+    DATA 137,900137,0,0,0,0,0.2: 'Unassigned
+    DATA 138,900138,0,0,0,0,0.2: 'Unassigned
+    DATA 139,900139,0,0,0,0,0.2: 'Unassigned
+    DATA 140,900140,0,0,0,0,0.2: 'Unassigned
+    DATA 141,900141,0,0,0,0,0.2: 'Unassigned
+    DATA 142,900142,0,0,0,0,0.2: 'Unassigned
+    DATA 143,900143,0,0,0,0,0.2: 'Unassigned
+    DATA 144,100300,0,0,0,0,-1: 'NUM LOCK
+    DATA 145,100302,0,0,0,0,-1: 'SCROLL LOCK
+    DATA 146,900146,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 147,900147,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 148,900148,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 149,900149,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 150,900150,0,0,0,0,0.2: 'OEM SPECIFIC
+    '   Index   Unmodified      Ctrl      Shift       Alt         AltGr     Repeat
+    DATA 151,900151,0,0,0,0,0.2: 'Unassigned
+    DATA 152,900152,0,0,0,0,0.2: 'Unassigned
+    DATA 153,900153,0,0,0,0,0.2: 'Unassigned
+    DATA 154,900154,0,0,0,0,0.2: 'Unassigned
+    DATA 155,900155,0,0,0,0,0.2: 'Unassigned
+    DATA 156,900156,0,0,0,0,0.2: 'Unassigned
+    DATA 157,900157,0,0,0,0,0.2: 'Unassigned
+    DATA 158,900158,0,0,0,0,0.2: 'Unassigned
+    DATA 159,900159,0,0,0,0,0.2: 'Unassigned
+    DATA 160,100304,0,0,0,0,-1: 'Left Shift
+    DATA 161,100303,0,0,0,0,-1: 'Right Shift
+    DATA 162,100306,0,0,0,0,-1: 'Left Control
+    DATA 163,100305,0,0,0,0,-1: 'Right Control
+    DATA 164,100308,0,0,0,0,-1: 'Left Alt
+    DATA 165,100309,0,0,0,0,-1: 'Right Alt
+    DATA 166,900166,0,0,0,0,0.2: 'Browser back
+    DATA 167,900167,0,0,0,0,0.2: 'Browser forward
+    DATA 168,900168,0,0,0,0,0.2: 'Browser refresh
+    DATA 169,900169,0,0,0,0,0.2: 'Browser stop
+    DATA 170,900170,0,0,0,0,0.2: 'Browser search
+    DATA 171,900171,0,0,0,0,0.2: 'Browser favorites
+    DATA 172,900172,0,0,0,0,0.2: 'Browser home
+    DATA 173,900173,0,0,0,0,0.2: 'Mute
+    DATA 174,900174,0,0,0,0,0.2: 'Vol Down
+    DATA 175,900175,0,0,0,0,0.2: 'Vol Up
+    '   Index   Unmodified      Ctrl      Shift       Alt         AltGr     Repeat
+    DATA 176,900176,0,0,0,0,0.2: 'Media Next
+    DATA 177,900177,0,0,0,0,0.2: 'Media prev
+    DATA 178,900178,0,0,0,0,0.2: 'Media stop
+    DATA 179,900179,0,0,0,0,0.2: 'Media Play/Pause
+    DATA 180,900180,0,0,0,0,0.2: 'Launch mail
+    DATA 181,900181,0,0,0,0,0.2: 'Launch media select
+    DATA 182,900182,0,0,0,0,0.2: 'Launch app1
+    DATA 183,900183,0,0,0,0,0.2: 'Launch app2
+    DATA 184,900184,0,0,0,0,0.2: 'Reserved
+    DATA 185,900185,0,0,0,0,0.2: 'Reserved
+    DATA 186,59,0,58,0,0,0.2: ';:
+    DATA 187,61,0,43,0,0,0.2: '=+
+    DATA 188,44,0,60,0,0,0.2: ',<
+    DATA 189,45,0,95,0,0,0.2: '-_
+    DATA 190,46,0,62,0,0,0.2: '.>
+    DATA 191,47,0,63,0,0,0.2: '/?
+    DATA 192,96,0,126,0,0,0.2: '`~
+    DATA 193,900193,0,0,0,0,0.2: 'Reserved
+    DATA 194,900194,0,0,0,0,0.2: 'Reserved
+    DATA 195,900195,0,0,0,0,0.2: 'Reserved
+    DATA 196,900196,0,0,0,0,0.2: 'Reserved
+    DATA 197,900197,0,0,0,0,0.2: 'Reserved
+    DATA 198,900198,0,0,0,0,0.2: 'Reserved
+    DATA 199,900199,0,0,0,0,0.2: 'Reserved
+    DATA 200,900200,0,0,0,0,0.2: 'Reserved
+    '   Index   Unmodified      Ctrl      Shift       Alt         AltGr     Repeat
+    DATA 201,900201,0,0,0,0,0.2: 'Reserved
+    DATA 202,900202,0,0,0,0,0.2: 'Reserved
+    DATA 203,900203,0,0,0,0,0.2: 'Reserved
+    DATA 204,900204,0,0,0,0,0.2: 'Reserved
+    DATA 205,900205,0,0,0,0,0.2: 'Reserved
+    DATA 206,900206,0,0,0,0,0.2: 'Reserved
+    DATA 207,900207,0,0,0,0,0.2: 'Reserved
+    DATA 208,900208,0,0,0,0,0.2: 'Reserved
+    DATA 209,900209,0,0,0,0,0.2: 'Reserved
+    DATA 210,900210,0,0,0,0,0.2: 'Reserved
+    DATA 211,900211,0,0,0,0,0.2: 'Reserved
+    DATA 212,900212,0,0,0,0,0.2: 'Reserved
+    DATA 213,900213,0,0,0,0,0.2: 'Reserved
+    DATA 214,900214,0,0,0,0,0.2: 'Reserved
+    DATA 215,900215,0,0,0,0,0.2: 'Reserved
+    DATA 216,900216,0,0,0,0,0.2: 'Unassigned
+    DATA 217,900217,0,0,0,0,0.2: 'Unassigned
+    DATA 218,900218,0,0,0,0,0.2: 'Unassigned
+    DATA 219,91,0,123,0,0,0.2: '[{
+    DATA 220,92,0,124,0,0,0.2: '\|
+    DATA 221,93,0,125,0,0,0.2: ']}
+    DATA 222,39,0,34,0,0,0.2: ''"
+    DATA 223,900223,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 224,900224,0,0,0,0,0.2: 'Reserved
+    DATA 225,900225,0,0,0,0,0.2: 'OEM SPECIFIC d
+    DATA 226,900226,0,0,0,0,0.2: 'Either the Angle Bracket key,or Backslash on RT 102-key keyboard
+    DATA 227,900227,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 228,900228,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 229,900229,0,0,0,0,0.2: 'IME PROCESS key (whatever that is)
+    DATA 230,900230,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 231,900231,0,0,0,0,0.2: 'Used to pass UNICODE characters (however that works)
+    DATA 232,900232,0,0,0,0,0.2: 'Unassigned
+    DATA 233,900233,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 234,900234,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 235,900235,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 236,900236,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 237,900237,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 238,900238,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 239,900239,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 240,900240,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 241,900241,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 242,900242,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 243,900243,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 244,900244,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 245,900245,0,0,0,0,0.2: 'OEM SPECIFIC
+    DATA 246,900246,0,0,0,0,0.2: 'VK_ATTN
+    DATA 247,900247,0,0,0,0,0.2: 'VK_ATTN
+    DATA 248,900248,0,0,0,0,0.2: 'VK_ATTN
+    DATA 249,900249,0,0,0,0,0.2: 'VK_ATTN
+    DATA 250,900250,0,0,0,0,0.2: 'VK_ATTN
+    DATA 251,900251,0,0,0,0,0.2: 'VK_ATTN
+    DATA 252,900252,0,0,0,0,0.2: 'Reserved
+    DATA 253,900253,0,0,0,0,0.2: 'VK_PA1
+    DATA 254,900253,0,0,0,0,0.2: 'VK_OEM_CLEAR
+    DATA 0,0,0,0,0,0,0.2: 'END OF DATA
+    AltGr(0) = 165
+    AltGr(1) = 0
+
+    SELECT CASE Language
+        CASE "DE"
+            RESTORE Microsoft_windows_cp1250
+            FOR i = 128 TO 255
+                READ unicode
+                _MAPUNICODE unicode TO ASCIIcode
+            NEXT
+            Microsoft_windows_cp1250:
+            DATA 8364,0,8218,0,8222,8230,8224,8225,0,8240,352,8249,346,356,381,377
+            DATA 0,8216,8217,8220,8221,8226,8211,8212,0,8482,353,8250,347,357,382,378
+            DATA 160,711,728,321,164,260,166,167,168,169,350,171,172,173,174,379
+            DATA 176,177,731,322,180,181,182,183,184,261,351,187,317,733,318,380
+            DATA 340,193,194,258,196,313,262,199,268,201,280,203,282,205,206,270
+            DATA 272,323,327,211,212,336,214,215,344,366,218,368,220,221,354,223
+            DATA 341,225,226,259,228,314,263,231,269,233,281,235,283,237,238,271
+            DATA 273,324,328,243,244,337,246,247,345,367,250,369,252,253,355,729
+            'Remap_KeyCode (Which, ASCII, Ctrl , Shift, Alt, AltGr, Repeat AS _FLOAT)
+            Remap_KeyCode 226, 60, 0, 62, 124, 92, 0.2 '<>|
+            Remap_KeyCode 219, 225, 0, 63, 0, 0, 0.2 '-
+            Remap_KeyCode 48, 48, 0, 61, 0, 125, 0.2 '0
+            Remap_KeyCode 192, 148, 0, 153, 0, 0, 0.2
+            Remap_KeyCode 222, 132, 0, 142, 0, 0, 0.2
+            Remap_KeyCode 50, 50, 0, 34, 0, 253, 0.2: '2 .. I don't see a superscript 3 for AltGr codes for the 3 key.
+            Remap_KeyCode 51, 51, 0, 35, 0, 0, 0.2: '3 ..I don't see the squiggle for this in the ASCII code.  It needs to be changed, but I dunno with what.
+            Remap_KeyCode 54, 54, 0, 38, 0, 0, 0.2: '6
+            Remap_KeyCode 55, 55, 0, 47, 0, 123, 0.2: '7
+            Remap_KeyCode 56, 56, 0, 40, 0, 91, 0.2: '8
+            Remap_KeyCode 57, 57, 0, 41, 0, 93, 0.2: '9
+            Remap_KeyCode 186, 129, 0, 154, 0, 0, 0.2: ';:
+            Remap_KeyCode 187, 43, 0, 42, 0, 126, 0.2: '=+
+            Remap_KeyCode 191, 35, 0, 249, 0, 0, 0.2: '/?
+            Remap_KeyCode 81, 81, 0, 113, 0, 64, 0.2: 'q
+            Remap_KeyCode 69, 69, 0, 101, 0, 238, 0.2: 'e
+            Remap_KeyCode 77, 77, 0, 109, 0, 0, 0.2: 'm -- again, I failed to find the goofy u which AltGr produces in the 256 ASCII set
+
+        CASE "WE"
+            RESTORE Microsoft_windows_cp1252
+            FOR i = 128 TO 255
+                READ unicode
+                _MAPUNICODE unicode TO ASCIIcode
+            NEXT
+
+            Microsoft_windows_cp1252:
+            DATA 8364,0,8218,402,8222,8230,8224,8225,710,8240,352,8249,338,0,381,0
+            DATA 0,8216,8217,8220,8221,8226,8211,8212,732,8482,353,8250,339,0,382,376
+            DATA 160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175
+            DATA 176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191
+            DATA 192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207
+            DATA 208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223
+            DATA 224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239
+            DATA 240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255
+
+
+            'remap_KeyCode (Which, ASCII, Ctrl , Shift, Alt, AltGr, Repeat AS _FLOAT)
+            Remap_KeyCode 188, 44, 0, 59, 0, 0, 0.2: ',;
+            Remap_KeyCode 190, 46, 0, 58, 0, 0, 0.2: '.:
+            Remap_KeyCode 50, 50, 0, 34, 0, 0, 0.2: '2 "
+            Remap_KeyCode 51, 51, 0, 156, 0, 0, 0.2: '3 ú
+            Remap_KeyCode 191, 151, 0, 21, 0, 0, 0.2: '£ 
+            Remap_KeyCode 222, 133, 0, 248, 0, 35, 0.2: 'Ö ¯#
+            Remap_KeyCode 192, 149, 0, 128, 0, 64, 0.2: 'ï Ä @
+            Remap_KeyCode 186, 138, 0, 130, 0, 91, 0.2 'ä Ç [
+            Remap_KeyCode 187, 43, 0, 42, 0, 93, 0.2 ' + * ]
+            Remap_KeyCode 54, 54, 0, 38, 0, 0, 0.2 '6 &
+            Remap_KeyCode 55, 55, 0, 47, 0, 0, 0.2 '7 /
+            Remap_KeyCode 56, 56, 0, 40, 0, 0, 0.2 '8(
+            Remap_KeyCode 57, 57, 0, 41, 0, 0, 0.2 '9 )
+            Remap_KeyCode 48, 48, 0, 61, 0, 0, 0.2 '0 =
+            Remap_KeyCode 219, 39, 0, 63, 0, 0, 0.2 ' ' ?
+            Remap_KeyCode 221, 141, 0, 94, 0, 0, 0.2 'ç ^
+            Remap_KeyCode 226, 60, 0, 62, 0, 0, 0.2 '< >
+
+        CASE "IT"
+
+            RESTORE ASCII_cp850
+            FOR i = 128 TO 255
+                READ unicode
+                _MAPUNICODE unicode TO ASCIIcode
+            NEXT
+
+            ASCII_cp850:
+            DATA 199,252,233,226,228,224,229,231,234,235,232,239,238,236,196,197
+            DATA 201,230,198,244,246,242,251,249,255,214,220,248,163,216,215,402
+            DATA 225,237,243,250,241,209,170,186,191,174,172,189,188,161,171,187
+            DATA 9617,9618,9619,9474,9508,193,194,192,169,9571,9553,9559,9565,162,165,9488
+            DATA 9492,9524,9516,9500,9472,9532,227,195,9562,9556,9577,9574,9568,9552,9580,164
+            DATA 240,208,202,203,200,305,205,206,207,9496,9484,9608,9604,166,204,9600
+            DATA 211,223,212,210,245,213,181,254,222,218,219,217,253,221,175,180
+            DATA 173,177,8215,190,182,167,247,184,176,168,183,185,179,178,9632,160
+
+            'remap_KeyCode (Which, ASCII, Ctrl , Shift, Alt, AltGr, Repeat AS _FLOAT)
+            Remap_KeyCode 188, 44, 0, 59, 0, 0, 0.2: ',;
+            Remap_KeyCode 190, 46, 0, 58, 0, 0, 0.2: '.:
+            Remap_KeyCode 50, 50, 0, 34, 0, 0, 0.2: '2 "
+            Remap_KeyCode 51, 51, 0, 156, 0, 0, 0.2: '3 ú
+            Remap_KeyCode 191, 151, 0, 21, 0, 0, 0.2: '£ 
+            Remap_KeyCode 222, 133, 0, 248, 0, 35, 0.2: 'Ö ¯#
+            Remap_KeyCode 192, 149, 0, 128, 0, 64, 0.2: 'ï Ä @
+            Remap_KeyCode 186, 138, 0, 130, 0, 91, 0.2 'ä Ç [
+            Remap_KeyCode 187, 43, 0, 42, 0, 93, 0.2 ' + * ]
+            Remap_KeyCode 54, 54, 0, 38, 0, 0, 0.2 '6 &
+            Remap_KeyCode 55, 55, 0, 47, 0, 0, 0.2 '7 /
+            Remap_KeyCode 56, 56, 0, 40, 0, 0, 0.2 '8(
+            Remap_KeyCode 57, 57, 0, 41, 0, 0, 0.2 '9 )
+            Remap_KeyCode 48, 48, 0, 61, 0, 0, 0.2 '0 =
+            Remap_KeyCode 219, 39, 0, 63, 0, 0, 0.2 ' ' ?
+            Remap_KeyCode 221, 141, 0, 94, 0, 0, 0.2 'ç ^
+            Remap_KeyCode 226, 60, 0, 62, 0, 0, 0.2 '< >
+    END SELECT
+END SUB
+
+
+
+
+$IF EXTENDEDTIMER = UNDEFINED THEN
+$LET EXTENDEDTIMER = TRUE
+
+    FUNCTION ExtendedTimer##
+        'modified extendedtimer to store the old day's count, and not have to recalculate it every time the routine is called.
+
+        STATIC olds AS _FLOAT, old_day AS _FLOAT
+        DIM m AS INTEGER, d AS INTEGER, y AS INTEGER
+        DIM s AS _FLOAT, day AS STRING
+        IF olds = 0 THEN 'calculate the day the first time the extended timer runs
+            day = DATE$
+            m = VAL(LEFT$(day, 2))
+            d = VAL(MID$(day, 4, 2))
+            y = VAL(RIGHT$(day, 4)) - 1970
+            SELECT CASE m 'Add the number of days for each previous month passed
+                CASE 2: d = d + 31
+                CASE 3: d = d + 59
+                CASE 4: d = d + 90
+                CASE 5: d = d + 120
+                CASE 6: d = d + 151
+                CASE 7: d = d + 181
+                CASE 8: d = d + 212
+                CASE 9: d = d + 243
+                CASE 10: d = d + 273
+                CASE 11: d = d + 304
+                CASE 12: d = d + 334
+            END SELECT
+            IF (y MOD 4) = 2 AND m > 2 THEN d = d + 1 'add a day if this is leap year and we're past february
+            d = (d - 1) + 365 * y 'current month days passed + 365 days per each standard year
+            d = d + (y + 2) \ 4 'add in days for leap years passed
+            s = d * 24 * 60 * 60 'Seconds are days * 24 hours * 60 minutes * 60 seconds
+            old_day = s
+        END IF
+        IF TIMER < oldt THEN 'we went from 23:59:59 (a second before midnight) to 0:0:0 (midnight)
+            old_day = s + 83400 'add another worth of seconds to our counter
+        END IF
+        oldt = TIMER
+        olds = old_day + oldt
+        ExtendedTimer## = olds
+    END FUNCTION
+$END IF
+
+SUB ExtendedInput (prompt$, result$) 'Over Engineered Input
+    'limit VALUES:
+    '1 = Unsigned
+    '2 = Integer
+    '4 = Float
+    '8 = Who cares. It's handled via internal variables and we don't need to know a type for it.
+    'Uses {} at the start of the prompt to limit possible input
+    'P = Password
+    'U = Unsigned
+    'I = Integer
+    'F = Float
+    'L## = Length of max ##
+    'X##, Y## = LOCATE before printing
+    'D = Disable paste option
+    'V = Move CTRL-V to AFTER paste
+    'H = Hide Input after finished.  (Won't leave prompt, or user input on the screen.)
+
+    PCOPY 0, 1
+    A = _AUTODISPLAY: X = POS(0): Y = CSRLIN
+    OX = X: OY = Y 'original x and y positions
+    CP = 0: OldCP = 0 'Cursor Position
+    _KEYCLEAR
+    length_limit = -1 'unlimited length input, by default
+
+    IF LEFT$(prompt$, 1) = "{" THEN 'possible limiter
+        i = INSTR(prompt$, "}")
+        IF i THEN 'yep, we have something!
+            limiter$ = UCASE$(MID$(prompt$, 2, i - 2))
+            IF INSTR(limiter$, "U") THEN limit = limit OR 1 'Unsigned
+            IF INSTR(limiter$, "I") THEN 'can't limit to BOTH an integer AND a float
+                limit = limit OR 2 'Integer
+            ELSEIF INSTR(limiter$, "F") THEN
+                limit = limit OR 4 'Float
+                float_before_limit = KB_GetValue(limiter$, "F")
+                float_after_limit = KB_GetValue(MID$(limiter$, INSTR(limiter$, "F") + 1), ".")
+            END IF
+        END IF
+        IF INSTR(limiter$, "P") THEN password_protected = -1: limit = limit OR 8 'don't show passwords.
+        IF INSTR(limiter$, "L") THEN 'Length Limitation
+            limit = limit OR 8
+            length_limit = KB_GetValue(limiter$, "L")
+        END IF
+        IF INSTR(limiter$, "X") THEN 'X position on screen
+            limit = limit OR 8
+            X = KB_GetValue(limiter$, "X")
+        END IF
+        IF INSTR(limiter$, "Y") THEN 'Y position on scren
+            limit = limit OR 8
+            Y = KB_GetValue(limiter$, "Y")
+        END IF
+        IF INSTR(limiter$, "D") THEN disable_paste = -1: limit = limit OR 8 'disable paste
+        IF INSTR(limiter$, "V") THEN cursor_after_paste = -1: limit = limit OR 8 'disable paste
+        IF INSTR(limiter$, "H") THEN clean_exit = -1: limit = limit OR 8 'hide after finished
+    END IF
+    IF limit <> 0 THEN prompt$ = MID$(prompt$, i + 1)
+
+
+    DO
+        PCOPY 1, 0
+        IF _KEYDOWN(100307) OR _KEYDOWN(100308) THEN AltDown = -1 ELSE AltDown = 0
+        k = KeyHit
+        IF AltDown THEN
+            SELECT CASE k 'ignore all keypresses except ALT-number presses
+                CASE -57 TO -48: AltWasDown = -1: alt$ = alt$ + CHR$(-k)
+            END SELECT
+        ELSE
+            SELECT CASE k 'without alt, add any keypresses to our input
+                CASE 8
+                    oldin$ = in$
+                    IF CP > 0 THEN OldCP = CP: CP = CP - 1
+                    in$ = LEFT$(in$, CP) + MID$(in$, CP + 2) 'backspace to erase input
+                CASE 9
+                    oldin$ = in$
+                    in$ = LEFT$(in$, CP) + SPACE$(4) + MID$(in$, CP + 1) 'four spaces for any TAB entered
+                    OldCP = CP
+                    CP = CP + 4
+                CASE 32 TO 128
+                    IF _KEYDOWN(100305) OR _KEYDOWN(100306) THEN
+                        IF k = 118 OR k = 86 THEN
+                            IF disable_paste = 0 THEN
+                                oldin$ = in$
+                                temp$ = _CLIPBOARD$
+                                in$ = LEFT$(in$, CP) + temp$ + MID$(in$, CP + 1) 'ctrl-v paste
+                                'CTRL-V leaves cursor in position before the paste, without moving it after.
+                                'Feel free to modify that behavior here, if you want it to move to after the paste.
+                                IF cursor_after_paste THEN CP = CP + LEN(temp$)
+                            END IF
+                        END IF
+                        IF k = 122 OR k = 90 THEN SWAP in$, oldin$: SWAP OldCP, CP 'ctrl-z undo
+                    ELSE
+                        check_input:
+                        oldin$ = in$
+                        IF limit AND 1 THEN 'unsigned
+                            IF k = 43 OR k = 45 THEN _CONTINUE 'remove signs +/-
+                        END IF
+                        IF limit AND 2 THEN 'integer
+                            IF k = 45 AND CP = 0 THEN GOTO good_input 'only allow a - sign for the first digit
+                            IF k < 48 OR k > 57 THEN _CONTINUE 'remove anything non-numeric
+                        END IF
+                        IF limit AND 4 THEN 'float
+                            IF k = 45 AND CP = 0 THEN GOTO good_input 'only allow a - sign for the first digit
+                            IF k = 46 AND INSTR(in$, ".") = 0 THEN GOTO good_input 'only one decimal point
+                            IF k < 48 OR k > 57 THEN _CONTINUE 'remove anything non-numeric
+                            IF LEFT$(in$, 1) = "-" THEN temp$ = MID$(in$, 2) ELSE temp$ = in$
+                            IF INSTR(in$, ".") = 0 OR CP < INSTR(in$, ".") THEN
+                                IF LEN(temp$) < float_before_limit OR float_before_limit = -1 THEN
+                                    in$ = LEFT$(in$, CP) + CHR$(k) + MID$(in$, CP + 1) 'add input to our string
+                                    OldCP = CP
+                                    CP = CP + 1
+                                END IF
+                            ELSE
+                                temp$ = MID$(in$, INSTR(in$, ".") + 1)
+                                IF LEN(temp$) < float_after_limit OR float_after_limit = -1 THEN
+                                    in$ = LEFT$(in$, CP) + CHR$(k) + MID$(in$, CP + 1) 'add input to our string
+                                    OldCP = CP
+                                    CP = CP + 1
+                                END IF
+                            END IF
+                            _CONTINUE
+                        END IF
+                        good_input:
+                        IF CP < length_limit OR length_limit < 0 THEN
+                            in$ = LEFT$(in$, CP) + CHR$(k) + MID$(in$, CP + 1) 'add input to our string
+
+                            OldCP = CP
+                            CP = CP + 1
+                        END IF
+                    END IF
+                CASE 18176 'Home
+                    CP = 0
+                CASE 20224 'End
+                    CP = LEN(in$)
+                CASE 21248 'Delete
+                    oldin$ = in$
+                    in$ = LEFT$(in$, CP) + MID$(in$, CP + 2)
+                CASE 19200 'Left
+                    CP = CP - 1
+                    IF CP < 0 THEN CP = 0
+                CASE 19712 'Right
+                    CP = CP + 1
+                    IF CP > LEN(in$) THEN CP = LEN(in$)
+            END SELECT
+        END IF
+        alt$ = RIGHT$(alt$, 3)
+        IF AltWasDown = -1 AND AltDown = 0 THEN
+            v = VAL(alt$)
+            IF v >= 0 AND v <= 255 THEN
+                k = v
+                alt$ = "": AltWasDown = 0
+                GOTO check_input
+            END IF
+        END IF
+        blink = (blink + 1) MOD 30
+        LOCATE Y, X
+        PRINT prompt$;
+        IF password_protected THEN
+            PRINT STRING$(LEN(LEFT$(in$, CP)), "*");
+            IF blink \ 15 THEN PRINT " "; ELSE PRINT "_";
+            PRINT STRING$(LEN(MID$(in$, CP + 1)), "*")
+        ELSE
+            PRINT LEFT$(in$, CP);
+            IF blink \ 15 THEN PRINT " "; ELSE PRINT "_";
+            PRINT MID$(in$, CP + 1)
+        END IF
+
+        _DISPLAY
+        _LIMIT 30
+    LOOP UNTIL k = 13
+
+    PCOPY 1, 0
+    LOCATE OY, OX
+    IF clean_exit = 0 THEN
+        LOCATE Y, X
+        IF password_protected THEN
+            PRINT prompt$; STRING$(LEN(in$), "*")
+        ELSE
+            PRINT prompt$; in$
+        END IF
+    END IF
+    result$ = in$
+    IF A THEN _AUTODISPLAY
+END FUNCTION
+
+
+FUNCTION KB_GetValue (limiter$, what$)
+    jstart = INSTR(limiter$, what$): j = 0
+    IF MID$(limiter$, INSTR(limiter$, what$) + 1, 1) = "-" THEN
+        GetValue = -1 'unlimited
+        EXIT FUNCTION
+    END IF
+
+    DO
+        j = j + 1
+        m$ = MID$(limiter$, jstart + j, 1)
+    LOOP UNTIL m$ < "0" OR m$ > "9"
+    KB_GetValue = VAL(MID$(limiter$, jstart + 1, j - 1))
+END FUNCTION
+
+
