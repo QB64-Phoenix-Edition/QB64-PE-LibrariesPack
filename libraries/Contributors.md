@@ -1,13 +1,15 @@
 ## You wanna contribute to the Libraries Pack?
-Perfect, as said earlier dropping in more library files should be easy enough, once you understood the layout of the `libraries` folder. The much harder part is to make sure the library meets the requirements for inclusion into the Pack first, for that check out the sections below. You should also be familiar with GitHub and its related tools.
+Perfect, as said earlier dropping in more library files should be easy enough, once you understood the layout of the `libraries` folder. The much harder part is to make sure the library meets the requirements for inclusion into the Pack first, for that check out the sections below. You should also be familiar with GitHub and its related tools, if you're not then just skip #1 and #6 of the following list.
 
-When you're sure everything is ready for inclusion, then follow the steps below:
 1. Make yourself a clone/fork of our [QB64-PE Libraries Pack](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack) repository.
-2. In your cloned/forked repository make a new folder for the `author` inside each of the four sub-folders `descriptors`, `documents`, `examples` and `includes` if the author is not already in the list.
+2. In your cloned/forked repository (or local installation if not using GitHub) make a new folder for the `author` inside each of the four sub-folders `descriptors`, `documents`, `examples` and `includes` if the author is not already in the list.
 3. Inside the `author` folders make a sub-folder for the `libraryname`, but only in the `documents`, `examples` and `includes` branches this time.
-4. In the `author` folder of the `descriptors` branch create a new INI file `libraryname.ini` and fill it with the respective data. The easiest is probably to copy the INI of another library, rename it accordingly and exchange its information.
-5. If the new author is a known forum member, then get his avatar picture and also save it in the new `descriptors/author` folder and specify it in the INI file. If no personalized avatar is available, then leave the INI entry empty.
+4. In the `author` folder of the `descriptors` branch create a new INI file `libraryname.ini` and fill it with the respective data. The easiest is probably to copy the INI of another library, rename it accordingly and exchange its information (see format details below).
+5. If the new author is a known forum member, then get his avatar picture and specify it in the INI file. If no personalized avatar is available, then leave the INI entry blank. In alternative you may use the avatar entry to specify a dedicated logo of 100x100 pixels for a library. All images must be saved in the `descriptors/author` folder of the respective library author.
 6. Open a **Pull Request** in your cloned/forked repository to request a merge of your made changes back into the parent repository.
+
+#### When contributing without using GitHub:
+First make sure you have the [latest release](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack/releases/latest) of the Libraries Pack, then just as initially said, drop in your library and make it work locally on your system according to the rules detailed below. When done, then pack the entire `libraries` folder, post the archive in the [GitHub Discussion](https://qb64phoenix.com/forum/forumdisplay.php?fid=42) Forum and ask for a developer (RhoSigma, a740g, DSMan195276, grymmjack, SMcNeill) to do the GitHub stuff.
 
 #### The Library Descriptor INI format is easy and straight forward:
 ```ini
@@ -33,11 +35,13 @@ Why is a hardcoded folder layout enforced here, wouldn't it be better to allow m
 
 ### What are the requirements for inclusion of a library?
 To avoid rejection of a library the following things are considered mandatory:
-1. The author of the library must be known (username) and also the license under which it was released, easy if it's your own library. A library should always be listed under the original author name, even if other people contributed to it or revised the library for inclusion.
-2. At least a rudimentary documentation must be provided. The simplest form should contain the syntax of all public functions with a brief overview of all arguments and at least one sentence of function description. The file format should be TXT, MD, PDF or HTML.
-3. At least one example must be provided. All examples must work from all possible compile locations, see `examples/QB64-PE/SampleLib/RootSample.bas` for an example how to do that.
-4. The library code itself must follow the **Library coding standards** outlined below. The library code may consist of 3 general parts/files, the **AtTop**, the **AfterMain** and the **AtBottom** parts, take a closer look to the `QB64-PE/SampleLib` and its examples to learn what must go in which part.
-5. One of the library parts/files must contain the code below to enforce **QB64-PE v4.3.0 or up** for use in the Libraries Pack. It's best to place it in the first part/file included to give the error as soon as possible. Also every example should contain the same code right before the $USELIBRARY line.
+1. The author of the library must be known at least by its username (real name is optional) and also the license under which the library was released. All that's easy if it's your own library. A library should always be listed under the original author name, even if other people contributed to it or revised the library for inclusion into the Pack.
+2. At least a rudimentary documentation must be provided, because nobody uses a library he must dig into code first to understand it's purpose and usage. The simplest form should contain the syntax of all public functions with a brief overview of all arguments and at least one sentence of function description, see a740g's QBDS libraries for a good minimal documentation. For more complex libraries a more comprehensive documentation is of advantage, such as in RhoSigma's and TerryRitchi's libraries. The file format should be TXT, MD, PDF or HTML.
+3. At least one example must be provided. All examples must work from all possible compile locations, i.e. especially when they read/write files. See `examples/QB64-PE/SampleLib/RootSample.bas` for an example how to do that.
+4. The library code itself must follow the **Library coding standards** outlined below. The library code may consist of 3 general parts/files, the **AtTop**, the **AfterMain** and the **AtBottom** parts, take a closer look to the `QB64-PE/SampleLib` and its examples to learn what must go in which part.<br>
+**Note:** Since **QB64-PE v4.4.0** it's possible to interleave main level code and SUB/FUNCTION definitions, so you may join the **AtBottom** file into the **AtTop** file now, if you want. However, **AfterMain** code such as GOSUB routines or ERROR handlers should remain in its own file for simplicity. If you otherwise also join it into the **AtTop** file, then make sure to place a GOTO before the GOSUB/ERROR routines to skip over it. Not doing so let's programs run into them whithout warning and results in "RETURN without GOSUB" and/or "RESUME without ERROR" failures.
+5. One of the library parts/files must contain the code below to enforce **QB64-PE v4.3.0 or up** for use in the Libraries Pack. It's best to place it in the first part/file included to give the error as soon as possible. Also every example should contain the same code right before the $USELIBRARY line.<br>
+**Important:** If your library depends on the new code interleaving feature, then the code below must be adapted to check for **v4.4.0** instead.
     ```vb
     $IF VERSION < 4.3.0 THEN
         $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
