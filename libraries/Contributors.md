@@ -9,7 +9,7 @@ Perfect, as said earlier dropping in more library files should be easy enough, o
 6. Open a **Pull Request** in your cloned/forked repository to request a merge of your made changes back into the parent repository.
 
 #### When contributing without using GitHub:
-First make sure you have the [latest release](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack/releases/latest) of the Libraries Pack, then just as initially said, drop in your library and make it work locally on your system according to the rules detailed below. When done, then pack the entire `libraries` folder, post the archive in the [GitHub Discussion](https://qb64phoenix.com/forum/forumdisplay.php?fid=42) Forum and ask for a developer (RhoSigma, a740g, DSMan195276, grymmjack, SMcNeill) to do the GitHub stuff.
+First make sure you have the [latest repository snapshot](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack/archive/refs/heads/main.zip) of the Libraries Pack, then just as initially said, drop in your library and make it work locally on your system according to the rules detailed below. When done, then pack the entire `libraries` folder, post the archive in the [GitHub Discussion](https://qb64phoenix.com/forum/forumdisplay.php?fid=42) Forum and ask for a developer (RhoSigma, a740g, DSMan195276, grymmjack, SMcNeill) to do the GitHub stuff.
 
 #### The Library Descriptor INI format is easy and straight forward:
 ```ini
