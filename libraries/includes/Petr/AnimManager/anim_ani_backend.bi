@@ -1,10 +1,3 @@
-$INCLUDEONCE
-
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
-
 ' =========================================================
 ' Commented source copy for the Windows ANI backend.
 ' Explanatory comments were added in English without altering executable code.
@@ -12,89 +5,96 @@ $END IF
 ' ANI cursor backend for RIFF ACON files
 ' Public names use Ani... prefix.
 
+$INCLUDEONCE
+
+$IF VERSION < 4.3.0 THEN
+    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
+$END IF
+
 ' Constant: ANI_LOOP_FILE_DEFAULT is a ANI/RIFF constant used while parsing Windows animated cursor files.
-Const ANI_LOOP_FILE_DEFAULT = -2
+CONST ANI_LOOP_FILE_DEFAULT = -2
 ' Constant: ANI_LOOP_FOREVER is a ANI/RIFF constant used while parsing Windows animated cursor files.
-Const ANI_LOOP_FOREVER = -1
+CONST ANI_LOOP_FOREVER = -1
 ' Constant: ANI_LOOP_ONCE is a ANI/RIFF constant used while parsing Windows animated cursor files.
-Const ANI_LOOP_ONCE = 0
+CONST ANI_LOOP_ONCE = 0
 
 ' Record layout: AniFrameStore groups related fields used by the Windows ANI backend.
 ' Keeping the data in one TYPE lets the module store one structured record per active object.
-Type AniFrameStore
+TYPE AniFrameStore
     ' Field: Used stores the flag telling whether the current slot or record is in use.
-    Used As Integer
+    Used AS INTEGER
     ' Field: ImageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    ImageHandle As Long
+    ImageHandle AS LONG
     ' Field: HotX stores the working value for hot x.
-    HotX As Long
+    HotX AS LONG
     ' Field: HotY stores the working value for hot y.
-    HotY As Long
-End Type
+    HotY AS LONG
+END TYPE
 
 ' Record layout: AniStepStore groups related fields used by the Windows ANI backend.
 ' Keeping the data in one TYPE lets the module store one structured record per active object.
-Type AniStepStore
+TYPE AniStepStore
     ' Field: Used stores the flag telling whether the current slot or record is in use.
-    Used As Integer
+    Used AS INTEGER
     ' Field: FrameIndex stores the index variable used to address the current item.
-    FrameIndex As Long
+    FrameIndex AS LONG
     ' Field: DelayJif stores the frame delay or timing value.
-    DelayJif As Long
-End Type
+    DelayJif AS LONG
+END TYPE
 
 ' Record layout: AniStore groups related fields used by the Windows ANI backend.
 ' Keeping the data in one TYPE lets the module store one structured record per active object.
-Type AniStore
+TYPE AniStore
     ' Field: Used stores the flag telling whether the current slot or record is in use.
-    Used As Integer
+    Used AS INTEGER
     ' Field: WidthPx stores the decoded image width in pixels.
-    WidthPx As Long
+    WidthPx AS LONG
     ' Field: HeightPx stores the decoded image height in pixels.
-    HeightPx As Long
+    HeightPx AS LONG
     ' Field: FrameStart stores the working value for frame start.
-    FrameStart As Long
+    FrameStart AS LONG
     ' Field: UniqueFrameCount stores the total number of frames available for the current animation.
-    UniqueFrameCount As Long
+    UniqueFrameCount AS LONG
     ' Field: StepStart stores the working value for step start.
-    StepStart As Long
+    StepStart AS LONG
     ' Field: StepCount stores the count used to size or iterate the current data set.
-    StepCount As Long
+    StepCount AS LONG
     ' Field: CurrentFrame stores the zero-based frame index currently selected for display or playback.
-    CurrentFrame As Long
+    CurrentFrame AS LONG
     ' Field: Playing stores the flag telling whether playback is currently running.
-    Playing As Integer
+    Playing AS INTEGER
     ' Field: Paused stores the flag telling whether playback is temporarily paused.
-    Paused As Integer
+    Paused AS INTEGER
     ' Field: LoopMode stores the loop policy that controls whether playback stops or repeats.
-    LoopMode As Long
+    LoopMode AS LONG
     ' Field: NextTick stores the absolute timer target for the next frame advance.
-    NextTick As Double
+    NextTick AS DOUBLE
     ' Field: RemainingDelay stores the time still left before the next frame should be shown.
-    RemainingDelay As Double
+    RemainingDelay AS DOUBLE
     ' Field: LastRawTimer stores the raw timer snapshot used to measure elapsed playback time.
-    LastRawTimer As Double
+    LastRawTimer AS DOUBLE
     ' Field: LoopIteration stores the counter of completed playback loops.
-    LoopIteration As Long
-End Type
+    LoopIteration AS LONG
+END TYPE
 
 ' Shared dynamic array: AniFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-ReDim Shared AniFrames(0) As AniFrameStore
+REDIM SHARED AniFrames(0) AS AniFrameStore
 ' Shared dynamic array: AniSteps is resized here to hold the working value for ANI steps.
-ReDim Shared AniSteps(0) As AniStepStore
+REDIM SHARED AniSteps(0) AS AniStepStore
 ' Shared dynamic array: AniItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-ReDim Shared AniItems(0) As AniStore
+REDIM SHARED AniItems(0) AS AniStore
 ' Shared dynamic array: AniErrorTexts is resized here to hold the text storage for the last human-readable error message.
-ReDim Shared AniErrorTexts(0) As String
+REDIM SHARED AniErrorTexts(0) AS STRING
 ' Shared variable: AniItemCapacity stores the working value for ANI item capacity.
-Dim Shared AniItemCapacity As Long
+DIM SHARED AniItemCapacity AS LONG
 ' Shared variable: AniFrameCapacity stores the working value for ANI frame capacity.
-Dim Shared AniFrameCapacity As Long
+DIM SHARED AniFrameCapacity AS LONG
 ' Shared variable: AniStepCapacity stores the working value for ANI step capacity.
-Dim Shared AniStepCapacity As Long
+DIM SHARED AniStepCapacity AS LONG
 
 ' Purpose: Seek to a specific ANI frame or time position.
 ' Parameters: aniId = working value for ANI id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
 ' Declaration only: the executable body is implemented later in the matching .bm module.
 DECLARE FUNCTION AniSeekFrame% (aniId As Long, frameIndex As Long)
+

@@ -1,140 +1,138 @@
-$INCLUDEONCE
-
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 ' =========================================================
 ' Commented source copy for the APNG backend.
 ' Explanatory comments were added in English without altering executable code.
 ' =========================================================
+' APNG backend prepared for unified Anim... dispatcher
+' Demo code removed. Public names use Apng... prefix.
+
+$INCLUDEONCE
 
 ' Purpose: Routine for the APNG backend: handle APNG ensure item capacity.
 ' Parameters: neededIndex = index variable used to address the current item.
-Sub ApngEnsureItemCapacity (neededIndex As Long)
+SUB ApngEnsureItemCapacity (neededIndex AS LONG)
     ' Variable: newCapacity stores the working value for new capacity.
-    Dim newCapacity As Long
+    DIM newCapacity AS LONG
 
-    If neededIndex <= ApngItemCapacity Then Exit Sub
+    IF neededIndex <= ApngItemCapacity THEN EXIT SUB
 
     newCapacity = ApngItemCapacity
-    If newCapacity < 1 Then newCapacity = 1
+    IF newCapacity < 1 THEN newCapacity = 1
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While newCapacity < neededIndex
-        If newCapacity < 8 Then
+    DO WHILE newCapacity < neededIndex
+        IF newCapacity < 8 THEN
             newCapacity = 8
-        Else
+        ELSE
             newCapacity = newCapacity * 2
-        End If
-    Loop
+        END IF
+    LOOP
 
     ' dynamic array: ApngItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-    ReDim _Preserve ApngItems(newCapacity) As ApngStore
+    REDIM _PRESERVE ApngItems(newCapacity) AS ApngStore
     ' dynamic array: ApngHeaderChunks is resized here to hold the working value for APNG header chunks.
-    ReDim _Preserve ApngHeaderChunks(newCapacity) As String
+    REDIM _PRESERVE ApngHeaderChunks(newCapacity) AS STRING
     ' dynamic array: ApngIhdrData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    ReDim _Preserve ApngIhdrData(newCapacity) As String
+    REDIM _PRESERVE ApngIhdrData(newCapacity) AS STRING
     ' dynamic array: ApngErrorTexts is resized here to hold the text storage for the last human-readable error message.
-    ReDim _Preserve ApngErrorTexts(newCapacity) As String
+    REDIM _PRESERVE ApngErrorTexts(newCapacity) AS STRING
     ApngItemCapacity = newCapacity
-End Sub
+END SUB
 
 ' Purpose: Routine for the APNG backend: handle APNG ensure frame capacity.
 ' Parameters: neededIndex = index variable used to address the current item.
-Sub ApngEnsureFrameCapacity (neededIndex As Long)
+SUB ApngEnsureFrameCapacity (neededIndex AS LONG)
     ' Variable: newCapacity stores the working value for new capacity.
-    Dim newCapacity As Long
+    DIM newCapacity AS LONG
 
-    If neededIndex <= ApngFrameCapacity Then Exit Sub
+    IF neededIndex <= ApngFrameCapacity THEN EXIT SUB
 
     newCapacity = ApngFrameCapacity
-    If newCapacity < 1 Then newCapacity = 1
+    IF newCapacity < 1 THEN newCapacity = 1
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While newCapacity < neededIndex
-        If newCapacity < 32 Then
+    DO WHILE newCapacity < neededIndex
+        IF newCapacity < 32 THEN
             newCapacity = 32
-        Else
+        ELSE
             newCapacity = newCapacity * 2
-        End If
-    Loop
+        END IF
+    LOOP
 
     ' dynamic array: ApngFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-    ReDim _Preserve ApngFrames(newCapacity) As ApngFrameStore
+    REDIM _PRESERVE ApngFrames(newCapacity) AS ApngFrameStore
     ' dynamic array: ApngFrameData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    ReDim _Preserve ApngFrameData(newCapacity) As String
+    REDIM _PRESERVE ApngFrameData(newCapacity) AS STRING
     ApngFrameCapacity = newCapacity
-End Sub
+END SUB
 
 ' Purpose: Routine for the APNG backend: handle APNG init storage if needed.
-Sub ApngInitStorageIfNeeded ()
-    If ApngItemCapacity = 0 Then ApngItemCapacity = UBound(ApngItems)
-    If ApngFrameCapacity = 0 Then ApngFrameCapacity = UBound(ApngFrames)
-    If ApngFrameTail < 0 Then ApngFrameTail = 0
-End Sub
+SUB ApngInitStorageIfNeeded ()
+    IF ApngItemCapacity = 0 THEN ApngItemCapacity = UBOUND(ApngItems)
+    IF ApngFrameCapacity = 0 THEN ApngFrameCapacity = UBOUND(ApngFrames)
+    IF ApngFrameTail < 0 THEN ApngFrameTail = 0
+END SUB
 
 ' Purpose: Open an APNG file, parse core PNG structures, and prepare APNG playback state.
 ' Parameters: fileName = string holding a file path or a human-readable name.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngOpen& (fileName As String)
+FUNCTION ApngOpen& (fileName AS STRING)
     ' Variable: pngData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim pngData As String
+    DIM pngData AS STRING
     ' Variable: sigText stores the working value for sig text.
-    Dim sigText As String
+    DIM sigText AS STRING
     ' Variable: dataLen stores the buffer that holds raw, packed, or decoded byte data.
-    Dim dataLen As Long
+    DIM dataLen AS LONG
     ' Variable: ofs stores the current offset into packed or unpacked data.
-    Dim ofs As Long
+    DIM ofs AS LONG
     ' Variable: chunkLen stores the working value for chunk len.
-    Dim chunkLen As Long
+    DIM chunkLen AS LONG
     ' Variable: chunkType stores the working value for chunk type.
-    Dim chunkType As String
+    DIM chunkType AS STRING
     ' Variable: chunkData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim chunkData As String
+    DIM chunkData AS STRING
     ' Variable: rawChunk stores the record or tag for the current chunk being parsed.
-    Dim rawChunk As String
+    DIM rawChunk AS STRING
     ' Variable: widthPx stores the decoded image width in pixels.
-    Dim widthPx As Long
+    DIM widthPx AS LONG
     ' Variable: heightPx stores the decoded image height in pixels.
-    Dim heightPx As Long
+    DIM heightPx AS LONG
     ' Variable: slotIndex stores the slot number inside the module-wide storage arrays.
-    Dim slotIndex As Long
+    DIM slotIndex AS LONG
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
     ' Variable: currentFrameSlot stores the zero-based frame index currently selected for display or playback.
-    Dim currentFrameSlot As Long
+    DIM currentFrameSlot AS LONG
     ' Variable: firstIdatSeen stores the working value for first idat seen.
-    Dim firstIdatSeen As Integer
+    DIM firstIdatSeen AS INTEGER
     ' Variable: declaredFrames stores the dynamic array that stores per-frame data or cached frame metadata.
-    Dim declaredFrames As Long
+    DIM declaredFrames AS LONG
     ' Variable: declaredPlays stores the working value for declared plays.
-    Dim declaredPlays As Long
+    DIM declaredPlays AS LONG
     ' Variable: animatedFlag stores the working value for animated flag.
-    Dim animatedFlag As Integer
+    DIM animatedFlag AS INTEGER
     ' Variable: defaultIncluded stores the working value for default included.
-    Dim defaultIncluded As Integer
+    DIM defaultIncluded AS INTEGER
     ' Variable: imageDataSeen stores the buffer that holds raw, packed, or decoded byte data.
-    Dim imageDataSeen As Integer
+    DIM imageDataSeen AS INTEGER
     ' Variable: frameStart stores the working value for frame start.
-    Dim frameStart As Long
+    DIM frameStart AS LONG
     ' Variable: frameCounter stores the total number of frames available for the current animation.
-    Dim frameCounter As Long
+    DIM frameCounter AS LONG
     
     ApngOpen = -1
     ApngInitStorageIfNeeded
-    If _FileExists(fileName) = 0 Then Exit Function
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT FUNCTION
 
-    pngData = _ReadFile$(fileName)
-    If Len(pngData) < 33 Then Exit Function
+    pngData = _READFILE$(fileName)
+    IF LEN(pngData) < 33 THEN EXIT FUNCTION
 
     sigText = ApngPngSignature
-    If Left$(pngData, 8) <> sigText Then Exit Function
+    IF LEFT$(pngData, 8) <> sigText THEN EXIT FUNCTION
 
     slotIndex = ApngAllocSlot
     ApngHeaderChunks(slotIndex) = ""
     ApngIhdrData(slotIndex) = ""
 
     ofs = 9
-    dataLen = Len(pngData)
+    dataLen = LEN(pngData)
     currentFrameSlot = -1
     firstIdatSeen = 0
     declaredFrames = 0
@@ -147,32 +145,32 @@ Function ApngOpen& (fileName As String)
     frameCounter = 0
 
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While ofs + 11 <= dataLen
+    DO WHILE ofs + 11 <= dataLen
         chunkLen = ApngReadUInt32(pngData, ofs)
-        chunkType = Mid$(pngData, ofs + 4, 4)
+        chunkType = MID$(pngData, ofs + 4, 4)
 
-        If chunkLen < 0 Then Exit Do
-        If ofs + 11 + chunkLen > dataLen Then Exit Do
+        IF chunkLen < 0 THEN EXIT DO
+        IF ofs + 11 + chunkLen > dataLen THEN EXIT DO
 
-        chunkData = Mid$(pngData, ofs + 8, chunkLen)
-        rawChunk = Mid$(pngData, ofs, chunkLen + 12)
+        chunkData = MID$(pngData, ofs + 8, chunkLen)
+        rawChunk = MID$(pngData, ofs, chunkLen + 12)
 
-        Select Case chunkType
-            Case "IHDR"
-                If chunkLen <> 13 Then Exit Do
+        SELECT CASE chunkType
+            CASE "IHDR"
+                IF chunkLen <> 13 THEN EXIT DO
                 ApngIhdrData(slotIndex) = chunkData
                 widthPx = ApngReadUInt32(chunkData, 1)
                 heightPx = ApngReadUInt32(chunkData, 5)
 
-            Case "acTL"
-                If chunkLen >= 8 Then
+            CASE "acTL"
+                IF chunkLen >= 8 THEN
                     animatedFlag = -1
                     declaredFrames = ApngReadUInt32(chunkData, 1)
                     declaredPlays = ApngReadUInt32(chunkData, 5)
-                End If
+                END IF
 
-            Case "fcTL"
-                If chunkLen >= 26 Then
+            CASE "fcTL"
+                IF chunkLen >= 26 THEN
                     frameSlot = ApngAppendFrameSlot
                     ApngFrames(frameSlot).Used = -1
                     ApngFrames(frameSlot).WidthPx = ApngReadUInt32(chunkData, 5)
@@ -187,15 +185,15 @@ Function ApngOpen& (fileName As String)
                     ApngFrames(frameSlot).ImageHandle = 0
                     currentFrameSlot = frameSlot
                     frameCounter = frameCounter + 1
-                    If firstIdatSeen = 0 And frameCounter = 1 Then defaultIncluded = -1
-                End If
+                    IF firstIdatSeen = 0 AND frameCounter = 1 THEN defaultIncluded = -1
+                END IF
 
-            Case "IDAT"
+            CASE "IDAT"
                 imageDataSeen = -1
-                If firstIdatSeen = 0 Then firstIdatSeen = -1
+                IF firstIdatSeen = 0 THEN firstIdatSeen = -1
 
-                If animatedFlag = 0 Then
-                    If frameCounter = 0 Then
+                IF animatedFlag = 0 THEN
+                    IF frameCounter = 0 THEN
                         frameSlot = ApngAppendFrameSlot
                         ApngFrames(frameSlot).Used = -1
                         ApngFrames(frameSlot).WidthPx = widthPx
@@ -211,49 +209,49 @@ Function ApngOpen& (fileName As String)
                         currentFrameSlot = frameSlot
                         frameCounter = 1
                         defaultIncluded = -1
-                    End If
-                    If currentFrameSlot >= 0 Then ApngFrameData(currentFrameSlot) = ApngFrameData(currentFrameSlot) + chunkData
-                Else
-                    If defaultIncluded <> 0 And currentFrameSlot >= 0 Then
+                    END IF
+                    IF currentFrameSlot >= 0 THEN ApngFrameData(currentFrameSlot) = ApngFrameData(currentFrameSlot) + chunkData
+                ELSE
+                    IF defaultIncluded <> 0 AND currentFrameSlot >= 0 THEN
                         ApngFrameData(currentFrameSlot) = ApngFrameData(currentFrameSlot) + chunkData
-                    End If
-                End If
+                    END IF
+                END IF
 
-            Case "fdAT"
-                If currentFrameSlot >= 0 Then
-                    If chunkLen >= 4 Then
-                        ApngFrameData(currentFrameSlot) = ApngFrameData(currentFrameSlot) + Mid$(chunkData, 5)
-                    End If
-                End If
+            CASE "fdAT"
+                IF currentFrameSlot >= 0 THEN
+                    IF chunkLen >= 4 THEN
+                        ApngFrameData(currentFrameSlot) = ApngFrameData(currentFrameSlot) + MID$(chunkData, 5)
+                    END IF
+                END IF
 
-            Case "IEND"
-                Exit Do
+            CASE "IEND"
+                EXIT DO
 
-            Case Else
-                If firstIdatSeen = 0 Then
-                    If chunkType <> "acTL" And chunkType <> "fcTL" Then
+            CASE ELSE
+                IF firstIdatSeen = 0 THEN
+                    IF chunkType <> "acTL" AND chunkType <> "fcTL" THEN
                         ApngHeaderChunks(slotIndex) = ApngHeaderChunks(slotIndex) + rawChunk
-                    End If
-                End If
-        End Select
+                    END IF
+                END IF
+        END SELECT
 
         ofs = ofs + chunkLen + 12
-    Loop
+    LOOP
 
-    If Len(ApngIhdrData(slotIndex)) <> 13 Then Exit Function
-    If widthPx <= 0 Or heightPx <= 0 Then Exit Function
-    If frameCounter <= 0 Then
-        If imageDataSeen = 0 Then Exit Function
+    IF LEN(ApngIhdrData(slotIndex)) <> 13 THEN EXIT FUNCTION
+    IF widthPx <= 0 OR heightPx <= 0 THEN EXIT FUNCTION
+    IF frameCounter <= 0 THEN
+        IF imageDataSeen = 0 THEN EXIT FUNCTION
         frameCounter = 1
-    End If
+    END IF
 
-    If animatedFlag <> 0 And declaredFrames > 0 Then
-        If declaredFrames <> frameCounter Then
+    IF animatedFlag <> 0 AND declaredFrames > 0 THEN
+        IF declaredFrames <> frameCounter THEN
             ' Keep practical tolerance: use parsed frame count.
-        End If
-    End If
+        END IF
+    END IF
 
-    If frameStart + frameCounter > ApngFrameTail Then ApngFrameTail = frameStart + frameCounter
+    IF frameStart + frameCounter > ApngFrameTail THEN ApngFrameTail = frameStart + frameCounter
 
     ApngItems(slotIndex).Used = -1
     ApngItems(slotIndex).IsAnimated = animatedFlag
@@ -262,7 +260,7 @@ Function ApngOpen& (fileName As String)
     ApngItems(slotIndex).FrameStart = frameStart
     ApngItems(slotIndex).FrameCount = frameCounter
     ApngItems(slotIndex).PlayCount = declaredPlays
-    If animatedFlag = 0 Then ApngItems(slotIndex).PlayCount = 1
+    IF animatedFlag = 0 THEN ApngItems(slotIndex).PlayCount = 1
     ApngItems(slotIndex).DefaultImageIncluded = defaultIncluded
     ApngItems(slotIndex).CurrentFrame = 0
     ApngItems(slotIndex).Playing = 0
@@ -273,79 +271,79 @@ Function ApngOpen& (fileName As String)
     ApngItems(slotIndex).LastRawTimer = 0
     ApngItems(slotIndex).CompletedLoops = 0
     ApngErrorTexts(slotIndex) = ""
-    ApngItems(slotIndex).CanvasHandle = _NewImage(widthPx, heightPx, 32)
+    ApngItems(slotIndex).CanvasHandle = _NEWIMAGE(widthPx, heightPx, 32)
     ApngItems(slotIndex).BackupHandle = 0
     ApngItems(slotIndex).RenderedFrame = -1
 
-    If ApngItems(slotIndex).CanvasHandle > -2 Then
+    IF ApngItems(slotIndex).CanvasHandle > -2 THEN
         ApngItems(slotIndex).Used = 0
         ApngHeaderChunks(slotIndex) = ""
         ApngIhdrData(slotIndex) = ""
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     ApngOpen = slotIndex
-End Function
+END FUNCTION
 
 ' Purpose: Open an APNG file, parse core PNG structures, and prepare APNG playback state.
 ' Parameters: fileName = string holding a file path or a human-readable name; maxWidth = maximum allowed width; maxHeight = maximum allowed height; maxFrames = maximum allowed frames.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long, maxFrames As Long)
+FUNCTION ApngOpenLimit& (fileName AS STRING, maxWidth AS LONG, maxHeight AS LONG, maxFrames AS LONG)
     ' Variable: ok stores the success flag returned by the current routine.
-    Dim ok As Integer
+    DIM ok AS INTEGER
     ' Variable: isAnimated stores the Boolean-like flag used by the current routine.
-    Dim isAnimated As Integer
+    DIM isAnimated AS INTEGER
     ' Variable: widthPx stores the decoded image width in pixels.
-    Dim widthPx As Long
+    DIM widthPx AS LONG
     ' Variable: heightPx stores the decoded image height in pixels.
-    Dim heightPx As Long
+    DIM heightPx AS LONG
     ' Variable: frameCount stores the total number of frames available for the current animation.
-    Dim frameCount As Long
+    DIM frameCount AS LONG
 
     ApngOpenLimit = -1
-    If maxWidth <= 0 And maxHeight <= 0 And maxFrames <= 0 Then
+    IF maxWidth <= 0 AND maxHeight <= 0 AND maxFrames <= 0 THEN
         ApngOpenLimit = ApngOpen(fileName)
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     ApngProbe fileName, ok, isAnimated, widthPx, heightPx, frameCount
-    If ok = 0 Then Exit Function
-    If maxWidth > 0 Then
-        If widthPx > maxWidth Then Exit Function
-    End If
-    If maxHeight > 0 Then
-        If heightPx > maxHeight Then Exit Function
-    End If
-    If maxFrames > 0 Then
-        If frameCount > maxFrames Then Exit Function
-    End If
+    IF ok = 0 THEN EXIT FUNCTION
+    IF maxWidth > 0 THEN
+        IF widthPx > maxWidth THEN EXIT FUNCTION
+    END IF
+    IF maxHeight > 0 THEN
+        IF heightPx > maxHeight THEN EXIT FUNCTION
+    END IF
+    IF maxFrames > 0 THEN
+        IF frameCount > maxFrames THEN EXIT FUNCTION
+    END IF
 
     ApngOpenLimit = ApngOpen(fileName)
-End Function
+END FUNCTION
 
 ' Purpose: Read APNG metadata without fully opening the animation.
 ' Parameters: fileName = string holding a file path or a human-readable name; ok = success flag returned by the current routine; isAnimated = Boolean-like flag used by the current routine; widthPx = decoded image width in pixels; heightPx = decoded image height in pixels; frameCount = total number of frames available for the current animation.
-Sub ApngProbe (fileName As String, ok As Integer, isAnimated As Integer, widthPx As Long, heightPx As Long, frameCount As Long)
+SUB ApngProbe (fileName AS STRING, ok AS INTEGER, isAnimated AS INTEGER, widthPx AS LONG, heightPx AS LONG, frameCount AS LONG)
     ' Variable: pngData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim pngData As String
+    DIM pngData AS STRING
     ' Variable: ofs stores the current offset into packed or unpacked data.
-    Dim ofs As Long
+    DIM ofs AS LONG
     ' Variable: dataLen stores the buffer that holds raw, packed, or decoded byte data.
-    Dim dataLen As Long
+    DIM dataLen AS LONG
     ' Variable: chunkLen stores the working value for chunk len.
-    Dim chunkLen As Long
+    DIM chunkLen AS LONG
     ' Variable: chunkType stores the working value for chunk type.
-    Dim chunkType As String
+    DIM chunkType AS STRING
     ' Variable: chunkData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim chunkData As String
+    DIM chunkData AS STRING
     ' Variable: firstIdatSeen stores the working value for first idat seen.
-    Dim firstIdatSeen As Integer
+    DIM firstIdatSeen AS INTEGER
     ' Variable: gotIhdr stores the working value for got ihdr.
-    Dim gotIhdr As Integer
+    DIM gotIhdr AS INTEGER
     ' Variable: gotActl stores the working value for got actl.
-    Dim gotActl As Integer
+    DIM gotActl AS INTEGER
     ' Variable: sigText stores the working value for sig text.
-    Dim sigText As String
+    DIM sigText AS STRING
 
     ok = 0
     isAnimated = 0
@@ -353,77 +351,77 @@ Sub ApngProbe (fileName As String, ok As Integer, isAnimated As Integer, widthPx
     heightPx = 0
     frameCount = 0
 
-    If _FileExists(fileName) = 0 Then Exit Sub
-    pngData = _ReadFile$(fileName)
-    If Len(pngData) < 33 Then Exit Sub
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT SUB
+    pngData = _READFILE$(fileName)
+    IF LEN(pngData) < 33 THEN EXIT SUB
 
     sigText = ApngPngSignature
-    If Left$(pngData, 8) <> sigText Then Exit Sub
+    IF LEFT$(pngData, 8) <> sigText THEN EXIT SUB
 
     ofs = 9
-    dataLen = Len(pngData)
+    dataLen = LEN(pngData)
     firstIdatSeen = 0
     gotIhdr = 0
     gotActl = 0
 
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While ofs + 11 <= dataLen
+    DO WHILE ofs + 11 <= dataLen
         chunkLen = ApngReadUInt32(pngData, ofs)
-        chunkType = Mid$(pngData, ofs + 4, 4)
-        If chunkLen < 0 Then Exit Do
-        If ofs + 11 + chunkLen > dataLen Then Exit Do
-        chunkData = Mid$(pngData, ofs + 8, chunkLen)
+        chunkType = MID$(pngData, ofs + 4, 4)
+        IF chunkLen < 0 THEN EXIT DO
+        IF ofs + 11 + chunkLen > dataLen THEN EXIT DO
+        chunkData = MID$(pngData, ofs + 8, chunkLen)
 
-        Select Case chunkType
-            Case "IHDR"
-                If chunkLen <> 13 Then Exit Do
+        SELECT CASE chunkType
+            CASE "IHDR"
+                IF chunkLen <> 13 THEN EXIT DO
                 widthPx = ApngReadUInt32(chunkData, 1)
                 heightPx = ApngReadUInt32(chunkData, 5)
                 gotIhdr = -1
 
-            Case "acTL"
-                If firstIdatSeen = 0 Then
+            CASE "acTL"
+                IF firstIdatSeen = 0 THEN
                     gotActl = -1
                     isAnimated = -1
-                End If
+                END IF
 
-            Case "fcTL"
+            CASE "fcTL"
                 frameCount = frameCount + 1
 
-            Case "IDAT"
+            CASE "IDAT"
                 firstIdatSeen = -1
 
-            Case "IEND"
-                Exit Do
-        End Select
+            CASE "IEND"
+                EXIT DO
+        END SELECT
 
         ofs = ofs + chunkLen + 12
-    Loop
+    LOOP
 
-    If gotIhdr = 0 Then Exit Sub
-    If widthPx <= 0 Or heightPx <= 0 Then Exit Sub
+    IF gotIhdr = 0 THEN EXIT SUB
+    IF widthPx <= 0 OR heightPx <= 0 THEN EXIT SUB
 
-    If gotActl = 0 Then
+    IF gotActl = 0 THEN
         frameCount = 1
         isAnimated = 0
-    Else
-        If frameCount <= 0 Then Exit Sub
-    End If
+    ELSE
+        IF frameCount <= 0 THEN EXIT SUB
+    END IF
 
     ok = -1
-End Sub
+END SUB
 
 ' Purpose: Release all resources owned by one APNG decoder instance.
 ' Parameters: apngId = working value for APNG id.
-Sub ApngClose (apngId As Long)
+SUB ApngClose (apngId AS LONG)
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
     ' Variable: firstFrame stores the working value for first frame.
-    Dim firstFrame As Long
+    DIM firstFrame AS LONG
     ' Variable: lastFrame stores the working value for last frame.
-    Dim lastFrame As Long
+    DIM lastFrame AS LONG
 
-    If ApngValidId(apngId) = 0 Then Exit Sub
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
 
     ApngFreeHandle ApngItems(apngId).CanvasHandle
     ApngFreeHandle ApngItems(apngId).BackupHandle
@@ -431,10 +429,10 @@ Sub ApngClose (apngId As Long)
     firstFrame = ApngItems(apngId).FrameStart
     lastFrame = firstFrame + ApngItems(apngId).FrameCount - 1
 
-    If ApngItems(apngId).FrameCount > 0 Then
+    IF ApngItems(apngId).FrameCount > 0 THEN
         ' Loop purpose: iterate through animation frames while building, seeking, or updating playback state.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For frameSlot = firstFrame To lastFrame
+        FOR frameSlot = firstFrame TO lastFrame
             ApngFreeHandle ApngFrames(frameSlot).ImageHandle
             ApngFrames(frameSlot).Used = 0
             ApngFrames(frameSlot).WidthPx = 0
@@ -447,8 +445,8 @@ Sub ApngClose (apngId As Long)
             ApngFrames(frameSlot).BlendOp = 0
             ApngFrames(frameSlot).ImageHandle = 0
             ApngFrameData(frameSlot) = ""
-        Next frameSlot
-    End If
+        NEXT frameSlot
+    END IF
 
     ApngItems(apngId).Used = 0
     ApngItems(apngId).IsAnimated = 0
@@ -473,37 +471,37 @@ Sub ApngClose (apngId As Long)
     ApngHeaderChunks(apngId) = ""
     ApngIhdrData(apngId) = ""
     ApngErrorTexts(apngId) = ""
-End Sub
+END SUB
 
 ' Purpose: Routine for the APNG backend: handle APNG free all.
-Sub ApngFreeAll ()
+SUB ApngFreeAll ()
     ' Variable: apngId stores the working value for APNG id.
-    Dim apngId As Long
+    DIM apngId AS LONG
 
     ' Loop purpose: walk through every currently allocated element in ApngItems.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For apngId = 0 To UBound(ApngItems)
-        If ApngItems(apngId).Used <> 0 Then
+    FOR apngId = 0 TO UBOUND(ApngItems)
+        IF ApngItems(apngId).Used <> 0 THEN
             ApngClose apngId
-        End If
-    Next apngId
+        END IF
+    NEXT apngId
 
     ApngFrameTail = 0
-End Sub
+END SUB
 
 ' Purpose: Start APNG playback timing.
 ' Parameters: apngId = working value for APNG id.
-Sub ApngPlay (apngId As Long)
+SUB ApngPlay (apngId AS LONG)
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
 
-    If ApngValidId(apngId) = 0 Then Exit Sub
-    If ApngItems(apngId).FrameCount <= 0 Then Exit Sub
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
+    IF ApngItems(apngId).FrameCount <= 0 THEN EXIT SUB
 
     ' Start playback from a fresh absolute schedule based on the current frame.
-    nowValue = Timer
+    nowValue = TIMER
     delaySec = ApngFrameDelay(apngId, ApngItems(apngId).CurrentFrame)
 
     ApngItems(apngId).Playing = -1
@@ -512,14 +510,14 @@ Sub ApngPlay (apngId As Long)
     ApngItems(apngId).RemainingDelay = 0
     ApngItems(apngId).LastRawTimer = nowValue
     ApngItems(apngId).NextTick = ApngTimeAdd(nowValue, delaySec)
-End Sub
+END SUB
 
 ' Purpose: Stop APNG playback timing.
 ' Parameters: apngId = working value for APNG id.
-Sub ApngStop (apngId As Long)
-    If ApngValidId(apngId) = 0 Then Exit Sub
+SUB ApngStop (apngId AS LONG)
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
     ' Variable: N stores the working value for n.
-    dim N as long
+    DIM N AS LONG
     ApngItems(apngId).Playing = 0
     ApngItems(apngId).Paused = 0
     ApngItems(apngId).CurrentFrame = 0
@@ -529,382 +527,382 @@ Sub ApngStop (apngId As Long)
     ApngItems(apngId).CompletedLoops = 0
 
     ApngResetRenderState apngId
-    If ApngItems(apngId).FrameCount > 0 Then
-    N = ApngEnsureFrameRendered (apngId, 0)
-    End If
-End Sub
+    IF ApngItems(apngId).FrameCount > 0 THEN
+        N = ApngEnsureFrameRendered(apngId, 0)
+    END IF
+END SUB
 
 ' Purpose: Pause APNG playback while keeping the current frame.
 ' Parameters: apngId = working value for APNG id.
-Sub ApngPause (apngId As Long)
+SUB ApngPause (apngId AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
 
-    If ApngValidId(apngId) = 0 Then Exit Sub
-    If ApngItems(apngId).Playing = 0 Then Exit Sub
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
+    IF ApngItems(apngId).Playing = 0 THEN EXIT SUB
 
     ' Preserve the remaining frame time so resume continues the current frame.
-    nowValue = Timer
+    nowValue = TIMER
     ApngItems(apngId).RemainingDelay = ApngTimeRemaining(ApngItems(apngId).NextTick, nowValue)
     ApngItems(apngId).LastRawTimer = nowValue
     ApngItems(apngId).Playing = 0
     ApngItems(apngId).Paused = -1
-End Sub
+END SUB
 
 ' Purpose: Resume APNG playback after a pause.
 ' Parameters: apngId = working value for APNG id.
-Sub ApngResume (apngId As Long)
+SUB ApngResume (apngId AS LONG)
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
 
-    If ApngValidId(apngId) = 0 Then Exit Sub
-    If ApngItems(apngId).Paused = 0 Then Exit Sub
-    If ApngItems(apngId).FrameCount <= 0 Then Exit Sub
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
+    IF ApngItems(apngId).Paused = 0 THEN EXIT SUB
+    IF ApngItems(apngId).FrameCount <= 0 THEN EXIT SUB
 
     ' Resume from the leftover delay instead of restarting a full frame delay.
-    nowValue = Timer
+    nowValue = TIMER
     delaySec = ApngItems(apngId).RemainingDelay
-    If delaySec <= 0 Then delaySec = ApngFrameDelay(apngId, ApngItems(apngId).CurrentFrame)
+    IF delaySec <= 0 THEN delaySec = ApngFrameDelay(apngId, ApngItems(apngId).CurrentFrame)
 
     ApngItems(apngId).Paused = 0
     ApngItems(apngId).Playing = -1
     ApngItems(apngId).LastRawTimer = nowValue
     ApngItems(apngId).NextTick = ApngTimeAdd(nowValue, delaySec)
     ApngItems(apngId).RemainingDelay = 0
-End Sub
+END SUB
 
 ' Purpose: Routine for the APNG backend: handle APNG set loop.
 ' Parameters: apngId = working value for APNG id; loopMode = loop policy that controls whether playback stops or repeats.
-Sub ApngSetLoop (apngId As Long, loopMode As Long)
-    If ApngValidId(apngId) = 0 Then Exit Sub
+SUB ApngSetLoop (apngId AS LONG, loopMode AS LONG)
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
 
-    Select Case loopMode
-        Case APNG_LOOP_FILE_DEFAULT, APNG_LOOP_FOREVER, APNG_LOOP_ONCE
+    SELECT CASE loopMode
+        CASE APNG_LOOP_FILE_DEFAULT, APNG_LOOP_FOREVER, APNG_LOOP_ONCE
             ApngItems(apngId).LoopMode = loopMode
-        Case Else
+        CASE ELSE
             ApngItems(apngId).LoopMode = APNG_LOOP_FILE_DEFAULT
-    End Select
-End Sub
+    END SELECT
+END SUB
 
 ' Purpose: Advance APNG playback based on elapsed time and frame delays.
 ' Parameters: apngId = working value for APNG id.
-Sub ApngUpdate (apngId As Long)
+SUB ApngUpdate (apngId AS LONG)
     ' Variable: tickNow stores the working value for tick now.
-    Dim tickNow As Double
+    DIM tickNow AS DOUBLE
     ' Variable: nextFrame stores the working value for next frame.
-    Dim nextFrame As Long
+    DIM nextFrame AS LONG
     ' Variable: allowLoop stores the working value for allow loop.
-    Dim allowLoop As Integer
+    DIM allowLoop AS INTEGER
     ' Variable: playCount stores the count used to size or iterate the current data set.
-    Dim playCount As Long
+    DIM playCount AS LONG
     ' Variable: N stores the working value for n.
-    Dim N As Long
+    DIM N AS LONG
     ' Variable: stepCount stores the count used to size or iterate the current data set.
-    Dim stepCount As Long
+    DIM stepCount AS LONG
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: jumpFlag stores the working value for jump flag.
-    Dim jumpFlag As Integer
+    DIM jumpFlag AS INTEGER
 
-    If ApngValidId(apngId) = 0 Then Exit Sub
-    If ApngItems(apngId).Playing = 0 Then Exit Sub
-    If ApngItems(apngId).FrameCount <= 1 Then Exit Sub
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
+    IF ApngItems(apngId).Playing = 0 THEN EXIT SUB
+    IF ApngItems(apngId).FrameCount <= 1 THEN EXIT SUB
 
-    tickNow = Timer
+    tickNow = TIMER
 
     ' Ignore manual system clock jumps but keep the normal midnight wrap working.
     jumpFlag = 0
-    If ApngItems(apngId).LastRawTimer > 0 Then
+    IF ApngItems(apngId).LastRawTimer > 0 THEN
         jumpFlag = ApngClockJumped(apngId, ApngItems(apngId).LastRawTimer, tickNow)
-    End If
-    If jumpFlag Then
+    END IF
+    IF jumpFlag THEN
         ApngResyncAfterClockJump apngId, tickNow
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
     ApngItems(apngId).LastRawTimer = tickNow
-    If ApngTimeReached(ApngItems(apngId).NextTick, tickNow) = 0 Then Exit Sub
+    IF ApngTimeReached(ApngItems(apngId).NextTick, tickNow) = 0 THEN EXIT SUB
 
     ' Advance against the scheduled timeline so playback can catch up after lag.
     stepCount = 0
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While ApngTimeReached(ApngItems(apngId).NextTick, tickNow)
+    DO WHILE ApngTimeReached(ApngItems(apngId).NextTick, tickNow)
         nextFrame = ApngItems(apngId).CurrentFrame + 1
 
-        If nextFrame >= ApngItems(apngId).FrameCount Then
+        IF nextFrame >= ApngItems(apngId).FrameCount THEN
             allowLoop = 0
 
-            Select Case ApngItems(apngId).LoopMode
-                Case APNG_LOOP_FOREVER
+            SELECT CASE ApngItems(apngId).LoopMode
+                CASE APNG_LOOP_FOREVER
                     allowLoop = -1
 
-                Case APNG_LOOP_ONCE
+                CASE APNG_LOOP_ONCE
                     allowLoop = 0
 
-                Case Else
+                CASE ELSE
                     playCount = ApngItems(apngId).PlayCount
-                    If playCount = 0 Then
+                    IF playCount = 0 THEN
                         allowLoop = -1
-                    ElseIf (ApngItems(apngId).CompletedLoops + 1) < playCount Then
+                    ELSEIF (ApngItems(apngId).CompletedLoops + 1) < playCount THEN
                         allowLoop = -1
-                    End If
-            End Select
+                    END IF
+            END SELECT
 
-            If allowLoop = 0 Then
+            IF allowLoop = 0 THEN
                 ApngItems(apngId).CurrentFrame = ApngItems(apngId).FrameCount - 1
                 ApngItems(apngId).Playing = 0
                 ApngItems(apngId).Paused = 0
                 ApngItems(apngId).RemainingDelay = 0
                 N = ApngEnsureFrameRendered(apngId, ApngItems(apngId).CurrentFrame)
-                Exit Sub
-            End If
+                EXIT SUB
+            END IF
 
             ApngItems(apngId).CompletedLoops = ApngItems(apngId).CompletedLoops + 1
             nextFrame = 0
-        End If
+        END IF
 
         ApngItems(apngId).CurrentFrame = nextFrame
         delaySec = ApngFrameDelay(apngId, nextFrame)
         ApngItems(apngId).NextTick = ApngTimeAdd(ApngItems(apngId).NextTick, delaySec)
 
         stepCount = stepCount + 1
-        If stepCount >= 32 Then Exit Do
-    Loop
-End Sub
+        IF stepCount >= 32 THEN EXIT DO
+    LOOP
+END SUB
 
 ' Purpose: Draw the current APNG frame to the active QB64 target.
 ' Parameters: apngId = working value for APNG id; x = horizontal pixel or coordinate index; y = vertical pixel or coordinate index.
-Sub ApngDraw (apngId As Long, x As Long, y As Long)
+SUB ApngDraw (apngId AS LONG, x AS LONG, y AS LONG)
     ' Variable: boxWidth stores the width value used by this routine.
-    Dim boxWidth As Long
+    DIM boxWidth AS LONG
     ' Variable: boxHeight stores the height value used by this routine.
-    Dim boxHeight As Long
+    DIM boxHeight AS LONG
     ' Variable: imgWidth stores the width value used by this routine.
-    Dim imgWidth As Long
+    DIM imgWidth AS LONG
     ' Variable: imgHeight stores the height value used by this routine.
-    Dim imgHeight As Long
+    DIM imgHeight AS LONG
     ' Variable: screenWidth stores the width value used by this routine.
-    Dim screenWidth As Long
+    DIM screenWidth AS LONG
     ' Variable: screenHeight stores the height value used by this routine.
-    Dim screenHeight As Long
+    DIM screenHeight AS LONG
 
-    If ApngValidId(apngId) = 0 Then Exit Sub
-    If ApngEnsureFrameRendered(apngId, ApngItems(apngId).CurrentFrame) = 0 Then Exit Sub
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
+    IF ApngEnsureFrameRendered(apngId, ApngItems(apngId).CurrentFrame) = 0 THEN EXIT SUB
 
     imgWidth = ApngItems(apngId).WidthPx
     imgHeight = ApngItems(apngId).HeightPx
-    screenWidth = _Width
-    screenHeight = _Height
+    screenWidth = _WIDTH
+    screenHeight = _HEIGHT
 
     boxWidth = screenWidth - x
     boxHeight = screenHeight - y
 
-    If boxWidth <= 0 Or boxHeight <= 0 Then Exit Sub
+    IF boxWidth <= 0 OR boxHeight <= 0 THEN EXIT SUB
 
-    If imgWidth <= boxWidth And imgHeight <= boxHeight Then
-        _PutImage (x, y), ApngItems(apngId).CanvasHandle
-    Else
+    IF imgWidth <= boxWidth AND imgHeight <= boxHeight THEN
+        _PUTIMAGE (x, y), ApngItems(apngId).CanvasHandle
+    ELSE
         ApngDrawFit apngId, x, y, boxWidth, boxHeight
-    End If
-End Sub
+    END IF
+END SUB
 
 ' Purpose: Draw the current APNG frame to the active QB64 target.
 ' Parameters: apngId = working value for APNG id; x = horizontal pixel or coordinate index; y = vertical pixel or coordinate index; boxWidth = width value used by this routine; boxHeight = height value used by this routine.
-Sub ApngDrawFit (apngId As Long, x As Long, y As Long, boxWidth As Long, boxHeight As Long)
+SUB ApngDrawFit (apngId AS LONG, x AS LONG, y AS LONG, boxWidth AS LONG, boxHeight AS LONG)
     ' Variable: srcWidth stores the width value used by this routine.
-    Dim srcWidth As Long
+    DIM srcWidth AS LONG
     ' Variable: srcHeight stores the height value used by this routine.
-    Dim srcHeight As Long
+    DIM srcHeight AS LONG
     ' Variable: scaleX stores the working value for scale x.
-    Dim scaleX As Double
+    DIM scaleX AS DOUBLE
     ' Variable: scaleY stores the working value for scale y.
-    Dim scaleY As Double
+    DIM scaleY AS DOUBLE
     ' Variable: scaleValue stores the working value for scale value.
-    Dim scaleValue As Double
+    DIM scaleValue AS DOUBLE
     ' Variable: drawWidth stores the width value used by this routine.
-    Dim drawWidth As Long
+    DIM drawWidth AS LONG
     ' Variable: drawHeight stores the height value used by this routine.
-    Dim drawHeight As Long
+    DIM drawHeight AS LONG
     ' Variable: offsetX stores the working value for offset x.
-    Dim offsetX As Long
+    DIM offsetX AS LONG
     ' Variable: offsetY stores the working value for offset y.
-    Dim offsetY As Long
+    DIM offsetY AS LONG
 
-    If ApngValidId(apngId) = 0 Then Exit Sub
-    If boxWidth <= 0 Or boxHeight <= 0 Then Exit Sub
-    If ApngEnsureFrameRendered(apngId, ApngItems(apngId).CurrentFrame) = 0 Then Exit Sub
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
+    IF boxWidth <= 0 OR boxHeight <= 0 THEN EXIT SUB
+    IF ApngEnsureFrameRendered(apngId, ApngItems(apngId).CurrentFrame) = 0 THEN EXIT SUB
 
     srcWidth = ApngItems(apngId).WidthPx
     srcHeight = ApngItems(apngId).HeightPx
-    If srcWidth <= 0 Or srcHeight <= 0 Then Exit Sub
+    IF srcWidth <= 0 OR srcHeight <= 0 THEN EXIT SUB
 
     scaleX = boxWidth / srcWidth
     scaleY = boxHeight / srcHeight
     scaleValue = scaleX
-    If scaleY < scaleValue Then scaleValue = scaleY
-    If scaleValue <= 0 Then Exit Sub
+    IF scaleY < scaleValue THEN scaleValue = scaleY
+    IF scaleValue <= 0 THEN EXIT SUB
 
-    drawWidth = CLng(srcWidth * scaleValue)
-    drawHeight = CLng(srcHeight * scaleValue)
-    If drawWidth < 1 Then drawWidth = 1
-    If drawHeight < 1 Then drawHeight = 1
+    drawWidth = CLNG(srcWidth * scaleValue)
+    drawHeight = CLNG(srcHeight * scaleValue)
+    IF drawWidth < 1 THEN drawWidth = 1
+    IF drawHeight < 1 THEN drawHeight = 1
 
     offsetX = x + (boxWidth - drawWidth) \ 2
     offsetY = y + (boxHeight - drawHeight) \ 2
 
-    _PutImage (offsetX, offsetY)-(offsetX + drawWidth - 1, offsetY + drawHeight - 1), ApngItems(apngId).CanvasHandle, 0
-End Sub
+    _PUTIMAGE (offsetX, offsetY)-(offsetX + drawWidth - 1, offsetY + drawHeight - 1), ApngItems(apngId).CanvasHandle, 0
+END SUB
 
 ' Purpose: Draw the current APNG frame to the active QB64 target.
 ' Parameters: apngId = working value for APNG id; x = horizontal pixel or coordinate index; y = vertical pixel or coordinate index; boxWidth = width value used by this routine; boxHeight = height value used by this routine.
-Sub ApngDrawStretch (apngId As Long, x As Long, y As Long, boxWidth As Long, boxHeight As Long)
-    If ApngValidId(apngId) = 0 Then Exit Sub
-    If boxWidth <= 0 Or boxHeight <= 0 Then Exit Sub
-    If ApngEnsureFrameRendered(apngId, ApngItems(apngId).CurrentFrame) = 0 Then Exit Sub
+SUB ApngDrawStretch (apngId AS LONG, x AS LONG, y AS LONG, boxWidth AS LONG, boxHeight AS LONG)
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
+    IF boxWidth <= 0 OR boxHeight <= 0 THEN EXIT SUB
+    IF ApngEnsureFrameRendered(apngId, ApngItems(apngId).CurrentFrame) = 0 THEN EXIT SUB
 
-    _PutImage (x, y)-(x + boxWidth - 1, y + boxHeight - 1), ApngItems(apngId).CanvasHandle, 0
-End Sub
+    _PUTIMAGE (x, y)-(x + boxWidth - 1, y + boxHeight - 1), ApngItems(apngId).CanvasHandle, 0
+END SUB
 
 ' Purpose: Routine for the APNG backend: handle APNG frame count.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngFrameCount& (apngId As Long)
-    If ApngValidId(apngId) = 0 Then Exit Function
+FUNCTION ApngFrameCount& (apngId AS LONG)
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
     ApngFrameCount = ApngItems(apngId).FrameCount
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG width.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngWidth& (apngId As Long)
-    If ApngValidId(apngId) = 0 Then Exit Function
+FUNCTION ApngWidth& (apngId AS LONG)
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
     ApngWidth = ApngItems(apngId).WidthPx
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG height.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngHeight& (apngId As Long)
-    If ApngValidId(apngId) = 0 Then Exit Function
+FUNCTION ApngHeight& (apngId AS LONG)
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
     ApngHeight = ApngItems(apngId).HeightPx
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG is playing.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngIsPlaying% (apngId As Long)
-    If ApngValidId(apngId) = 0 Then Exit Function
+FUNCTION ApngIsPlaying% (apngId AS LONG)
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
     ApngIsPlaying = ApngItems(apngId).Playing
-End Function
+END FUNCTION
 
 ' Purpose: Seek to a specific APNG frame or time position.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngSeekFrame% (apngId As Long, frameIndex As Long)
+FUNCTION ApngSeekFrame% (apngId AS LONG, frameIndex AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
     ApngSeekFrame = 0
-    If ApngValidId(apngId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= ApngItems(apngId).FrameCount Then Exit Function
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= ApngItems(apngId).FrameCount THEN EXIT FUNCTION
 
-    If ApngEnsureFrameRendered(apngId, frameIndex) = 0 Then Exit Function
+    IF ApngEnsureFrameRendered(apngId, frameIndex) = 0 THEN EXIT FUNCTION
 
     delaySec = ApngFrameDelay(apngId, frameIndex)
-    If delaySec <= 0 Then delaySec = 1# / 30#
+    IF delaySec <= 0 THEN delaySec = 1# / 30#
 
-    nowValue = Timer
+    nowValue = TIMER
     ApngItems(apngId).CurrentFrame = frameIndex
 
-    If ApngItems(apngId).Playing Then
-        If ApngItems(apngId).Paused Then
+    IF ApngItems(apngId).Playing THEN
+        IF ApngItems(apngId).Paused THEN
             ApngItems(apngId).RemainingDelay = delaySec
             ApngItems(apngId).LastRawTimer = nowValue
-        Else
+        ELSE
             ApngItems(apngId).LastRawTimer = nowValue
             ApngItems(apngId).NextTick = ApngTimeAdd(nowValue, delaySec)
             ApngItems(apngId).RemainingDelay = 0
-        End If
-    Else
+        END IF
+    ELSE
         ApngItems(apngId).NextTick = 0
         ApngItems(apngId).RemainingDelay = 0
         ApngItems(apngId).LastRawTimer = 0
-    End If
+    END IF
 
     ApngSeekFrame = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG is loaded.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngIsLoaded% (apngId As Long)
+FUNCTION ApngIsLoaded% (apngId AS LONG)
     ApngIsLoaded = ApngValidId(apngId)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG format.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngFormat& (apngId As Long)
+FUNCTION ApngFormat& (apngId AS LONG)
     ApngFormat = 0
-    If ApngValidId(apngId) = 0 Then Exit Function
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
 
-    If ApngItems(apngId).IsAnimated <> 0 Then
+    IF ApngItems(apngId).IsAnimated <> 0 THEN
         ApngFormat = APNG_FMT_APNG
-    Else
+    ELSE
         ApngFormat = APNG_FMT_PNG
-    End If
-End Function
+    END IF
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG error.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngError$ (apngId As Long)
+FUNCTION ApngError$ (apngId AS LONG)
     ApngError = ""
-    If apngId < 0 Then Exit Function
-    If apngId > UBound(ApngErrorTexts) Then Exit Function
+    IF apngId < 0 THEN EXIT FUNCTION
+    IF apngId > UBOUND(ApngErrorTexts) THEN EXIT FUNCTION
     ApngError = ApngErrorTexts(apngId)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG save frame.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item; fileName = string holding a file path or a human-readable name.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngSaveFrame% (apngId As Long, frameIndex As Long, fileName As String)
+FUNCTION ApngSaveFrame% (apngId AS LONG, frameIndex AS LONG, fileName AS STRING)
     ' Variable: saveCanvas stores the working value for save canvas.
-    Dim saveCanvas As Long
+    DIM saveCanvas AS LONG
     ' Variable: oldCanvas stores the working value for old canvas.
-    Dim oldCanvas As Long
+    DIM oldCanvas AS LONG
     ' Variable: oldBackup stores the working value for old backup.
-    Dim oldBackup As Long
+    DIM oldBackup AS LONG
     ' Variable: oldRendered stores the working value for old rendered.
-    Dim oldRendered As Long
+    DIM oldRendered AS LONG
     ' Variable: okResult stores the working value for ok result.
-    Dim okResult As Integer
+    DIM okResult AS INTEGER
 
     ApngSaveFrame = 0
-    If ApngValidId(apngId) = 0 Then Exit Function
-    If frameIndex < 0 Or frameIndex >= ApngItems(apngId).FrameCount Then Exit Function
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 OR frameIndex >= ApngItems(apngId).FrameCount THEN EXIT FUNCTION
 
     oldCanvas = ApngItems(apngId).CanvasHandle
     oldBackup = ApngItems(apngId).BackupHandle
     oldRendered = ApngItems(apngId).RenderedFrame
 
-    saveCanvas = _NewImage(ApngItems(apngId).WidthPx, ApngItems(apngId).HeightPx, 32)
-    If saveCanvas > -2 Then Exit Function
+    saveCanvas = _NEWIMAGE(ApngItems(apngId).WidthPx, ApngItems(apngId).HeightPx, 32)
+    IF saveCanvas > -2 THEN EXIT FUNCTION
 
     ApngItems(apngId).CanvasHandle = saveCanvas
     ApngItems(apngId).BackupHandle = 0
     ApngItems(apngId).RenderedFrame = -1
 
     okResult = ApngEnsureFrameRendered(apngId, frameIndex)
-    If okResult <> 0 Then
-        _SaveImage fileName, ApngItems(apngId).CanvasHandle
+    IF okResult <> 0 THEN
+        _SAVEIMAGE fileName, ApngItems(apngId).CanvasHandle
         ApngSaveFrame = -1
-    End If
+    END IF
 
     ApngFreeHandle ApngItems(apngId).BackupHandle
     ApngFreeHandle ApngItems(apngId).CanvasHandle
@@ -912,216 +910,216 @@ Function ApngSaveFrame% (apngId As Long, frameIndex As Long, fileName As String)
     ApngItems(apngId).CanvasHandle = oldCanvas
     ApngItems(apngId).BackupHandle = oldBackup
     ApngItems(apngId).RenderedFrame = oldRendered
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG current frame.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngCurrentFrame& (apngId As Long)
-    If ApngValidId(apngId) = 0 Then Exit Function
+FUNCTION ApngCurrentFrame& (apngId AS LONG)
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
     ApngCurrentFrame = ApngItems(apngId).CurrentFrame
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG alloc slot.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngAllocSlot&
+FUNCTION ApngAllocSlot&
     ' Variable: itemIndex stores the index variable used to address the current item.
-    Dim itemIndex As Long
+    DIM itemIndex AS LONG
     ' Variable: lastIndex stores the index variable used to address the current item.
-    Dim lastIndex As Long
+    DIM lastIndex AS LONG
     ' Variable: newIndex stores the index variable used to address the current item.
-    Dim newIndex As Long
+    DIM newIndex AS LONG
 
     ApngInitStorageIfNeeded
-    lastIndex = UBound(ApngItems)
+    lastIndex = UBOUND(ApngItems)
     ' Loop purpose: use itemIndex as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For itemIndex = 0 To lastIndex
-        If ApngItems(itemIndex).Used = 0 Then
+    FOR itemIndex = 0 TO lastIndex
+        IF ApngItems(itemIndex).Used = 0 THEN
             ApngAllocSlot = itemIndex
-            Exit Function
-        End If
-    Next itemIndex
+            EXIT FUNCTION
+        END IF
+    NEXT itemIndex
 
     newIndex = lastIndex + 1
     ApngEnsureItemCapacity newIndex
     ApngAllocSlot = newIndex
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG append frame slot.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngAppendFrameSlot&
+FUNCTION ApngAppendFrameSlot&
     ' Variable: slotIndex stores the slot number inside the module-wide storage arrays.
-    Dim slotIndex As Long
+    DIM slotIndex AS LONG
 
     ApngInitStorageIfNeeded
     slotIndex = ApngFrameTail
     ApngEnsureFrameCapacity slotIndex
     ApngFrameTail = ApngFrameTail + 1
     ApngAppendFrameSlot = slotIndex
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG valid id.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngValidId% (apngId As Long)
-    If apngId < 0 Then Exit Function
-    If apngId > UBound(ApngItems) Then Exit Function
-    If ApngItems(apngId).Used = 0 Then Exit Function
+FUNCTION ApngValidId% (apngId AS LONG)
+    IF apngId < 0 THEN EXIT FUNCTION
+    IF apngId > UBOUND(ApngItems) THEN EXIT FUNCTION
+    IF ApngItems(apngId).Used = 0 THEN EXIT FUNCTION
     ApngValidId = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG reset render state.
 ' Parameters: apngId = working value for APNG id.
-Sub ApngResetRenderState (apngId As Long)
+SUB ApngResetRenderState (apngId AS LONG)
     ApngFreeHandle ApngItems(apngId).CanvasHandle
     ApngFreeHandle ApngItems(apngId).BackupHandle
 
-    ApngItems(apngId).CanvasHandle = _NewImage(ApngItems(apngId).WidthPx, ApngItems(apngId).HeightPx, 32)
+    ApngItems(apngId).CanvasHandle = _NEWIMAGE(ApngItems(apngId).WidthPx, ApngItems(apngId).HeightPx, 32)
     ApngItems(apngId).BackupHandle = 0
     ApngItems(apngId).RenderedFrame = -1
-End Sub
+END SUB
 
 ' Purpose: Routine for the APNG backend: handle APNG ensure frame rendered.
 ' Parameters: apngId = working value for APNG id; targetFrame = working value for target frame.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngEnsureFrameRendered% (apngId As Long, targetFrame As Long)
+FUNCTION ApngEnsureFrameRendered% (apngId AS LONG, targetFrame AS LONG)
     ' Variable: renderIndex stores the index variable used to address the current item.
-    Dim renderIndex As Long
+    DIM renderIndex AS LONG
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
     ' Variable: prevFrame stores the working value for prev frame.
-    Dim prevFrame As Long
+    DIM prevFrame AS LONG
     ' Variable: disposeOp stores the working value for dispose op.
-    Dim disposeOp As Integer
+    DIM disposeOp AS INTEGER
 
     ApngEnsureFrameRendered = 0
-    If ApngValidId(apngId) = 0 Then Exit Function
-    If targetFrame < 0 Or targetFrame >= ApngItems(apngId).FrameCount Then Exit Function
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
+    IF targetFrame < 0 OR targetFrame >= ApngItems(apngId).FrameCount THEN EXIT FUNCTION
 
-    If ApngItems(apngId).CanvasHandle > -2 Then Exit Function
+    IF ApngItems(apngId).CanvasHandle > -2 THEN EXIT FUNCTION
 
-    If ApngItems(apngId).RenderedFrame > targetFrame Then
+    IF ApngItems(apngId).RenderedFrame > targetFrame THEN
         ApngResetRenderState apngId
-    End If
+    END IF
 
     ' Loop purpose: iterate through animation frames while building, seeking, or updating playback state.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For renderIndex = ApngItems(apngId).RenderedFrame + 1 To targetFrame
-        If renderIndex > 0 Then
+    FOR renderIndex = ApngItems(apngId).RenderedFrame + 1 TO targetFrame
+        IF renderIndex > 0 THEN
             prevFrame = renderIndex - 1
             ApngApplyDisposal apngId, prevFrame
-        End If
+        END IF
 
         frameSlot = ApngItems(apngId).FrameStart + renderIndex
         disposeOp = ApngFrames(frameSlot).DisposeOp
-        If renderIndex = 0 And disposeOp = 2 Then disposeOp = 1
-        If disposeOp = 2 Then
-            If ApngItems(apngId).BackupHandle > -2 Then
-                ApngItems(apngId).BackupHandle = _NewImage(ApngItems(apngId).WidthPx, ApngItems(apngId).HeightPx, 32)
-                If ApngItems(apngId).BackupHandle > -2 Then Exit Function
-            End If
-            _PutImage (0, 0), ApngItems(apngId).CanvasHandle, ApngItems(apngId).BackupHandle
-        End If
+        IF renderIndex = 0 AND disposeOp = 2 THEN disposeOp = 1
+        IF disposeOp = 2 THEN
+            IF ApngItems(apngId).BackupHandle > -2 THEN
+                ApngItems(apngId).BackupHandle = _NEWIMAGE(ApngItems(apngId).WidthPx, ApngItems(apngId).HeightPx, 32)
+                IF ApngItems(apngId).BackupHandle > -2 THEN EXIT FUNCTION
+            END IF
+            _PUTIMAGE (0, 0), ApngItems(apngId).CanvasHandle, ApngItems(apngId).BackupHandle
+        END IF
 
-        If ApngRenderFrameToCanvas(apngId, renderIndex) = 0 Then Exit Function
+        IF ApngRenderFrameToCanvas(apngId, renderIndex) = 0 THEN EXIT FUNCTION
         ApngItems(apngId).RenderedFrame = renderIndex
-    Next renderIndex
+    NEXT renderIndex
 
     ApngEnsureFrameRendered = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG apply disposal.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item.
-Sub ApngApplyDisposal (apngId As Long, frameIndex As Long)
+SUB ApngApplyDisposal (apngId AS LONG, frameIndex AS LONG)
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
     ' Variable: disposeOp stores the working value for dispose op.
-    Dim disposeOp As Integer
+    DIM disposeOp AS INTEGER
 
-    If frameIndex < 0 Then Exit Sub
+    IF frameIndex < 0 THEN EXIT SUB
     frameSlot = ApngItems(apngId).FrameStart + frameIndex
     disposeOp = ApngFrames(frameSlot).DisposeOp
-    If frameIndex = 0 And disposeOp = 2 Then disposeOp = 1
+    IF frameIndex = 0 AND disposeOp = 2 THEN disposeOp = 1
 
-    Select Case disposeOp
-        Case 0
+    SELECT CASE disposeOp
+        CASE 0
             ' keep canvas as-is
 
-        Case 1
+        CASE 1
             ApngClearRectInImage ApngItems(apngId).CanvasHandle, ApngItems(apngId).WidthPx, ApngItems(apngId).HeightPx, ApngFrames(frameSlot).XOffset, ApngFrames(frameSlot).YOffset, ApngFrames(frameSlot).WidthPx, ApngFrames(frameSlot).HeightPx
 
-        Case 2
-            If ApngItems(apngId).BackupHandle < -1 Then
-                _PutImage (0, 0), ApngItems(apngId).BackupHandle, ApngItems(apngId).CanvasHandle
-            Else
+        CASE 2
+            IF ApngItems(apngId).BackupHandle < -1 THEN
+                _PUTIMAGE (0, 0), ApngItems(apngId).BackupHandle, ApngItems(apngId).CanvasHandle
+            ELSE
                 ApngClearRectInImage ApngItems(apngId).CanvasHandle, ApngItems(apngId).WidthPx, ApngItems(apngId).HeightPx, ApngFrames(frameSlot).XOffset, ApngFrames(frameSlot).YOffset, ApngFrames(frameSlot).WidthPx, ApngFrames(frameSlot).HeightPx
-            End If
-    End Select
-End Sub
+            END IF
+    END SELECT
+END SUB
 
 ' Purpose: Render or composite APNG frame content into the output image.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngRenderFrameToCanvas% (apngId As Long, frameIndex As Long)
+FUNCTION ApngRenderFrameToCanvas% (apngId AS LONG, frameIndex AS LONG)
     ' Variable: frameHandle stores the handle used to reference an external or QB64 resource.
-    Dim frameHandle As Long
+    DIM frameHandle AS LONG
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
 
     ApngRenderFrameToCanvas = 0
-    If ApngValidId(apngId) = 0 Then Exit Function
-    If frameIndex < 0 Or frameIndex >= ApngItems(apngId).FrameCount Then Exit Function
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 OR frameIndex >= ApngItems(apngId).FrameCount THEN EXIT FUNCTION
 
     frameSlot = ApngItems(apngId).FrameStart + frameIndex
     frameHandle = ApngFrames(frameSlot).ImageHandle
-    If frameHandle > -2 Then
+    IF frameHandle > -2 THEN
         frameHandle = ApngPrepareFrameImage(apngId, frameIndex)
-        If frameHandle > -2 Then Exit Function
+        IF frameHandle > -2 THEN EXIT FUNCTION
         ApngFrames(frameSlot).ImageHandle = frameHandle
-    End If
+    END IF
 
-    If ApngFrames(frameSlot).BlendOp = 0 Then
+    IF ApngFrames(frameSlot).BlendOp = 0 THEN
         ApngClearRectInImage ApngItems(apngId).CanvasHandle, ApngItems(apngId).WidthPx, ApngItems(apngId).HeightPx, ApngFrames(frameSlot).XOffset, ApngFrames(frameSlot).YOffset, ApngFrames(frameSlot).WidthPx, ApngFrames(frameSlot).HeightPx
-    End If
+    END IF
 
-    _PutImage (ApngFrames(frameSlot).XOffset, ApngFrames(frameSlot).YOffset), frameHandle, ApngItems(apngId).CanvasHandle
+    _PUTIMAGE (ApngFrames(frameSlot).XOffset, ApngFrames(frameSlot).YOffset), frameHandle, ApngItems(apngId).CanvasHandle
     ApngRenderFrameToCanvas = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG build frame PNG.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngBuildFramePng$ (apngId As Long, frameIndex As Long)
+FUNCTION ApngBuildFramePng$ (apngId AS LONG, frameIndex AS LONG)
     ApngBuildFramePng = ApngBuildFramePngForCanvas(apngId, frameIndex, 0)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG build frame PNG for canvas.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item; fullCanvas = working value for full canvas.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngBuildFramePngForCanvas$ (apngId As Long, frameIndex As Long, fullCanvas As Integer)
+FUNCTION ApngBuildFramePngForCanvas$ (apngId AS LONG, frameIndex AS LONG, fullCanvas AS INTEGER)
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
     ' Variable: pngData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim pngData As String
+    DIM pngData AS STRING
     ' Variable: ihdrData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim ihdrData As String
+    DIM ihdrData AS STRING
     ' Variable: outWidth stores the width value used by this routine.
-    Dim outWidth As Long
+    DIM outWidth AS LONG
     ' Variable: outHeight stores the height value used by this routine.
-    Dim outHeight As Long
+    DIM outHeight AS LONG
 
     frameSlot = ApngItems(apngId).FrameStart + frameIndex
 
-    If fullCanvas <> 0 Then
+    IF fullCanvas <> 0 THEN
         outWidth = ApngItems(apngId).WidthPx
         outHeight = ApngItems(apngId).HeightPx
-    Else
+    ELSE
         outWidth = ApngFrames(frameSlot).WidthPx
         outHeight = ApngFrames(frameSlot).HeightPx
-    End If
+    END IF
 
-    ihdrData = ApngUInt32(outWidth) + ApngUInt32(outHeight) + Mid$(ApngIhdrData(apngId), 9, 5)
+    ihdrData = ApngUInt32(outWidth) + ApngUInt32(outHeight) + MID$(ApngIhdrData(apngId), 9, 5)
     pngData = ApngPngSignature
     pngData = pngData + ApngMakeChunk("IHDR", ihdrData)
     pngData = pngData + ApngHeaderChunks(apngId)
@@ -1129,58 +1127,58 @@ Function ApngBuildFramePngForCanvas$ (apngId As Long, frameIndex As Long, fullCa
     pngData = pngData + ApngMakeChunk("IEND", "")
 
     ApngBuildFramePngForCanvas = pngData
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG make chunk.
 ' Parameters: chunkType = working value for chunk type; chunkData = buffer that holds raw, packed, or decoded byte data.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngMakeChunk$ (chunkType As String, chunkData As String)
+FUNCTION ApngMakeChunk$ (chunkType AS STRING, chunkData AS STRING)
     ' Variable: crcValue stores the CRC value used to validate integrity of chunk data.
-    Dim crcValue As _Unsigned Long
+    DIM crcValue AS _UNSIGNED LONG
 
-    crcValue = _Crc32(chunkType + chunkData)
-    ApngMakeChunk = ApngUInt32(Len(chunkData)) + chunkType + chunkData + ApngUInt32(crcValue)
-End Function
+    crcValue = _CRC32(chunkType + chunkData)
+    ApngMakeChunk = ApngUInt32(LEN(chunkData)) + chunkType + chunkData + ApngUInt32(crcValue)
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG PNG signature.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngPngSignature$
-    ApngPngSignature = Chr$(137) + "PNG" + Chr$(13) + Chr$(10) + Chr$(26) + Chr$(10)
-End Function
+FUNCTION ApngPngSignature$
+    ApngPngSignature = CHR$(137) + "PNG" + CHR$(13) + CHR$(10) + CHR$(26) + CHR$(10)
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG u int 32.
 ' Parameters: value = working value for value.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngUInt32$ (value As _Unsigned Long)
+FUNCTION ApngUInt32$ (value AS _UNSIGNED LONG)
     ' Variable: b1 stores the working value for b 1.
-    Dim b1 As Integer
+    DIM b1 AS INTEGER
     ' Variable: b2 stores the working value for b 2.
-    Dim b2 As Integer
+    DIM b2 AS INTEGER
     ' Variable: b3 stores the working value for b 3.
-    Dim b3 As Integer
+    DIM b3 AS INTEGER
     ' Variable: b4 stores the working value for b 4.
-    Dim b4 As Integer
+    DIM b4 AS INTEGER
 
-    b1 = (value \ 16777216) And 255
-    b2 = (value \ 65536) And 255
-    b3 = (value \ 256) And 255
-    b4 = value And 255
+    b1 = (value \ 16777216) AND 255
+    b2 = (value \ 65536) AND 255
+    b3 = (value \ 256) AND 255
+    b4 = value AND 255
 
-    ApngUInt32 = Chr$(b1) + Chr$(b2) + Chr$(b3) + Chr$(b4)
-End Function
+    ApngUInt32 = CHR$(b1) + CHR$(b2) + CHR$(b3) + CHR$(b4)
+END FUNCTION
 
 ' Purpose: Read structured APNG/PNG data from the byte stream and decode it into runtime state.
 ' Parameters: textData = buffer that holds raw, packed, or decoded byte data; ofs = current offset into packed or unpacked data.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngReadUInt32& (textData As String, ofs As Long)
+FUNCTION ApngReadUInt32& (textData AS STRING, ofs AS LONG)
     ' Variable: b1 stores the working value for b 1.
-    Dim b1 As Long
+    DIM b1 AS LONG
     ' Variable: b2 stores the working value for b 2.
-    Dim b2 As Long
+    DIM b2 AS LONG
     ' Variable: b3 stores the working value for b 3.
-    Dim b3 As Long
+    DIM b3 AS LONG
     ' Variable: b4 stores the working value for b 4.
-    Dim b4 As Long
+    DIM b4 AS LONG
 
     b1 = ApngReadByte(textData, ofs)
     b2 = ApngReadByte(textData, ofs + 1)
@@ -1188,284 +1186,285 @@ Function ApngReadUInt32& (textData As String, ofs As Long)
     b4 = ApngReadByte(textData, ofs + 3)
 
     ApngReadUInt32 = ((b1 * 256 + b2) * 256 + b3) * 256 + b4
-End Function
+END FUNCTION
 
 ' Purpose: Read structured APNG/PNG data from the byte stream and decode it into runtime state.
 ' Parameters: textData = buffer that holds raw, packed, or decoded byte data; ofs = current offset into packed or unpacked data.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngReadUInt16& (textData As String, ofs As Long)
+FUNCTION ApngReadUInt16& (textData AS STRING, ofs AS LONG)
     ' Variable: b1 stores the working value for b 1.
-    Dim b1 As Long
+    DIM b1 AS LONG
     ' Variable: b2 stores the working value for b 2.
-    Dim b2 As Long
+    DIM b2 AS LONG
 
     b1 = ApngReadByte(textData, ofs)
     b2 = ApngReadByte(textData, ofs + 1)
     ApngReadUInt16 = b1 * 256 + b2
-End Function
+END FUNCTION
 
 ' Purpose: Read structured APNG/PNG data from the byte stream and decode it into runtime state.
 ' Parameters: textData = buffer that holds raw, packed, or decoded byte data; ofs = current offset into packed or unpacked data.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngReadByte% (textData As String, ofs As Long)
-    If ofs < 1 Or ofs > Len(textData) Then Exit Function
-    ApngReadByte = Asc(Mid$(textData, ofs, 1))
-End Function
+FUNCTION ApngReadByte% (textData AS STRING, ofs AS LONG)
+    IF ofs < 1 OR ofs > LEN(textData) THEN EXIT FUNCTION
+    ApngReadByte = ASC(MID$(textData, ofs, 1))
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG time add.
 ' Parameters: baseTime = time-related value used by the current routine; deltaSec = working value for delta sec.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngTimeAdd# (baseTime As Double, deltaSec As Double)
+FUNCTION ApngTimeAdd# (baseTime AS DOUBLE, deltaSec AS DOUBLE)
     ' Variable: resultTime stores the time-related value used by the current routine.
-    Dim resultTime As Double
+    DIM resultTime AS DOUBLE
 
     ' Add seconds to a TIMER value and wrap across midnight.
     ' QB64PE should not use the function name inside expressions here.
     resultTime = baseTime + deltaSec
-    If resultTime >= 86400# Then resultTime = resultTime - 86400#
+    IF resultTime >= 86400# THEN resultTime = resultTime - 86400#
 
     ApngTimeAdd = resultTime
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG time reached.
 ' Parameters: targetTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngTimeReached% (targetTime As Double, currentTime As Double)
+FUNCTION ApngTimeReached% (targetTime AS DOUBLE, currentTime AS DOUBLE)
     ' Compare TIMER values safely even when playback crosses midnight.
     ApngTimeReached = 0
 
-    If Abs(currentTime - targetTime) < 43200# Then
-        If currentTime >= targetTime Then ApngTimeReached = -1
-    Else
-        If currentTime < targetTime Then ApngTimeReached = -1
-    End If
-End Function
+    IF ABS(currentTime - targetTime) < 43200# THEN
+        IF currentTime >= targetTime THEN ApngTimeReached = -1
+    ELSE
+        IF currentTime < targetTime THEN ApngTimeReached = -1
+    END IF
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG time remaining.
 ' Parameters: targetTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngTimeRemaining# (targetTime As Double, currentTime As Double)
+FUNCTION ApngTimeRemaining# (targetTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: resultTime stores the time-related value used by the current routine.
-    Dim resultTime As Double
+    DIM resultTime AS DOUBLE
     ' Variable: reachedFlag stores the working value for reached flag.
-    Dim reachedFlag As Integer
+    DIM reachedFlag AS INTEGER
 
     ' Preserve the leftover part of the current frame when pause is pressed.
     ' Use a local variable so the function name is only assigned at the end.
     resultTime = 0
     reachedFlag = ApngTimeReached(targetTime, currentTime)
-    If reachedFlag Then
+    IF reachedFlag THEN
         ApngTimeRemaining = resultTime
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     resultTime = targetTime - currentTime
-    If resultTime < 0 Then resultTime = resultTime + 86400#
+    IF resultTime < 0 THEN resultTime = resultTime + 86400#
 
     ApngTimeRemaining = resultTime
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG elapsed since.
 ' Parameters: previousTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngElapsedSince# (previousTime As Double, currentTime As Double)
+FUNCTION ApngElapsedSince# (previousTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: elapsedSec stores the working value for elapsed sec.
-    Dim elapsedSec As Double
+    DIM elapsedSec AS DOUBLE
 
     ' Keep the midnight wrap behavior intact while measuring TIMER progress.
     elapsedSec = currentTime - previousTime
-    If elapsedSec < 0 Then elapsedSec = elapsedSec + 86400#
+    IF elapsedSec < 0 THEN elapsedSec = elapsedSec + 86400#
 
     ApngElapsedSince = elapsedSec
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG clock jump limit.
 ' Parameters: apngId = working value for APNG id; previousTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngClockJumpLimit# (apngId As Long, previousTime As Double)
+FUNCTION ApngClockJumpLimit# (apngId AS LONG, previousTime AS DOUBLE)
     ' Variable: limitSec stores the working value for limit sec.
-    Dim limitSec As Double
+    DIM limitSec AS DOUBLE
 
     limitSec = ApngTimeRemaining(ApngItems(apngId).NextTick, previousTime)
-    If limitSec <= 0 Then limitSec = ApngFrameDelay(apngId, ApngItems(apngId).CurrentFrame)
+    IF limitSec <= 0 THEN limitSec = ApngFrameDelay(apngId, ApngItems(apngId).CurrentFrame)
 
     ' Allow ordinary frame jitter, but treat large raw TIMER jumps as a resync event.
     limitSec = limitSec + 1#
-    If limitSec < 2# Then limitSec = 2#
-    If limitSec > 10# Then limitSec = 10#
+    IF limitSec < 2# THEN limitSec = 2#
+    IF limitSec > 10# THEN limitSec = 10#
 
     ApngClockJumpLimit = limitSec
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG clock jumped.
 ' Parameters: apngId = working value for APNG id; previousTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngClockJumped% (apngId As Long, previousTime As Double, currentTime As Double)
+FUNCTION ApngClockJumped% (apngId AS LONG, previousTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: jumpFlag stores the working value for jump flag.
-    Dim jumpFlag As Integer
+    DIM jumpFlag AS INTEGER
     ' Variable: elapsedSec stores the working value for elapsed sec.
-    Dim elapsedSec As Double
+    DIM elapsedSec AS DOUBLE
     ' Variable: limitSec stores the working value for limit sec.
-    Dim limitSec As Double
+    DIM limitSec AS DOUBLE
 
     jumpFlag = 0
     elapsedSec = ApngElapsedSince(previousTime, currentTime)
     limitSec = ApngClockJumpLimit(apngId, previousTime)
-    If elapsedSec > limitSec Then jumpFlag = -1
+    IF elapsedSec > limitSec THEN jumpFlag = -1
 
     ApngClockJumped = jumpFlag
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG resync after clock jump.
 ' Parameters: apngId = working value for APNG id; currentTime = time-related value used by the current routine.
-Sub ApngResyncAfterClockJump (apngId As Long, currentTime As Double)
+SUB ApngResyncAfterClockJump (apngId AS LONG, currentTime AS DOUBLE)
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: previousTime stores the time-related value used by the current routine.
-    Dim previousTime As Double
+    DIM previousTime AS DOUBLE
 
-    If ApngValidId(apngId) = 0 Then Exit Sub
+    IF ApngValidId(apngId) = 0 THEN EXIT SUB
 
     ' Re-anchor the current frame after a manual clock change or large TIMER discontinuity.
     previousTime = ApngItems(apngId).LastRawTimer
     delaySec = ApngTimeRemaining(ApngItems(apngId).NextTick, previousTime)
-    If delaySec <= 0 Then delaySec = ApngFrameDelay(apngId, ApngItems(apngId).CurrentFrame)
+    IF delaySec <= 0 THEN delaySec = ApngFrameDelay(apngId, ApngItems(apngId).CurrentFrame)
 
     ApngItems(apngId).NextTick = ApngTimeAdd(currentTime, delaySec)
     ApngItems(apngId).LastRawTimer = currentTime
-End Sub
+END SUB
 
 ' Purpose: Routine for the APNG backend: handle APNG frame delay.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngFrameDelay# (apngId As Long, frameIndex As Long)
+FUNCTION ApngFrameDelay# (apngId AS LONG, frameIndex AS LONG)
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
     ' Variable: delayNum stores the frame delay or timing value.
-    Dim delayNum As Long
+    DIM delayNum AS LONG
     ' Variable: delayDen stores the frame delay or timing value.
-    Dim delayDen As Long
+    DIM delayDen AS LONG
 
     ApngFrameDelay = .1
-    If ApngValidId(apngId) = 0 Then Exit Function
-    If frameIndex < 0 Or frameIndex >= ApngItems(apngId).FrameCount Then Exit Function
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 OR frameIndex >= ApngItems(apngId).FrameCount THEN EXIT FUNCTION
 
     frameSlot = ApngItems(apngId).FrameStart + frameIndex
     delayNum = ApngFrames(frameSlot).DelayNum
     delayDen = ApngFrames(frameSlot).DelayDen
-    If delayDen <= 0 Then delayDen = 100
+    IF delayDen <= 0 THEN delayDen = 100
 
-    If delayNum <= 0 Then
+    IF delayNum <= 0 THEN
         ApngFrameDelay = .01
-    Else
+    ELSE
         ApngFrameDelay = delayNum / delayDen
-    End If
-End Function
+    END IF
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG clear rect in image.
 ' Parameters: imageHandle = QB64 image handle used to store or draw decoded pixels; imageWidth = width value used by this routine; imageHeight = height value used by this routine; leftPx = working value for left px; topPx = working value for top px; rectWidth = width value used by this routine; additional parameters continue the same pattern.
-Sub ApngClearRectInImage (imageHandle As Long, imageWidth As Long, imageHeight As Long, leftPx As Long, topPx As Long, rectWidth As Long, rectHeight As Long)
+SUB ApngClearRectInImage (imageHandle AS LONG, imageWidth AS LONG, imageHeight AS LONG, leftPx AS LONG, topPx AS LONG, rectWidth AS LONG, rectHeight AS LONG)
     ' Variable: memBlock stores the memory handle or memory-related helper value.
-    Dim memBlock As _MEM
+    DIM memBlock AS _MEM
     ' Variable: x1 stores the working value for x 1.
-    Dim x1 As Long
+    DIM x1 AS LONG
     ' Variable: y1 stores the working value for y 1.
-    Dim y1 As Long
+    DIM y1 AS LONG
     ' Variable: x2 stores the working value for x 2.
-    Dim x2 As Long
+    DIM x2 AS LONG
     ' Variable: y2 stores the working value for y 2.
-    Dim y2 As Long
+    DIM y2 AS LONG
     ' Variable: rowIndex stores the index variable used to address the current item.
-    Dim rowIndex As Long
+    DIM rowIndex AS LONG
     ' Variable: rowOffset stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowOffset As _Offset
+    DIM rowOffset AS _OFFSET
     ' Variable: fillPixels stores the working value for fill pixels.
-    Dim fillPixels As Long
+    DIM fillPixels AS LONG
     ' Variable: fillBytes stores the working value for fill bytes.
-    Dim fillBytes As Long
+    DIM fillBytes AS LONG
     ' Variable: zeroRow stores the row pointer, row buffer, or row index used for image processing.
-    Dim zeroRow As String
+    DIM zeroRow AS STRING
 
-    If imageHandle > -2 Then Exit Sub
-    If rectWidth <= 0 Or rectHeight <= 0 Then Exit Sub
+    IF imageHandle > -2 THEN EXIT SUB
+    IF rectWidth <= 0 OR rectHeight <= 0 THEN EXIT SUB
 
     x1 = leftPx
     y1 = topPx
     x2 = leftPx + rectWidth - 1
     y2 = topPx + rectHeight - 1
 
-    If x1 < 0 Then x1 = 0
-    If y1 < 0 Then y1 = 0
-    If x2 >= imageWidth Then x2 = imageWidth - 1
-    If y2 >= imageHeight Then y2 = imageHeight - 1
+    IF x1 < 0 THEN x1 = 0
+    IF y1 < 0 THEN y1 = 0
+    IF x2 >= imageWidth THEN x2 = imageWidth - 1
+    IF y2 >= imageHeight THEN y2 = imageHeight - 1
 
-    If x1 > x2 Or y1 > y2 Then Exit Sub
+    IF x1 > x2 OR y1 > y2 THEN EXIT SUB
 
     fillPixels = x2 - x1 + 1
     fillBytes = fillPixels * 4
-    zeroRow = String$(fillBytes, 0)
+    zeroRow = STRING$(fillBytes, 0)
 
-    memBlock = _MemImage(imageHandle)
+    memBlock = _MEMIMAGE(imageHandle)
 
     ' Loop purpose: use rowIndex as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For rowIndex = y1 To y2
+    FOR rowIndex = y1 TO y2
         rowOffset = memBlock.OFFSET + ((rowIndex * imageWidth + x1) * 4)
-        _MemPut memBlock, rowOffset, zeroRow
-    Next rowIndex
+        _MEMPUT memBlock, rowOffset, zeroRow
+    NEXT rowIndex
 
-    If _MemExists(memBlock) Then _MemFree memBlock
-End Sub
+    IF _MEMEXISTS(memBlock) THEN _MEMFREE memBlock
+END SUB
 
 ' Purpose: Routine for the APNG backend: handle APNG temp file name.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngTempFileName$ (apngId As Long, frameIndex As Long)
-    ApngTempFileName = _CWD$ + "/__apngtmp_" + LTrim$(Str$(apngId)) + "_" + LTrim$(Str$(frameIndex)) + ".png"
-End Function
+FUNCTION ApngTempFileName$ (apngId AS LONG, frameIndex AS LONG)
+    ApngTempFileName = _CWD$ + "/__apngtmp_" + LTRIM$(STR$(apngId)) + "_" + LTRIM$(STR$(frameIndex)) + ".png"
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG prepare frame image.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngPrepareFrameImage& (apngId As Long, frameIndex As Long)
+FUNCTION ApngPrepareFrameImage& (apngId AS LONG, frameIndex AS LONG)
     ' Variable: pngData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim pngData As String
+    DIM pngData AS STRING
     ' Variable: frameHandle stores the handle used to reference an external or QB64 resource.
-    Dim frameHandle As Long
+    DIM frameHandle AS LONG
 
     ApngPrepareFrameImage = -1
-    If ApngValidId(apngId) = 0 Then Exit Function
-    If frameIndex < 0 Or frameIndex >= ApngItems(apngId).FrameCount Then Exit Function
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 OR frameIndex >= ApngItems(apngId).FrameCount THEN EXIT FUNCTION
 
     pngData = ApngBuildFramePng(apngId, frameIndex)
-    frameHandle = _LoadImage(pngData, 32, "memory")
+    frameHandle = _LOADIMAGE(pngData, 32, "memory")
 
     ApngPrepareFrameImage = frameHandle
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG clone frame image.
 ' Parameters: apngId = working value for APNG id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngCloneFrameImage& (apngId As Long, frameIndex As Long)
+FUNCTION ApngCloneFrameImage& (apngId AS LONG, frameIndex AS LONG)
     ApngCloneFrameImage = -1
-    If ApngValidId(apngId) = 0 Then Exit Function
-    If frameIndex < 0 Or frameIndex >= ApngItems(apngId).FrameCount Then Exit Function
-    If ApngEnsureFrameRendered(apngId, frameIndex) = 0 Then Exit Function
-    If ApngItems(apngId).CanvasHandle > -2 Then Exit Function
-    ApngCloneFrameImage = _CopyImage(ApngItems(apngId).CanvasHandle, 32)
-End Function
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 OR frameIndex >= ApngItems(apngId).FrameCount THEN EXIT FUNCTION
+    IF ApngEnsureFrameRendered(apngId, frameIndex) = 0 THEN EXIT FUNCTION
+    IF ApngItems(apngId).CanvasHandle > -2 THEN EXIT FUNCTION
+    ApngCloneFrameImage = _COPYIMAGE(ApngItems(apngId).CanvasHandle, 32)
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG cache play count.
 ' Parameters: apngId = working value for APNG id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function ApngCachePlayCount& (apngId As Long)
+FUNCTION ApngCachePlayCount& (apngId AS LONG)
     ApngCachePlayCount = 0
-    If ApngValidId(apngId) = 0 Then Exit Function
+    IF ApngValidId(apngId) = 0 THEN EXIT FUNCTION
     ApngCachePlayCount = ApngItems(apngId).PlayCount
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the APNG backend: handle APNG free handle.
 ' Parameters: imageHandle = QB64 image handle used to store or draw decoded pixels.
-Sub ApngFreeHandle (imageHandle As Long)
-    If imageHandle <= -2 Then _FreeImage imageHandle: imageHandle = 0
-End Sub
+SUB ApngFreeHandle (imageHandle AS LONG)
+    IF imageHandle <= -2 THEN _FREEIMAGE imageHandle: imageHandle = 0
+END SUB
+

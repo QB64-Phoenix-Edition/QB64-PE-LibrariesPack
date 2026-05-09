@@ -1,47 +1,47 @@
-$INCLUDEONCE
-
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 ' =========================================================
 ' Commented source copy for the FLIC/FLC backend.
 ' Explanatory comments were added in English without altering executable code.
 ' =========================================================
+' FLIC / FLI / FLC multi-instance backend module for QB64PE
+' Include-friendly: no demo code, no SCREEN, no END, no input loop.
+' Public API prefix: Flic...
+
+$INCLUDEONCE
+
 ' Purpose: Open an Autodesk FLI/FLC file, parse headers, and prepare buffered playback.
 ' Parameters: fileName = string holding a file path or a human-readable name; maxWidth = maximum allowed width; maxHeight = maximum allowed height; maxFrames = maximum allowed frames.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long, maxFrames As Long)
+FUNCTION FlicOpenLimit& (fileName AS STRING, maxWidth AS LONG, maxHeight AS LONG, maxFrames AS LONG)
     ' Variable: formatId stores the numeric identifier of the detected animation file format.
-    Dim formatId As Long
+    DIM formatId AS LONG
     ' Variable: fileNum stores the working value for file num.
-    Dim fileNum As Integer
+    DIM fileNum AS INTEGER
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: headerData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim headerData As FLICHeaderType
+    DIM headerData AS FLICHeaderType
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
     ' Variable: pixelCount stores the count used to size or iterate the current data set.
-    Dim pixelCount As Long
+    DIM pixelCount AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
     ' Variable: frameStart stores the working value for frame start.
-    Dim frameStart As Long
+    DIM frameStart AS LONG
     ' Variable: snapshotMetaStart stores the working value for snapshot meta start.
-    Dim snapshotMetaStart As Long
+    DIM snapshotMetaStart AS LONG
     ' Variable: snapshotCount stores the count used to size or iterate the current data set.
-    Dim snapshotCount As Long
+    DIM snapshotCount AS LONG
     ' Variable: hasRing stores the Boolean-like flag used by the current routine.
-    Dim hasRing As Integer
+    DIM hasRing AS INTEGER
     ' Variable: ringOffset stores the working value for ring offset.
-    Dim ringOffset As _Integer64
+    DIM ringOffset AS _INTEGER64
     ' Variable: ringSize stores the working value for ring size.
-    Dim ringSize As _Integer64
+    DIM ringSize AS _INTEGER64
     ' Variable: fileSize stores the working value for file size.
-    Dim fileSize As _Integer64
+    DIM fileSize AS _INTEGER64
     ' Variable: fileDataStart stores the buffer that holds raw, packed, or decoded byte data.
-    Dim fileDataStart As Long
+    DIM fileDataStart AS LONG
 
     FlicOpenLimit& = -1
     formatId = ANIM_FORMAT_NONE
@@ -59,107 +59,107 @@ Function FlicOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long
     fileSize = 0
     fileDataStart = -1
 
-    If _FileExists(fileName) = 0 Then Exit Function
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT FUNCTION
 
-    fileNum = FreeFile
-    Open fileName For Binary As #fileNum
+    fileNum = FREEFILE
+    OPEN fileName FOR BINARY AS #fileNum
 
-    If FlicReadHeaderFromFile(fileNum, headerData, formatId) = 0 Then
-        Close #fileNum
-        Exit Function
-    End If
+    IF FlicReadHeaderFromFile(fileNum, headerData, formatId) = 0 THEN
+        CLOSE #fileNum
+        EXIT FUNCTION
+    END IF
 
-    If maxWidth > 0 Then
-        If headerData.Width > maxWidth Then
-            Close #fileNum
-            Exit Function
-        End If
-    End If
+    IF maxWidth > 0 THEN
+        IF headerData.Width > maxWidth THEN
+            CLOSE #fileNum
+            EXIT FUNCTION
+        END IF
+    END IF
 
-    If maxHeight > 0 Then
-        If headerData.Height > maxHeight Then
-            Close #fileNum
-            Exit Function
-        End If
-    End If
+    IF maxHeight > 0 THEN
+        IF headerData.Height > maxHeight THEN
+            CLOSE #fileNum
+            EXIT FUNCTION
+        END IF
+    END IF
 
-    If maxFrames > 0 Then
-        If headerData.Frames > maxFrames Then
-            Close #fileNum
-            Exit Function
-        End If
-    End If
+    IF maxFrames > 0 THEN
+        IF headerData.Frames > maxFrames THEN
+            CLOSE #fileNum
+            EXIT FUNCTION
+        END IF
+    END IF
 
     fileSize = LOF(fileNum)
-    If fileSize < 128 Then
-        Close #fileNum
-        Exit Function
-    End If
+    IF fileSize < 128 THEN
+        CLOSE #fileNum
+        EXIT FUNCTION
+    END IF
 
     slotId = FlicAllocSlot
-    If slotId < 0 Then
-        Close #fileNum
-        Exit Function
-    End If
+    IF slotId < 0 THEN
+        CLOSE #fileNum
+        EXIT FUNCTION
+    END IF
 
     FlicInitSlot slotId
     FlicFileNames(slotId) = fileName
 
     fileDataStart = FlicAllocFileBlock(fileSize)
-    If fileDataStart < 0 Then
-        Close #fileNum
+    IF fileDataStart < 0 THEN
+        CLOSE #fileNum
         FlicSetError slotId, "FlicOpenLimit: file RAM allocation failed"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    If FlicLoadWholeFileToRam(fileNum, fileDataStart, fileSize) = 0 Then
-        Close #fileNum
+    IF FlicLoadWholeFileToRam(fileNum, fileDataStart, fileSize) = 0 THEN
+        CLOSE #fileNum
         FlicSetError slotId, "FlicOpenLimit: file RAM load failed"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    Close #fileNum
+    CLOSE #fileNum
 
     imageHandle = FlicCreateRenderImage(headerData.Width, headerData.Height)
-    If imageHandle > -2 Then
+    IF imageHandle > -2 THEN
         FlicSetError slotId, "FlicOpenLimit: _NewImage failed"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     pixelCount = headerData.Width * headerData.Height
-    If pixelCount < 1 Then
-        If imageHandle <= -2 Then _FreeImage imageHandle: imageHandle = 0
+    IF pixelCount < 1 THEN
+        IF imageHandle <= -2 THEN _FREEIMAGE imageHandle: imageHandle = 0
         FlicSetError slotId, "FlicOpenLimit: invalid pixel count"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     pixelStart = FlicAllocPixelBlock(pixelCount)
-    If pixelStart < 0 Then
-        If imageHandle <= -2 Then _FreeImage imageHandle: imageHandle = 0
+    IF pixelStart < 0 THEN
+        IF imageHandle <= -2 THEN _FREEIMAGE imageHandle: imageHandle = 0
         FlicSetError slotId, "FlicOpenLimit: pixel buffer allocation failed"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     frameStart = FlicAllocFrameBlock(headerData.Frames)
-    If frameStart < 0 Then
-        If imageHandle <= -2 Then _FreeImage imageHandle: imageHandle = 0
+    IF frameStart < 0 THEN
+        IF imageHandle <= -2 THEN _FREEIMAGE imageHandle: imageHandle = 0
         FlicSetError slotId, "FlicOpenLimit: frame index allocation failed"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     snapshotCount = FlicCountSnapshots(headerData.Frames, FLIC_SNAPSHOT_INTERVAL)
     snapshotMetaStart = FlicAllocSnapshotMetaBlock(snapshotCount, pixelCount)
-    If snapshotMetaStart < 0 Then
-        If imageHandle <= -2 Then _FreeImage imageHandle: imageHandle = 0
+    IF snapshotMetaStart < 0 THEN
+        IF imageHandle <= -2 THEN _FREEIMAGE imageHandle: imageHandle = 0
         FlicSetError slotId, "FlicOpenLimit: snapshot cache allocation failed"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    If FlicBuildFrameIndex(fileDataStart, fileSize, headerData, formatId, headerData.Frames, frameStart, hasRing, ringOffset, ringSize) = 0 Then
-        If imageHandle <= -2 Then _FreeImage imageHandle: imageHandle = 0
+    IF FlicBuildFrameIndex(fileDataStart, fileSize, headerData, formatId, headerData.Frames, frameStart, hasRing, ringOffset, ringSize) = 0 THEN
+        IF imageHandle <= -2 THEN _FREEIMAGE imageHandle: imageHandle = 0
         FlicSetError slotId, "FlicOpenLimit: frame index build failed"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     FlicItems(slotId).Used = -1
     FlicItems(slotId).FormatType = formatId
@@ -201,15 +201,15 @@ Function FlicOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long
     FlicResetDecodeState slotId
 
     FlicOpenLimit& = slotId
-End Function
+END FUNCTION
 
 ' Purpose: Read FLI/FLC metadata without fully opening the animation.
 ' Parameters: fileName = string holding a file path or a human-readable name; ok = success flag returned by the current routine; formatId = numeric identifier of the detected animation file format; widthPx = decoded image width in pixels; heightPx = decoded image height in pixels; frameCount = total number of frames available for the current animation.
-Sub FlicProbe (fileName As String, ok As Integer, formatId As Long, widthPx As Long, heightPx As Long, frameCount As Long)
+SUB FlicProbe (fileName AS STRING, ok AS INTEGER, formatId AS LONG, widthPx AS LONG, heightPx AS LONG, frameCount AS LONG)
     ' Variable: fileNum stores the working value for file num.
-    Dim fileNum As Integer
+    DIM fileNum AS INTEGER
     ' Variable: headerData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim headerData As FLICHeaderType
+    DIM headerData AS FLICHeaderType
 
     ok = 0
     formatId = ANIM_FORMAT_NONE
@@ -218,33 +218,33 @@ Sub FlicProbe (fileName As String, ok As Integer, formatId As Long, widthPx As L
     frameCount = 0
     fileNum = 0
 
-    If _FileExists(fileName) = 0 Then Exit Sub
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT SUB
 
-    fileNum = FreeFile
-    Open fileName For Binary As #fileNum
+    fileNum = FREEFILE
+    OPEN fileName FOR BINARY AS #fileNum
 
-    If FlicReadHeaderFromFile(fileNum, headerData, formatId) Then
+    IF FlicReadHeaderFromFile(fileNum, headerData, formatId) THEN
         ok = -1
         widthPx = headerData.Width
         heightPx = headerData.Height
         frameCount = headerData.Frames
-    End If
+    END IF
 
-    Close #fileNum
-End Sub
+    CLOSE #fileNum
+END SUB
 
 ' Purpose: Release all resources owned by one FLI/FLC decoder instance.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicClose (flicId As Long)
-    If FlicValidId(flicId) = 0 Then Exit Sub
+SUB FlicClose (flicId AS LONG)
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
 
-    If FlicItems(flicId).CanvasImage <= -2 Then
-        _FreeImage FlicItems(flicId).CanvasImage
-    End If
+    IF FlicItems(flicId).CanvasImage <= -2 THEN
+        _FREEIMAGE FlicItems(flicId).CanvasImage
+    END IF
 
-    If FlicDecodeContextId = flicId Then
+    IF FlicDecodeContextId = flicId THEN
         FlicDecodeContextId = -1
-    End If
+    END IF
 
     FlicItems(flicId).CanvasImage = -1
     FlicItems(flicId).Used = 0
@@ -281,32 +281,32 @@ Sub FlicClose (flicId As Long)
     FlicItems(flicId).SnapshotInterval = 0
     FlicFileNames(flicId) = ""
     FlicErrorTexts(flicId) = ""
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC free all.
-Sub FlicFreeAll ()
+SUB FlicFreeAll ()
     ' Variable: indexValue stores the working value for index value.
-    Dim indexValue As Long
+    DIM indexValue AS LONG
 
     ' Loop purpose: walk through every currently allocated element in FlicItems.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For indexValue = 0 To UBound(FlicItems)
-        If FlicItems(indexValue).Used Then
+    FOR indexValue = 0 TO UBOUND(FlicItems)
+        IF FlicItems(indexValue).Used THEN
             FlicClose indexValue
-        End If
-    Next indexValue
-End Sub
+        END IF
+    NEXT indexValue
+END SUB
 
 ' Purpose: Start FLI/FLC playback timing.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicStart (flicId As Long)
+SUB FlicStart (flicId AS LONG)
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
 
-    If FlicValidId(flicId) = 0 Then Exit Sub
-    If FlicItems(flicId).FrameCount < 1 Then Exit Sub
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
+    IF FlicItems(flicId).FrameCount < 1 THEN EXIT SUB
 
     FlicItems(flicId).CurrentFrame = 0
     FlicItems(flicId).Playing = -1
@@ -314,537 +314,537 @@ Sub FlicStart (flicId As Long)
     FlicItems(flicId).RemainingDelay = 0
 
     FlicResetDecodeState flicId
-    If FlicEnsureRenderedFrame(flicId, 0) = 0 Then
+    IF FlicEnsureRenderedFrame(flicId, 0) = 0 THEN
         FlicItems(flicId).Playing = 0
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
     delaySec = FlicGetFrameDelay(flicId, FlicItems(flicId).CurrentFrame) / 1000#
-    If delaySec <= 0 Then delaySec = .03
+    IF delaySec <= 0 THEN delaySec = .03
 
     ' Start playback from a fresh absolute schedule based on the current frame.
-    nowValue = Timer
+    nowValue = TIMER
     FlicItems(flicId).LastTick = nowValue
     FlicItems(flicId).LastRawTimer = nowValue
     FlicItems(flicId).NextTick = FlicTimeAdd(FlicItems(flicId).LastTick, delaySec)
-End Sub
+END SUB
 
 ' Purpose: Stop FLI/FLC playback timing.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicStop (flicId As Long)
-    If FlicValidId(flicId) = 0 Then Exit Sub
+SUB FlicStop (flicId AS LONG)
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
     FlicMakeDefaultStopState flicId
-End Sub
+END SUB
 
 ' Purpose: Pause FLI/FLC playback while keeping the current frame.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicPause (flicId As Long)
+SUB FlicPause (flicId AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
 
-    If FlicValidId(flicId) = 0 Then Exit Sub
-    If FlicItems(flicId).Playing = 0 Then Exit Sub
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
+    IF FlicItems(flicId).Playing = 0 THEN EXIT SUB
 
     ' Preserve the remaining frame time so resume continues the current frame.
-    nowValue = Timer
+    nowValue = TIMER
     FlicItems(flicId).RemainingDelay = FlicTimeRemaining(FlicItems(flicId).NextTick, nowValue)
     FlicItems(flicId).LastRawTimer = nowValue
     FlicItems(flicId).Paused = -1
-End Sub
+END SUB
 
 ' Purpose: Resume FLI/FLC playback after a pause.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicResume (flicId As Long)
+SUB FlicResume (flicId AS LONG)
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
 
-    If FlicValidId(flicId) = 0 Then Exit Sub
-    If FlicItems(flicId).Playing = 0 Then Exit Sub
-    If FlicItems(flicId).Paused = 0 Then Exit Sub
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
+    IF FlicItems(flicId).Playing = 0 THEN EXIT SUB
+    IF FlicItems(flicId).Paused = 0 THEN EXIT SUB
 
     ' Resume from the leftover delay instead of restarting a full frame delay.
-    nowValue = Timer
+    nowValue = TIMER
     delaySec = FlicItems(flicId).RemainingDelay
-    If delaySec <= 0 Then
+    IF delaySec <= 0 THEN
         delaySec = FlicGetFrameDelay(flicId, FlicItems(flicId).CurrentFrame) / 1000#
-        If delaySec <= 0 Then delaySec = .03
-    End If
+        IF delaySec <= 0 THEN delaySec = .03
+    END IF
 
     FlicItems(flicId).Paused = 0
     FlicItems(flicId).LastTick = nowValue
     FlicItems(flicId).LastRawTimer = nowValue
     FlicItems(flicId).NextTick = FlicTimeAdd(FlicItems(flicId).LastTick, delaySec)
     FlicItems(flicId).RemainingDelay = 0
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC set loop.
 ' Parameters: flicId = working value for FLIC id; loopMode = loop policy that controls whether playback stops or repeats.
-Sub FlicSetLoop (flicId As Long, loopMode As Long)
-    If FlicValidId(flicId) = 0 Then Exit Sub
+SUB FlicSetLoop (flicId AS LONG, loopMode AS LONG)
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
 
-    If loopMode Then
+    IF loopMode THEN
         FlicItems(flicId).Looping = -1
-    Else
+    ELSE
         FlicItems(flicId).Looping = 0
-    End If
-End Sub
+    END IF
+END SUB
 
 ' Purpose: Advance FLI/FLC playback according to frame timing.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicUpdate (flicId As Long)
+SUB FlicUpdate (flicId AS LONG)
     ' Variable: currentTime stores the time-related value used by the current routine.
-    Dim currentTime As Double
+    DIM currentTime AS DOUBLE
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: nextFrame stores the working value for next frame.
-    Dim nextFrame As Long
+    DIM nextFrame AS LONG
     ' Variable: stepCount stores the count used to size or iterate the current data set.
-    Dim stepCount As Long
+    DIM stepCount AS LONG
     ' Variable: jumpFlag stores the working value for jump flag.
-    Dim jumpFlag As Integer
+    DIM jumpFlag AS INTEGER
 
-    If FlicValidId(flicId) = 0 Then Exit Sub
-    If FlicItems(flicId).Playing = 0 Then Exit Sub
-    If FlicItems(flicId).Paused Then Exit Sub
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
+    IF FlicItems(flicId).Playing = 0 THEN EXIT SUB
+    IF FlicItems(flicId).Paused THEN EXIT SUB
 
-    currentTime = Timer
+    currentTime = TIMER
 
     ' Ignore manual system clock jumps but keep the normal midnight wrap working.
     jumpFlag = 0
-    If FlicItems(flicId).LastRawTimer > 0 Then
+    IF FlicItems(flicId).LastRawTimer > 0 THEN
         jumpFlag = FlicClockJumped(flicId, FlicItems(flicId).LastRawTimer, currentTime)
-    End If
-    If jumpFlag Then
+    END IF
+    IF jumpFlag THEN
         FlicResyncAfterClockJump flicId, currentTime
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
     FlicItems(flicId).LastRawTimer = currentTime
-    If FlicTimerReached(FlicItems(flicId).NextTick, currentTime) = 0 Then Exit Sub
+    IF FlicTimerReached(FlicItems(flicId).NextTick, currentTime) = 0 THEN EXIT SUB
 
-    If FlicItems(flicId).FrameCount < 1 Then
+    IF FlicItems(flicId).FrameCount < 1 THEN
         FlicItems(flicId).Playing = 0
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
     ' Advance against the scheduled timeline so playback can catch up after lag.
     stepCount = 0
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While FlicTimerReached(FlicItems(flicId).NextTick, currentTime)
-        If FlicItems(flicId).CurrentFrame < FlicItems(flicId).FrameCount - 1 Then
+    DO WHILE FlicTimerReached(FlicItems(flicId).NextTick, currentTime)
+        IF FlicItems(flicId).CurrentFrame < FlicItems(flicId).FrameCount - 1 THEN
             nextFrame = FlicItems(flicId).CurrentFrame + 1
-            If FlicEnsureRenderedFrame(flicId, nextFrame) = 0 Then
+            IF FlicEnsureRenderedFrame(flicId, nextFrame) = 0 THEN
                 FlicItems(flicId).Playing = 0
-                Exit Sub
-            End If
-        Else
-            If FlicItems(flicId).Looping Then
-                If FlicLoopToStart(flicId) = 0 Then
+                EXIT SUB
+            END IF
+        ELSE
+            IF FlicItems(flicId).Looping THEN
+                IF FlicLoopToStart(flicId) = 0 THEN
                     FlicItems(flicId).Playing = 0
-                    Exit Sub
-                End If
-            Else
+                    EXIT SUB
+                END IF
+            ELSE
                 FlicItems(flicId).Playing = 0
-                Exit Sub
-            End If
-        End If
+                EXIT SUB
+            END IF
+        END IF
 
         delaySec = FlicGetFrameDelay(flicId, FlicItems(flicId).CurrentFrame) / 1000#
-        If delaySec <= 0 Then delaySec = .03
+        IF delaySec <= 0 THEN delaySec = .03
 
         FlicItems(flicId).LastTick = FlicItems(flicId).NextTick
         FlicItems(flicId).NextTick = FlicTimeAdd(FlicItems(flicId).NextTick, delaySec)
 
         stepCount = stepCount + 1
-        If stepCount >= 32 Then Exit Do
-    Loop
-End Sub
+        IF stepCount >= 32 THEN EXIT DO
+    LOOP
+END SUB
 
 ' Purpose: Draw the current FLI/FLC frame to the active QB64 target.
 ' Parameters: flicId = working value for FLIC id; x = horizontal pixel or coordinate index; y = vertical pixel or coordinate index.
-Sub FlicDraw (flicId As Long, x As Long, y As Long)
+SUB FlicDraw (flicId AS LONG, x AS LONG, y AS LONG)
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
     imageHandle = FlicRenderCurrentImage(flicId)
-    If imageHandle <= -2 Then
-        _PutImage (x, y), imageHandle, 0
-    End If
-End Sub
+    IF imageHandle <= -2 THEN
+        _PUTIMAGE (x, y), imageHandle, 0
+    END IF
+END SUB
 
 ' Purpose: Draw the current FLI/FLC frame to the active QB64 target.
 ' Parameters: flicId = working value for FLIC id; x = horizontal pixel or coordinate index; y = vertical pixel or coordinate index; boxWidth = width value used by this routine; boxHeight = height value used by this routine.
-Sub FlicDrawFit (flicId As Long, x As Long, y As Long, boxWidth As Long, boxHeight As Long)
+SUB FlicDrawFit (flicId AS LONG, x AS LONG, y AS LONG, boxWidth AS LONG, boxHeight AS LONG)
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
     ' Variable: srcWidth stores the width value used by this routine.
-    Dim srcWidth As Long
+    DIM srcWidth AS LONG
     ' Variable: srcHeight stores the height value used by this routine.
-    Dim srcHeight As Long
+    DIM srcHeight AS LONG
     ' Variable: scaleX stores the working value for scale x.
-    Dim scaleX As Single
+    DIM scaleX AS SINGLE
     ' Variable: scaleY stores the working value for scale y.
-    Dim scaleY As Single
+    DIM scaleY AS SINGLE
     ' Variable: scaleValue stores the working value for scale value.
-    Dim scaleValue As Single
+    DIM scaleValue AS SINGLE
     ' Variable: drawWidth stores the width value used by this routine.
-    Dim drawWidth As Long
+    DIM drawWidth AS LONG
     ' Variable: drawHeight stores the height value used by this routine.
-    Dim drawHeight As Long
+    DIM drawHeight AS LONG
     ' Variable: drawX stores the working value for draw x.
-    Dim drawX As Long
+    DIM drawX AS LONG
     ' Variable: drawY stores the working value for draw y.
-    Dim drawY As Long
+    DIM drawY AS LONG
 
-    If boxWidth < 1 Then Exit Sub
-    If boxHeight < 1 Then Exit Sub
-    If FlicValidId(flicId) = 0 Then Exit Sub
+    IF boxWidth < 1 THEN EXIT SUB
+    IF boxHeight < 1 THEN EXIT SUB
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
 
     srcWidth = FlicItems(flicId).WidthPx
     srcHeight = FlicItems(flicId).HeightPx
-    If srcWidth < 1 Then Exit Sub
-    If srcHeight < 1 Then Exit Sub
+    IF srcWidth < 1 THEN EXIT SUB
+    IF srcHeight < 1 THEN EXIT SUB
 
     imageHandle = FlicRenderCurrentImage(flicId)
-    If imageHandle > -2 Then Exit Sub
+    IF imageHandle > -2 THEN EXIT SUB
 
     scaleX = boxWidth / srcWidth
     scaleY = boxHeight / srcHeight
-    If scaleX < scaleY Then
+    IF scaleX < scaleY THEN
         scaleValue = scaleX
-    Else
+    ELSE
         scaleValue = scaleY
-    End If
-    If scaleValue <= 0 Then Exit Sub
+    END IF
+    IF scaleValue <= 0 THEN EXIT SUB
 
-    drawWidth = _Round(srcWidth * scaleValue)
-    drawHeight = _Round(srcHeight * scaleValue)
-    If drawWidth < 1 Then drawWidth = 1
-    If drawHeight < 1 Then drawHeight = 1
+    drawWidth = _ROUND(srcWidth * scaleValue)
+    drawHeight = _ROUND(srcHeight * scaleValue)
+    IF drawWidth < 1 THEN drawWidth = 1
+    IF drawHeight < 1 THEN drawHeight = 1
 
     drawX = x + (boxWidth - drawWidth) \ 2
     drawY = y + (boxHeight - drawHeight) \ 2
 
-    _PutImage (drawX, drawY)-(drawX + drawWidth - 1, drawY + drawHeight - 1), imageHandle, 0
-End Sub
+    _PUTIMAGE (drawX, drawY)-(drawX + drawWidth - 1, drawY + drawHeight - 1), imageHandle, 0
+END SUB
 
 ' Purpose: Draw the current FLI/FLC frame to the active QB64 target.
 ' Parameters: flicId = working value for FLIC id; x = horizontal pixel or coordinate index; y = vertical pixel or coordinate index; boxWidth = width value used by this routine; boxHeight = height value used by this routine.
-Sub FlicDrawStretch (flicId As Long, x As Long, y As Long, boxWidth As Long, boxHeight As Long)
+SUB FlicDrawStretch (flicId AS LONG, x AS LONG, y AS LONG, boxWidth AS LONG, boxHeight AS LONG)
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
-    If boxWidth < 1 Then Exit Sub
-    If boxHeight < 1 Then Exit Sub
+    IF boxWidth < 1 THEN EXIT SUB
+    IF boxHeight < 1 THEN EXIT SUB
 
     imageHandle = FlicRenderCurrentImage(flicId)
-    If imageHandle <= -2 Then
-        _PutImage (x, y)-(x + boxWidth - 1, y + boxHeight - 1), imageHandle, 0
-    End If
-End Sub
+    IF imageHandle <= -2 THEN
+        _PUTIMAGE (x, y)-(x + boxWidth - 1, y + boxHeight - 1), imageHandle, 0
+    END IF
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC frame count.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicFrameCount& (flicId As Long)
+FUNCTION FlicFrameCount& (flicId AS LONG)
     FlicFrameCount& = 0
-    If FlicValidId(flicId) = 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
     FlicFrameCount& = FlicItems(flicId).FrameCount
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC width.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicWidth& (flicId As Long)
+FUNCTION FlicWidth& (flicId AS LONG)
     FlicWidth& = 0
-    If FlicValidId(flicId) = 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
     FlicWidth& = FlicItems(flicId).WidthPx
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC height.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicHeight& (flicId As Long)
+FUNCTION FlicHeight& (flicId AS LONG)
     FlicHeight& = 0
-    If FlicValidId(flicId) = 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
     FlicHeight& = FlicItems(flicId).HeightPx
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC current frame.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicCurrentFrame& (flicId As Long)
+FUNCTION FlicCurrentFrame& (flicId AS LONG)
     FlicCurrentFrame& = 0
-    If FlicValidId(flicId) = 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
     FlicCurrentFrame& = FlicItems(flicId).CurrentFrame
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC format.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicFormat& (flicId As Long)
+FUNCTION FlicFormat& (flicId AS LONG)
     FlicFormat& = ANIM_FORMAT_NONE
-    If FlicValidId(flicId) = 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
     FlicFormat& = FlicItems(flicId).FormatType
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC is playing.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicIsPlaying% (flicId As Long)
+FUNCTION FlicIsPlaying% (flicId AS LONG)
     FlicIsPlaying% = 0
-    If FlicValidId(flicId) = 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
     FlicIsPlaying% = FlicItems(flicId).Playing
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC is loaded.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicIsLoaded% (flicId As Long)
+FUNCTION FlicIsLoaded% (flicId AS LONG)
     FlicIsLoaded% = FlicValidId(flicId)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC error.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicError$ (flicId As Long)
+FUNCTION FlicError$ (flicId AS LONG)
     FlicError$ = ""
 
-    If flicId < 0 Then Exit Function
-    If flicId > UBound(FlicErrorTexts) Then Exit Function
+    IF flicId < 0 THEN EXIT FUNCTION
+    IF flicId > UBOUND(FlicErrorTexts) THEN EXIT FUNCTION
 
     FlicError$ = FlicErrorTexts(flicId)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC get frame delay.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicGetFrameDelay& (flicId As Long, frameIndex As Long)
+FUNCTION FlicGetFrameDelay& (flicId AS LONG, frameIndex AS LONG)
     FlicGetFrameDelay& = 30
 
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= FlicItems(flicId).FrameCount Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= FlicItems(flicId).FrameCount THEN EXIT FUNCTION
     ' Variable: n stores the working value for n.
-    dim n as long
+    DIM n AS LONG
     FlicGetFrameDelay& = FlicItems(flicId).DefaultDelayMS
-    n =  FlicItems(flicId).DefaultDelayMS
-    If n < 1 Then FlicGetFrameDelay& = 30
-End Function
+    n = FlicItems(flicId).DefaultDelayMS
+    IF n < 1 THEN FlicGetFrameDelay& = 30
+END FUNCTION
 
 ' Purpose: Convert the current FLI/FLC frame buffer into a QB64 image.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicRenderCurrentImage& (flicId As Long)
+FUNCTION FlicRenderCurrentImage& (flicId AS LONG)
     FlicRenderCurrentImage& = -1
 
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If FlicItems(flicId).CanvasImage > -2 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF FlicItems(flicId).CanvasImage > -2 THEN EXIT FUNCTION
 
-    If FlicItems(flicId).CurrentFrame < 0 Then
+    IF FlicItems(flicId).CurrentFrame < 0 THEN
         FlicItems(flicId).CurrentFrame = 0
-    End If
+    END IF
 
-    If FlicItems(flicId).CurrentFrame >= FlicItems(flicId).FrameCount Then
+    IF FlicItems(flicId).CurrentFrame >= FlicItems(flicId).FrameCount THEN
         FlicItems(flicId).CurrentFrame = FlicItems(flicId).FrameCount - 1
-    End If
+    END IF
 
-    If FlicItems(flicId).CurrentFrame < 0 Then Exit Function
+    IF FlicItems(flicId).CurrentFrame < 0 THEN EXIT FUNCTION
 
-    If FlicEnsureRenderedFrame(flicId, FlicItems(flicId).CurrentFrame) = 0 Then Exit Function
+    IF FlicEnsureRenderedFrame(flicId, FlicItems(flicId).CurrentFrame) = 0 THEN EXIT FUNCTION
 
     FlicRenderCurrentImage& = FlicItems(flicId).CanvasImage
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC save frame.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item; fileName = string holding a file path or a human-readable name.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicSaveFrame% (flicId As Long, frameIndex As Long, fileName As String)
+FUNCTION FlicSaveFrame% (flicId AS LONG, frameIndex AS LONG, fileName AS STRING)
     ' Variable: savedFrame stores the working value for saved frame.
-    Dim savedFrame As Long
+    DIM savedFrame AS LONG
 
     FlicSaveFrame% = 0
 
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= FlicItems(flicId).FrameCount Then Exit Function
-    If Len(fileName) = 0 Then Exit Function
-    If FlicItems(flicId).CanvasImage > -2 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= FlicItems(flicId).FrameCount THEN EXIT FUNCTION
+    IF LEN(fileName) = 0 THEN EXIT FUNCTION
+    IF FlicItems(flicId).CanvasImage > -2 THEN EXIT FUNCTION
 
     savedFrame = FlicItems(flicId).CurrentFrame
 
-    If FlicEnsureRenderedFrame(flicId, frameIndex) = 0 Then Exit Function
+    IF FlicEnsureRenderedFrame(flicId, frameIndex) = 0 THEN EXIT FUNCTION
 
-    _SaveImage fileName, FlicItems(flicId).CanvasImage
-    dim N as long
+    _SAVEIMAGE fileName, FlicItems(flicId).CanvasImage
+    DIM N AS LONG
     FlicItems(flicId).CurrentFrame = savedFrame
-    N = FlicEnsureRenderedFrame (flicId, savedFrame)
+    N = FlicEnsureRenderedFrame(flicId, savedFrame)
 
     FlicSaveFrame% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC clone frame image.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicCloneFrameImage& (flicId As Long, frameIndex As Long)
+FUNCTION FlicCloneFrameImage& (flicId AS LONG, frameIndex AS LONG)
     ' Variable: savedFrame stores the working value for saved frame.
-    Dim savedFrame As Long
+    DIM savedFrame AS LONG
     ' Variable: outHandle stores the handle used to reference an external or QB64 resource.
-    Dim outHandle As Long
+    DIM outHandle AS LONG
 
     FlicCloneFrameImage = -1
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= FlicItems(flicId).FrameCount Then Exit Function
-    If FlicItems(flicId).CanvasImage > -2 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= FlicItems(flicId).FrameCount THEN EXIT FUNCTION
+    IF FlicItems(flicId).CanvasImage > -2 THEN EXIT FUNCTION
 
     savedFrame = FlicItems(flicId).CurrentFrame
-    If FlicEnsureRenderedFrame(flicId, frameIndex) = 0 Then Exit Function
-    If FlicItems(flicId).CanvasImage > -2 Then Exit Function
+    IF FlicEnsureRenderedFrame(flicId, frameIndex) = 0 THEN EXIT FUNCTION
+    IF FlicItems(flicId).CanvasImage > -2 THEN EXIT FUNCTION
 
-    outHandle = _CopyImage(FlicItems(flicId).CanvasImage, 32)
-    dim N as long
-    If savedFrame <> frameIndex Then
+    outHandle = _COPYIMAGE(FlicItems(flicId).CanvasImage, 32)
+    DIM N AS LONG
+    IF savedFrame <> frameIndex THEN
         FlicItems(flicId).CurrentFrame = savedFrame
-        N = FlicEnsureRenderedFrame (flicId, savedFrame)
-    End If
+        N = FlicEnsureRenderedFrame(flicId, savedFrame)
+    END IF
 
     FlicCloneFrameImage = outHandle
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC frame delay sec.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicFrameDelaySec# (flicId As Long, frameIndex As Long)
+FUNCTION FlicFrameDelaySec# (flicId AS LONG, frameIndex AS LONG)
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
     delaySec = FlicGetFrameDelay(flicId, frameIndex) / 1000#
-    If delaySec <= 0 Then delaySec = .03
+    IF delaySec <= 0 THEN delaySec = .03
     FlicFrameDelaySec = delaySec
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC alloc slot.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicAllocSlot& ()
+FUNCTION FlicAllocSlot& ()
     ' Variable: indexValue stores the working value for index value.
-    Dim indexValue As Long
+    DIM indexValue AS LONG
     ' Variable: oldTop stores the working value for old top.
-    Dim oldTop As Long
+    DIM oldTop AS LONG
     ' Variable: newTop stores the working value for new top.
-    Dim newTop As Long
+    DIM newTop AS LONG
 
     FlicAllocSlot& = -1
 
     ' Loop purpose: walk through every currently allocated element in FlicItems.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For indexValue = 0 To UBound(FlicItems)
-        If FlicItems(indexValue).Used = 0 Then
+    FOR indexValue = 0 TO UBOUND(FlicItems)
+        IF FlicItems(indexValue).Used = 0 THEN
             FlicAllocSlot& = indexValue
-            Exit Function
-        End If
-    Next indexValue
+            EXIT FUNCTION
+        END IF
+    NEXT indexValue
 
-    oldTop = UBound(FlicItems)
-    If FlicSlotCapacity <= oldTop Then
-        If FlicSlotCapacity < 1 Then
+    oldTop = UBOUND(FlicItems)
+    IF FlicSlotCapacity <= oldTop THEN
+        IF FlicSlotCapacity < 1 THEN
             newTop = 7
-        Else
+        ELSE
             newTop = FlicSlotCapacity * 2 + 1
-        End If
+        END IF
         ' dynamic array: FlicItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-        ReDim _Preserve FlicItems(newTop) As FlicStore
+        REDIM _PRESERVE FlicItems(newTop) AS FlicStore
         ' dynamic array: FlicFileNames is resized here to hold the parallel array that remembers the source filename for each active entry.
-        ReDim _Preserve FlicFileNames(newTop) As String
+        REDIM _PRESERVE FlicFileNames(newTop) AS STRING
         ' dynamic array: FlicErrorTexts is resized here to hold the text storage for the last human-readable error message.
-        ReDim _Preserve FlicErrorTexts(newTop) As String
+        REDIM _PRESERVE FlicErrorTexts(newTop) AS STRING
         ' dynamic array: FlicPaletteData is resized here to hold the palette storage or palette index used during indexed-color decoding.
-        ReDim _Preserve FlicPaletteData(0 To 255, 0 To newTop) As RGBColorType
+        REDIM _PRESERVE FlicPaletteData(0 TO 255, 0 TO newTop) AS RGBColorType
         ' dynamic array: FlicPalette32Data is resized here to hold the palette storage or palette index used during indexed-color decoding.
-        ReDim _Preserve FlicPalette32Data(0 To 255, 0 To newTop) As _Unsigned Long
+        REDIM _PRESERVE FlicPalette32Data(0 TO 255, 0 TO newTop) AS _UNSIGNED LONG
         FlicSlotCapacity = newTop
-    End If
+    END IF
 
     FlicAllocSlot& = oldTop + 1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC set error.
 ' Parameters: flicId = working value for FLIC id; textValue = working value for text value.
-Sub FlicSetError (flicId As Long, textValue As String)
-    If flicId < 0 Then Exit Sub
-    If flicId > UBound(FlicErrorTexts) Then Exit Sub
+SUB FlicSetError (flicId AS LONG, textValue AS STRING)
+    IF flicId < 0 THEN EXIT SUB
+    IF flicId > UBOUND(FlicErrorTexts) THEN EXIT SUB
     FlicErrorTexts(flicId) = textValue
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC mark dirty rect.
 ' Parameters: flicId = working value for FLIC id; leftPx = working value for left px; topPx = working value for top px; rightPx = working value for right px; bottomPx = working value for bottom px.
-Sub FlicMarkDirtyRect (flicId As Long, leftPx As Long, topPx As Long, rightPx As Long, bottomPx As Long)
+SUB FlicMarkDirtyRect (flicId AS LONG, leftPx AS LONG, topPx AS LONG, rightPx AS LONG, bottomPx AS LONG)
     ' Variable: maxRight stores the maximum allowed right.
-    Dim maxRight As Long
+    DIM maxRight AS LONG
     ' Variable: maxBottom stores the maximum allowed bottom.
-    Dim maxBottom As Long
+    DIM maxBottom AS LONG
 
-    If FlicValidId(flicId) = 0 Then Exit Sub
-    If leftPx > rightPx Then Exit Sub
-    If topPx > bottomPx Then Exit Sub
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
+    IF leftPx > rightPx THEN EXIT SUB
+    IF topPx > bottomPx THEN EXIT SUB
 
     maxRight = FlicItems(flicId).WidthPx - 1
     maxBottom = FlicItems(flicId).HeightPx - 1
-    If maxRight < 0 Then Exit Sub
-    If maxBottom < 0 Then Exit Sub
+    IF maxRight < 0 THEN EXIT SUB
+    IF maxBottom < 0 THEN EXIT SUB
 
-    If leftPx < 0 Then leftPx = 0
-    If topPx < 0 Then topPx = 0
-    If rightPx > maxRight Then rightPx = maxRight
-    If bottomPx > maxBottom Then bottomPx = maxBottom
+    IF leftPx < 0 THEN leftPx = 0
+    IF topPx < 0 THEN topPx = 0
+    IF rightPx > maxRight THEN rightPx = maxRight
+    IF bottomPx > maxBottom THEN bottomPx = maxBottom
 
-    If leftPx > rightPx Then Exit Sub
-    If topPx > bottomPx Then Exit Sub
+    IF leftPx > rightPx THEN EXIT SUB
+    IF topPx > bottomPx THEN EXIT SUB
 
-    If FlicItems(flicId).DirtyValid = 0 Then
+    IF FlicItems(flicId).DirtyValid = 0 THEN
         FlicItems(flicId).DirtyLeft = leftPx
         FlicItems(flicId).DirtyTop = topPx
         FlicItems(flicId).DirtyRight = rightPx
         FlicItems(flicId).DirtyBottom = bottomPx
         FlicItems(flicId).DirtyValid = -1
-    Else
-        If leftPx < FlicItems(flicId).DirtyLeft Then FlicItems(flicId).DirtyLeft = leftPx
-        If topPx < FlicItems(flicId).DirtyTop Then FlicItems(flicId).DirtyTop = topPx
-        If rightPx > FlicItems(flicId).DirtyRight Then FlicItems(flicId).DirtyRight = rightPx
-        If bottomPx > FlicItems(flicId).DirtyBottom Then FlicItems(flicId).DirtyBottom = bottomPx
-    End If
-End Sub
+    ELSE
+        IF leftPx < FlicItems(flicId).DirtyLeft THEN FlicItems(flicId).DirtyLeft = leftPx
+        IF topPx < FlicItems(flicId).DirtyTop THEN FlicItems(flicId).DirtyTop = topPx
+        IF rightPx > FlicItems(flicId).DirtyRight THEN FlicItems(flicId).DirtyRight = rightPx
+        IF bottomPx > FlicItems(flicId).DirtyBottom THEN FlicItems(flicId).DirtyBottom = bottomPx
+    END IF
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC mark dirty full frame.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicMarkDirtyFullFrame (flicId As Long)
-    If FlicValidId(flicId) = 0 Then Exit Sub
-    If FlicItems(flicId).WidthPx < 1 Then Exit Sub
-    If FlicItems(flicId).HeightPx < 1 Then Exit Sub
+SUB FlicMarkDirtyFullFrame (flicId AS LONG)
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
+    IF FlicItems(flicId).WidthPx < 1 THEN EXIT SUB
+    IF FlicItems(flicId).HeightPx < 1 THEN EXIT SUB
 
     FlicMarkDirtyRect flicId, 0, 0, FlicItems(flicId).WidthPx - 1, FlicItems(flicId).HeightPx - 1
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC valid id.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicValidId% (flicId As Long)
+FUNCTION FlicValidId% (flicId AS LONG)
     FlicValidId% = 0
 
-    If flicId < 0 Then Exit Function
-    If flicId > UBound(FlicItems) Then Exit Function
-    If FlicItems(flicId).Used = 0 Then Exit Function
+    IF flicId < 0 THEN EXIT FUNCTION
+    IF flicId > UBOUND(FlicItems) THEN EXIT FUNCTION
+    IF FlicItems(flicId).Used = 0 THEN EXIT FUNCTION
 
     FlicValidId% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC init slot.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicInitSlot (flicId As Long)
-    If flicId < 0 Then Exit Sub
-    If flicId > UBound(FlicItems) Then Exit Sub
+SUB FlicInitSlot (flicId AS LONG)
+    IF flicId < 0 THEN EXIT SUB
+    IF flicId > UBOUND(FlicItems) THEN EXIT SUB
 
     FlicItems(flicId).Used = 0
     FlicItems(flicId).FormatType = ANIM_FORMAT_NONE
@@ -880,349 +880,349 @@ Sub FlicInitSlot (flicId As Long)
     FlicItems(flicId).SnapshotInterval = 0
     FlicFileNames(flicId) = ""
     FlicErrorTexts(flicId) = ""
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC clear active.
-Sub FlicClearActive ()
+SUB FlicClearActive ()
     FlicDecodeContextId = -1
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC prepare active.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicPrepareActive% (flicId As Long)
+FUNCTION FlicPrepareActive% (flicId AS LONG)
     FlicPrepareActive% = 0
 
-    If FlicValidId(flicId) = 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
 
     FlicDecodeContextId = flicId
     FlicPrepareActive% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC alloc file block.
 ' Parameters: byteCount = count used to size or iterate the current data set.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicAllocFileBlock& (byteCount As _Integer64)
+FUNCTION FlicAllocFileBlock& (byteCount AS _INTEGER64)
     ' Variable: startIndex stores the index variable used to address the current item.
-    Dim startIndex As Long
+    DIM startIndex AS LONG
     ' Variable: neededTop stores the working value for needed top.
-    Dim neededTop As Long
+    DIM neededTop AS LONG
     ' Variable: newCapacity stores the working value for new capacity.
-    Dim newCapacity As Long
+    DIM newCapacity AS LONG
 
     FlicAllocFileBlock& = -1
 
-    If byteCount < 1 Then Exit Function
-    If byteCount > 2147483647 Then Exit Function
+    IF byteCount < 1 THEN EXIT FUNCTION
+    IF byteCount > 2147483647 THEN EXIT FUNCTION
 
     startIndex = FlicFileDataNext
     neededTop = startIndex + byteCount
 
-    If neededTop > FlicFileDataCapacity Then
+    IF neededTop > FlicFileDataCapacity THEN
         newCapacity = FlicFileDataCapacity
-        If newCapacity < 1 Then newCapacity = 65536
+        IF newCapacity < 1 THEN newCapacity = 65536
         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-        Do While newCapacity < neededTop
-            If newCapacity > 1073741823 Then
+        DO WHILE newCapacity < neededTop
+            IF newCapacity > 1073741823 THEN
                 newCapacity = neededTop
-                Exit Do
-            End If
+                EXIT DO
+            END IF
             newCapacity = newCapacity * 2
-        Loop
+        LOOP
         ' dynamic array: FlicFileData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        ReDim _Preserve FlicFileData(newCapacity - 1) As _Unsigned _Byte
+        REDIM _PRESERVE FlicFileData(newCapacity - 1) AS _UNSIGNED _BYTE
         FlicFileDataCapacity = newCapacity
-    End If
+    END IF
 
     FlicAllocFileBlock& = startIndex
     FlicFileDataNext = neededTop
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC load whole file to ram.
 ' Parameters: fileNum = working value for file num; fileDataStart = buffer that holds raw, packed, or decoded byte data; fileSize = working value for file size.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicLoadWholeFileToRam% (fileNum As Integer, fileDataStart As Long, fileSize As _Integer64)
+FUNCTION FlicLoadWholeFileToRam% (fileNum AS INTEGER, fileDataStart AS LONG, fileSize AS _INTEGER64)
     ' Variable: fileMem stores the memory handle or memory-related helper value.
-    Dim fileMem As _MEM
+    DIM fileMem AS _MEM
     ' Variable: chunkBytes stores the working value for chunk bytes.
-    Dim chunkBytes As Long
+    DIM chunkBytes AS LONG
     ' Variable: tailBytes stores the working value for tail bytes.
-    Dim tailBytes As Long
+    DIM tailBytes AS LONG
     ' Variable: fullChunkCount stores the count used to size or iterate the current data set.
-    Dim fullChunkCount As Long
+    DIM fullChunkCount AS LONG
     ' Variable: chunkIndex stores the index variable used to address the current item.
-    Dim chunkIndex As Long
+    DIM chunkIndex AS LONG
     ' Variable: writeOffset stores the working value for write offset.
-    Dim writeOffset As _Integer64
+    DIM writeOffset AS _INTEGER64
     ' Variable: readPos stores the working value for read pos.
-    Dim readPos As _Integer64
+    DIM readPos AS _INTEGER64
     ' Variable: chunkSize stores the size of the current chunk payload.
-    Dim chunkSize As Long
+    DIM chunkSize AS LONG
 
     FlicLoadWholeFileToRam% = 0
 
-    If fileNum = 0 Then Exit Function
-    If fileDataStart < 0 Then Exit Function
-    If fileSize < 1 Then Exit Function
-    If fileSize > 2147483647 Then Exit Function
+    IF fileNum = 0 THEN EXIT FUNCTION
+    IF fileDataStart < 0 THEN EXIT FUNCTION
+    IF fileSize < 1 THEN EXIT FUNCTION
+    IF fileSize > 2147483647 THEN EXIT FUNCTION
 
     chunkBytes = 262144
-    If FlicEnsureIoChunkBuffer(chunkBytes) = 0 Then Exit Function
+    IF FlicEnsureIoChunkBuffer(chunkBytes) = 0 THEN EXIT FUNCTION
 
-    fileMem = _Mem(FlicFileData())
-    If _MemExists(fileMem) = 0 Then Exit Function
+    fileMem = _MEM(FlicFileData())
+    IF _MEMEXISTS(fileMem) = 0 THEN EXIT FUNCTION
 
     fullChunkCount = fileSize \ chunkBytes
-    tailBytes = fileSize Mod chunkBytes
+    tailBytes = fileSize MOD chunkBytes
     writeOffset = fileMem.OFFSET + fileDataStart
     readPos = 1
 
     ' Loop purpose: step through structured chunks in the current file block.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For chunkIndex = 1 To fullChunkCount
-        Get #fileNum, readPos, FlicIoChunkData()
-        _MemPut fileMem, writeOffset, FlicIoChunkData()
+    FOR chunkIndex = 1 TO fullChunkCount
+        GET #fileNum, readPos, FlicIoChunkData()
+        _MEMPUT fileMem, writeOffset, FlicIoChunkData()
         writeOffset = writeOffset + chunkBytes
         readPos = readPos + chunkBytes
-    Next chunkIndex
+    NEXT chunkIndex
 
-    If tailBytes > 0 Then
+    IF tailBytes > 0 THEN
         chunkSize = tailBytes
-        If FlicEnsureIoTailBuffer(chunkSize) = 0 Then
-            If _MemExists(fileMem) Then _MemFree fileMem
-            Exit Function
-        End If
-        Get #fileNum, readPos, FlicIoTailData()
-        _MemPut fileMem, writeOffset, FlicIoTailData()
-    End If
+        IF FlicEnsureIoTailBuffer(chunkSize) = 0 THEN
+            IF _MEMEXISTS(fileMem) THEN _MEMFREE fileMem
+            EXIT FUNCTION
+        END IF
+        GET #fileNum, readPos, FlicIoTailData()
+        _MEMPUT fileMem, writeOffset, FlicIoTailData()
+    END IF
 
-    If _MemExists(fileMem) Then _MemFree fileMem
+    IF _MEMEXISTS(fileMem) THEN _MEMFREE fileMem
     FlicLoadWholeFileToRam% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC alloc pixel block.
 ' Parameters: pixelCount = count used to size or iterate the current data set.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicAllocPixelBlock& (pixelCount As Long)
+FUNCTION FlicAllocPixelBlock& (pixelCount AS LONG)
     ' Variable: startIndex stores the index variable used to address the current item.
-    Dim startIndex As Long
+    DIM startIndex AS LONG
     ' Variable: neededTop stores the working value for needed top.
-    Dim neededTop As Long
+    DIM neededTop AS LONG
     ' Variable: newCapacity stores the working value for new capacity.
-    Dim newCapacity As Long
+    DIM newCapacity AS LONG
 
     FlicAllocPixelBlock& = -1
-    If pixelCount < 1 Then Exit Function
+    IF pixelCount < 1 THEN EXIT FUNCTION
 
     startIndex = FlicPixelDataNext
     neededTop = startIndex + pixelCount
 
-    If neededTop > FlicPixelDataCapacity Then
+    IF neededTop > FlicPixelDataCapacity THEN
         newCapacity = FlicPixelDataCapacity
-        If newCapacity < 1 Then newCapacity = 65536
+        IF newCapacity < 1 THEN newCapacity = 65536
         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-        Do While newCapacity < neededTop
-            If newCapacity > 1073741823 Then
+        DO WHILE newCapacity < neededTop
+            IF newCapacity > 1073741823 THEN
                 newCapacity = neededTop
-                Exit Do
-            End If
+                EXIT DO
+            END IF
             newCapacity = newCapacity * 2
-        Loop
+        LOOP
         ' dynamic array: FlicPixelData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        ReDim _Preserve FlicPixelData(newCapacity - 1) As _Unsigned _Byte
+        REDIM _PRESERVE FlicPixelData(newCapacity - 1) AS _UNSIGNED _BYTE
         FlicPixelDataCapacity = newCapacity
-    End If
+    END IF
 
     FlicAllocPixelBlock& = startIndex
     FlicPixelDataNext = neededTop
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC alloc frame block.
 ' Parameters: frameCount = total number of frames available for the current animation.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicAllocFrameBlock& (frameCount As Long)
+FUNCTION FlicAllocFrameBlock& (frameCount AS LONG)
     ' Variable: startIndex stores the index variable used to address the current item.
-    Dim startIndex As Long
+    DIM startIndex AS LONG
     ' Variable: neededTop stores the working value for needed top.
-    Dim neededTop As Long
+    DIM neededTop AS LONG
     ' Variable: newCapacity stores the working value for new capacity.
-    Dim newCapacity As Long
+    DIM newCapacity AS LONG
 
     FlicAllocFrameBlock& = -1
-    If frameCount < 1 Then Exit Function
+    IF frameCount < 1 THEN EXIT FUNCTION
 
     startIndex = FlicFrameOffsetsNext
     neededTop = startIndex + frameCount
 
-    If neededTop > FlicFrameOffsetsCapacity Then
+    IF neededTop > FlicFrameOffsetsCapacity THEN
         newCapacity = FlicFrameOffsetsCapacity
-        If newCapacity < 1 Then newCapacity = 4096
+        IF newCapacity < 1 THEN newCapacity = 4096
         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-        Do While newCapacity < neededTop
-            If newCapacity > 1073741823 Then
+        DO WHILE newCapacity < neededTop
+            IF newCapacity > 1073741823 THEN
                 newCapacity = neededTop
-                Exit Do
-            End If
+                EXIT DO
+            END IF
             newCapacity = newCapacity * 2
-        Loop
+        LOOP
         ' dynamic array: FlicFrameOffsets64 is resized here to hold the working value for FLIC frame offsets 64.
-        ReDim _Preserve FlicFrameOffsets64(newCapacity - 1) As _Integer64
+        REDIM _PRESERVE FlicFrameOffsets64(newCapacity - 1) AS _INTEGER64
         FlicFrameOffsetsCapacity = newCapacity
-    End If
+    END IF
 
     FlicAllocFrameBlock& = startIndex
     FlicFrameOffsetsNext = neededTop
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC count snapshots.
 ' Parameters: frameCount = total number of frames available for the current animation; intervalValue = working value for interval value.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicCountSnapshots& (frameCount As Long, intervalValue As Long)
-    If frameCount < 1 Then
+FUNCTION FlicCountSnapshots& (frameCount AS LONG, intervalValue AS LONG)
+    IF frameCount < 1 THEN
         FlicCountSnapshots = 0
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    If intervalValue < 1 Then intervalValue = 1
+    IF intervalValue < 1 THEN intervalValue = 1
     FlicCountSnapshots = ((frameCount - 1) \ intervalValue) + 1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC alloc snapshot meta block.
 ' Parameters: snapshotCount = count used to size or iterate the current data set; pixelCount = count used to size or iterate the current data set.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicAllocSnapshotMetaBlock& (snapshotCount As Long, pixelCount As Long)
+FUNCTION FlicAllocSnapshotMetaBlock& (snapshotCount AS LONG, pixelCount AS LONG)
     ' Variable: startIndex stores the index variable used to address the current item.
-    Dim startIndex As Long
+    DIM startIndex AS LONG
     ' Variable: neededTop stores the working value for needed top.
-    Dim neededTop As Long
+    DIM neededTop AS LONG
     ' Variable: newCapacity stores the working value for new capacity.
-    Dim newCapacity As Long
+    DIM newCapacity AS LONG
     ' Variable: paletteStart stores the palette storage or palette index used during indexed-color decoding.
-    Dim paletteStart As Long
+    DIM paletteStart AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
     ' Variable: snapshotIndex stores the index variable used to address the current item.
-    Dim snapshotIndex As Long
+    DIM snapshotIndex AS LONG
 
     FlicAllocSnapshotMetaBlock = -1
-    If snapshotCount < 1 Then Exit Function
-    If pixelCount < 1 Then Exit Function
+    IF snapshotCount < 1 THEN EXIT FUNCTION
+    IF pixelCount < 1 THEN EXIT FUNCTION
 
     startIndex = FlicSnapshotMetaNext
     neededTop = startIndex + snapshotCount
-    If neededTop > FlicSnapshotMetaCapacity Then
+    IF neededTop > FlicSnapshotMetaCapacity THEN
         newCapacity = FlicSnapshotMetaCapacity
-        If newCapacity < 1 Then newCapacity = 256
+        IF newCapacity < 1 THEN newCapacity = 256
         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-        Do While newCapacity < neededTop
-            If newCapacity > 1073741823 Then
+        DO WHILE newCapacity < neededTop
+            IF newCapacity > 1073741823 THEN
                 newCapacity = neededTop
-                Exit Do
-            End If
+                EXIT DO
+            END IF
             newCapacity = newCapacity * 2
-        Loop
+        LOOP
         ' dynamic array: FlicSnapshotMeta is resized here to hold the working value for FLIC snapshot meta.
-        ReDim _Preserve FlicSnapshotMeta(newCapacity - 1) As FlicSnapshotStore
+        REDIM _PRESERVE FlicSnapshotMeta(newCapacity - 1) AS FlicSnapshotStore
         FlicSnapshotMetaCapacity = newCapacity
-    End If
+    END IF
 
     paletteStart = FlicSnapshotPaletteNext
     neededTop = paletteStart + snapshotCount
-    If neededTop > FlicSnapshotPaletteCapacity Then
+    IF neededTop > FlicSnapshotPaletteCapacity THEN
         newCapacity = FlicSnapshotPaletteCapacity
-        If newCapacity < 1 Then newCapacity = 256
+        IF newCapacity < 1 THEN newCapacity = 256
         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-        Do While newCapacity < neededTop
-            If newCapacity > 1073741823 Then
+        DO WHILE newCapacity < neededTop
+            IF newCapacity > 1073741823 THEN
                 newCapacity = neededTop
-                Exit Do
-            End If
+                EXIT DO
+            END IF
             newCapacity = newCapacity * 2
-        Loop
+        LOOP
         ' dynamic array: FlicSnapshotPalette is resized here to hold the palette storage or palette index used during indexed-color decoding.
-        ReDim _Preserve FlicSnapshotPalette(0 To 255, newCapacity - 1) As RGBColorType
+        REDIM _PRESERVE FlicSnapshotPalette(0 TO 255, newCapacity - 1) AS RGBColorType
         FlicSnapshotPaletteCapacity = newCapacity
-    End If
+    END IF
 
     pixelStart = FlicSnapshotPixelsNext
     neededTop = pixelStart + snapshotCount * pixelCount
-    If neededTop > FlicSnapshotPixelsCapacity Then
+    IF neededTop > FlicSnapshotPixelsCapacity THEN
         newCapacity = FlicSnapshotPixelsCapacity
-        If newCapacity < 1 Then newCapacity = 65536
+        IF newCapacity < 1 THEN newCapacity = 65536
         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-        Do While newCapacity < neededTop
-            If newCapacity > 1073741823 Then
+        DO WHILE newCapacity < neededTop
+            IF newCapacity > 1073741823 THEN
                 newCapacity = neededTop
-                Exit Do
-            End If
+                EXIT DO
+            END IF
             newCapacity = newCapacity * 2
-        Loop
+        LOOP
         ' dynamic array: FlicSnapshotPixels is resized here to hold the working value for FLIC snapshot pixels.
-        ReDim _Preserve FlicSnapshotPixels(newCapacity - 1) As _Unsigned _Byte
+        REDIM _PRESERVE FlicSnapshotPixels(newCapacity - 1) AS _UNSIGNED _BYTE
         FlicSnapshotPixelsCapacity = newCapacity
-    End If
+    END IF
 
     snapshotIndex = 0
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While snapshotIndex < snapshotCount
+    DO WHILE snapshotIndex < snapshotCount
         FlicSnapshotMeta(startIndex + snapshotIndex).Used = 0
         FlicSnapshotMeta(startIndex + snapshotIndex).FrameIndex = -1
         FlicSnapshotMeta(startIndex + snapshotIndex).PixelStart = pixelStart + snapshotIndex * pixelCount
         FlicSnapshotMeta(startIndex + snapshotIndex).PaletteIndex = paletteStart + snapshotIndex
         snapshotIndex = snapshotIndex + 1
-    Loop
+    LOOP
 
     FlicSnapshotMetaNext = startIndex + snapshotCount
     FlicSnapshotPaletteNext = paletteStart + snapshotCount
     FlicSnapshotPixelsNext = pixelStart + snapshotCount * pixelCount
     FlicAllocSnapshotMetaBlock = startIndex
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC snapshot slot index.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicSnapshotSlotIndex& (flicId As Long, frameIndex As Long)
+FUNCTION FlicSnapshotSlotIndex& (flicId AS LONG, frameIndex AS LONG)
     ' Variable: intervalValue stores the working value for interval value.
-    Dim intervalValue As Long
+    DIM intervalValue AS LONG
     ' Variable: slotOffset stores the working value for slot offset.
-    Dim slotOffset As Long
+    DIM slotOffset AS LONG
 
     FlicSnapshotSlotIndex = -1
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
 
     intervalValue = FlicItems(flicId).SnapshotInterval
-    If intervalValue < 1 Then Exit Function
-    If (frameIndex Mod intervalValue) <> 0 Then Exit Function
+    IF intervalValue < 1 THEN EXIT FUNCTION
+    IF (frameIndex MOD intervalValue) <> 0 THEN EXIT FUNCTION
 
     slotOffset = frameIndex \ intervalValue
-    If slotOffset < 0 Then Exit Function
-    If slotOffset >= FlicItems(flicId).SnapshotCount Then Exit Function
+    IF slotOffset < 0 THEN EXIT FUNCTION
+    IF slotOffset >= FlicItems(flicId).SnapshotCount THEN EXIT FUNCTION
 
     FlicSnapshotSlotIndex = FlicItems(flicId).SnapshotMetaStart + slotOffset
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC maybe store snapshot.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item.
-Sub FlicMaybeStoreSnapshot (flicId As Long, frameIndex As Long)
+SUB FlicMaybeStoreSnapshot (flicId AS LONG, frameIndex AS LONG)
     ' Variable: snapshotSlot stores the slot number inside the module-wide storage arrays.
-    Dim snapshotSlot As Long
+    DIM snapshotSlot AS LONG
     ' Variable: pixelCount stores the count used to size or iterate the current data set.
-    Dim pixelCount As Long
+    DIM pixelCount AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
     ' Variable: snapshotPixelStart stores the working value for snapshot pixel start.
-    Dim snapshotPixelStart As Long
+    DIM snapshotPixelStart AS LONG
     ' Variable: paletteIndex stores the index variable used to address the current item.
-    Dim paletteIndex As Long
+    DIM paletteIndex AS LONG
     ' Variable: indexValue stores the working value for index value.
-    Dim indexValue As Long
+    DIM indexValue AS LONG
 
-    If FlicValidId(flicId) = 0 Then Exit Sub
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
 
     snapshotSlot = FlicSnapshotSlotIndex(flicId, frameIndex)
-    If snapshotSlot < 0 Then Exit Sub
-    If FlicSnapshotMeta(snapshotSlot).Used Then Exit Sub
+    IF snapshotSlot < 0 THEN EXIT SUB
+    IF FlicSnapshotMeta(snapshotSlot).Used THEN EXIT SUB
 
     pixelCount = FlicItems(flicId).PixelCount
     pixelStart = FlicItems(flicId).PixelStart
@@ -1231,65 +1231,65 @@ Sub FlicMaybeStoreSnapshot (flicId As Long, frameIndex As Long)
 
     indexValue = 0
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While indexValue < pixelCount
+    DO WHILE indexValue < pixelCount
         FlicSnapshotPixels(snapshotPixelStart + indexValue) = FlicPixelData(pixelStart + indexValue)
         indexValue = indexValue + 1
-    Loop
+    LOOP
 
     indexValue = 0
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While indexValue <= 255
+    DO WHILE indexValue <= 255
         FlicSnapshotPalette(indexValue, paletteIndex) = FlicPaletteData(indexValue, flicId)
         indexValue = indexValue + 1
-    Loop
+    LOOP
 
     FlicSnapshotMeta(snapshotSlot).FrameIndex = frameIndex
     FlicSnapshotMeta(snapshotSlot).Used = -1
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC restore nearest snapshot.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item; restoredFrame = working value for restored frame.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicRestoreNearestSnapshot% (flicId As Long, frameIndex As Long, restoredFrame As Long)
+FUNCTION FlicRestoreNearestSnapshot% (flicId AS LONG, frameIndex AS LONG, restoredFrame AS LONG)
     ' Variable: intervalValue stores the working value for interval value.
-    Dim intervalValue As Long
+    DIM intervalValue AS LONG
     ' Variable: slotOffset stores the working value for slot offset.
-    Dim slotOffset As Long
+    DIM slotOffset AS LONG
     ' Variable: snapshotSlot stores the slot number inside the module-wide storage arrays.
-    Dim snapshotSlot As Long
+    DIM snapshotSlot AS LONG
     ' Variable: pixelCount stores the count used to size or iterate the current data set.
-    Dim pixelCount As Long
+    DIM pixelCount AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
     ' Variable: snapshotPixelStart stores the working value for snapshot pixel start.
-    Dim snapshotPixelStart As Long
+    DIM snapshotPixelStart AS LONG
     ' Variable: paletteIndex stores the index variable used to address the current item.
-    Dim paletteIndex As Long
+    DIM paletteIndex AS LONG
     ' Variable: indexValue stores the working value for index value.
-    Dim indexValue As Long
+    DIM indexValue AS LONG
     ' Variable: redValue stores the working value for red value.
-    Dim redValue As Long
+    DIM redValue AS LONG
     ' Variable: greenValue stores the working value for green value.
-    Dim greenValue As Long
+    DIM greenValue AS LONG
     ' Variable: blueValue stores the working value for blue value.
-    Dim blueValue As Long
+    DIM blueValue AS LONG
 
     FlicRestoreNearestSnapshot = 0
     restoredFrame = -1
 
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
 
     intervalValue = FlicItems(flicId).SnapshotInterval
-    If intervalValue < 1 Then Exit Function
+    IF intervalValue < 1 THEN EXIT FUNCTION
 
     slotOffset = frameIndex \ intervalValue
-    If slotOffset >= FlicItems(flicId).SnapshotCount Then slotOffset = FlicItems(flicId).SnapshotCount - 1
+    IF slotOffset >= FlicItems(flicId).SnapshotCount THEN slotOffset = FlicItems(flicId).SnapshotCount - 1
 
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While slotOffset >= 0
+    DO WHILE slotOffset >= 0
         snapshotSlot = FlicItems(flicId).SnapshotMetaStart + slotOffset
-        If FlicSnapshotMeta(snapshotSlot).Used Then
+        IF FlicSnapshotMeta(snapshotSlot).Used THEN
             pixelCount = FlicItems(flicId).PixelCount
             pixelStart = FlicItems(flicId).PixelStart
             snapshotPixelStart = FlicSnapshotMeta(snapshotSlot).PixelStart
@@ -1297,21 +1297,21 @@ Function FlicRestoreNearestSnapshot% (flicId As Long, frameIndex As Long, restor
 
             indexValue = 0
             ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-            Do While indexValue < pixelCount
+            DO WHILE indexValue < pixelCount
                 FlicPixelData(pixelStart + indexValue) = FlicSnapshotPixels(snapshotPixelStart + indexValue)
                 indexValue = indexValue + 1
-            Loop
+            LOOP
 
             indexValue = 0
             ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-            Do While indexValue <= 255
+            DO WHILE indexValue <= 255
                 FlicPaletteData(indexValue, flicId) = FlicSnapshotPalette(indexValue, paletteIndex)
                 redValue = FlicPaletteData(indexValue, flicId).R
                 greenValue = FlicPaletteData(indexValue, flicId).G
                 blueValue = FlicPaletteData(indexValue, flicId).B
                 FlicPalette32Data(indexValue, flicId) = _RGB32(redValue, greenValue, blueValue)
                 indexValue = indexValue + 1
-            Loop
+            LOOP
 
             restoredFrame = FlicSnapshotMeta(snapshotSlot).FrameIndex
             FlicItems(flicId).DecodedFrame = restoredFrame
@@ -1321,156 +1321,156 @@ Function FlicRestoreNearestSnapshot% (flicId As Long, frameIndex As Long, restor
             FlicItems(flicId).DirtyValid = 0
             FlicMarkDirtyFullFrame flicId
             FlicRestoreNearestSnapshot = -1
-            Exit Function
-        End If
+            EXIT FUNCTION
+        END IF
         slotOffset = slotOffset - 1
-    Loop
-End Function
+    LOOP
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC ensure io chunk buffer.
 ' Parameters: requiredBytes = working value for required bytes.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicEnsureIoChunkBuffer% (requiredBytes As Long)
+FUNCTION FlicEnsureIoChunkBuffer% (requiredBytes AS LONG)
     FlicEnsureIoChunkBuffer% = 0
-    If requiredBytes < 1 Then Exit Function
-    If FlicIoChunkCapacity <> requiredBytes Then
+    IF requiredBytes < 1 THEN EXIT FUNCTION
+    IF FlicIoChunkCapacity <> requiredBytes THEN
         ' dynamic array: FlicIoChunkData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        ReDim FlicIoChunkData(requiredBytes - 1) As _Unsigned _Byte
+        REDIM FlicIoChunkData(requiredBytes - 1) AS _UNSIGNED _BYTE
         FlicIoChunkCapacity = requiredBytes
-    End If
+    END IF
     FlicEnsureIoChunkBuffer% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC ensure io tail buffer.
 ' Parameters: requiredBytes = working value for required bytes.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicEnsureIoTailBuffer% (requiredBytes As Long)
+FUNCTION FlicEnsureIoTailBuffer% (requiredBytes AS LONG)
     FlicEnsureIoTailBuffer% = 0
-    If requiredBytes < 1 Then Exit Function
-    If FlicIoTailCapacity <> requiredBytes Then
+    IF requiredBytes < 1 THEN EXIT FUNCTION
+    IF FlicIoTailCapacity <> requiredBytes THEN
         ' dynamic array: FlicIoTailData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        ReDim FlicIoTailData(requiredBytes - 1) As _Unsigned _Byte
+        REDIM FlicIoTailData(requiredBytes - 1) AS _UNSIGNED _BYTE
         FlicIoTailCapacity = requiredBytes
-    End If
+    END IF
     FlicEnsureIoTailBuffer% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC ensure zero fill buffer.
 ' Parameters: requiredBytes = working value for required bytes.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicEnsureZeroFillBuffer% (requiredBytes As Long)
+FUNCTION FlicEnsureZeroFillBuffer% (requiredBytes AS LONG)
     FlicEnsureZeroFillBuffer% = 0
-    If requiredBytes < 1 Then Exit Function
-    If FlicZeroFillCapacity <> requiredBytes Then
+    IF requiredBytes < 1 THEN EXIT FUNCTION
+    IF FlicZeroFillCapacity <> requiredBytes THEN
         ' dynamic array: FlicZeroFillData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        ReDim FlicZeroFillData(requiredBytes - 1) As _Unsigned _Byte
+        REDIM FlicZeroFillData(requiredBytes - 1) AS _UNSIGNED _BYTE
         FlicZeroFillCapacity = requiredBytes
-    End If
+    END IF
     FlicEnsureZeroFillBuffer% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC ensure row 32 buffer.
 ' Parameters: pixelCount = count used to size or iterate the current data set.
-Sub FlicEnsureRow32Buffer (pixelCount As Long)
-    If pixelCount < 1 Then Exit Sub
-    If pixelCount = FlicRow32Capacity Then Exit Sub
+SUB FlicEnsureRow32Buffer (pixelCount AS LONG)
+    IF pixelCount < 1 THEN EXIT SUB
+    IF pixelCount = FlicRow32Capacity THEN EXIT SUB
 
     ' dynamic array: FlicRow32Data is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    ReDim FlicRow32Data(pixelCount - 1) As _Unsigned Long
+    REDIM FlicRow32Data(pixelCount - 1) AS _UNSIGNED LONG
     FlicRow32Capacity = pixelCount
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC set decode context.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicSetDecodeContext (flicId As Long)
+SUB FlicSetDecodeContext (flicId AS LONG)
     FlicDecodeContextId = flicId
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC frame offset 64.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicFrameOffset64&& (flicId As Long, frameIndex As Long)
+FUNCTION FlicFrameOffset64&& (flicId AS LONG, frameIndex AS LONG)
     FlicFrameOffset64&& = 0
 
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= FlicItems(flicId).FrameCount Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= FlicItems(flicId).FrameCount THEN EXIT FUNCTION
 
     FlicFrameOffset64&& = FlicFrameOffsets64(FlicItems(flicId).FrameInfoStart + frameIndex)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC build frame index.
 ' Parameters: fileDataStart = buffer that holds raw, packed, or decoded byte data; fileSize = working value for file size; headerData = buffer that holds raw, packed, or decoded byte data; formatType = working value for format type; frameCount = total number of frames available for the current animation; frameStart = working value for frame start; additional parameters continue the same pattern.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicBuildFrameIndex% (fileDataStart As Long, fileSize As _Integer64, headerData As FLICHeaderType, formatType As Long, frameCount As Long, frameStart As Long, hasRing As Integer, ringOffset As _Integer64, ringSize As _Integer64)
+FUNCTION FlicBuildFrameIndex% (fileDataStart AS LONG, fileSize AS _INTEGER64, headerData AS FLICHeaderType, formatType AS LONG, frameCount AS LONG, frameStart AS LONG, hasRing AS INTEGER, ringOffset AS _INTEGER64, ringSize AS _INTEGER64)
     ' Variable: frameOffset stores the working value for frame offset.
-    Dim frameOffset As _Integer64
+    DIM frameOffset AS _INTEGER64
     ' Variable: frameSize stores the working value for frame size.
-    Dim frameSize As _Integer64
+    DIM frameSize AS _INTEGER64
     ' Variable: frameType stores the working value for frame type.
-    Dim frameType As Long
+    DIM frameType AS LONG
     ' Variable: chunkCount stores the count used to size or iterate the current data set.
-    Dim chunkCount As Long
+    DIM chunkCount AS LONG
     ' Variable: indexValue stores the working value for index value.
-    Dim indexValue As Long
+    DIM indexValue AS LONG
 
     FlicBuildFrameIndex% = 0
     hasRing = 0
     ringOffset = 0
     ringSize = 0
 
-    If frameCount < 1 Then Exit Function
-    If fileDataStart < 0 Then Exit Function
-    If fileSize < 128 Then Exit Function
+    IF frameCount < 1 THEN EXIT FUNCTION
+    IF fileDataStart < 0 THEN EXIT FUNCTION
+    IF fileSize < 128 THEN EXIT FUNCTION
 
-    If formatType = ANIM_FORMAT_FLI Then
+    IF formatType = ANIM_FORMAT_FLI THEN
         frameOffset = 128
-    Else
+    ELSE
         frameOffset = headerData.OfFrame1
-    End If
+    END IF
 
     ' Loop purpose: iterate through animation frames while building, seeking, or updating playback state.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For indexValue = 0 To frameCount - 1
-        If frameOffset + FRAME_HEADER_SIZE > fileSize Then Exit Function
+    FOR indexValue = 0 TO frameCount - 1
+        IF frameOffset + FRAME_HEADER_SIZE > fileSize THEN EXIT FUNCTION
 
         frameSize = FlicRamReadULong(fileDataStart, frameOffset)
         frameType = FlicRamReadUShort(fileDataStart, frameOffset + 4)
         chunkCount = FlicRamReadUShort(fileDataStart, frameOffset + 6)
 
-        If frameSize < FRAME_HEADER_SIZE Then Exit Function
-        If frameType <> FRAME_MAGIC Then Exit Function
-        If frameOffset + frameSize > fileSize Then Exit Function
+        IF frameSize < FRAME_HEADER_SIZE THEN EXIT FUNCTION
+        IF frameType <> FRAME_MAGIC THEN EXIT FUNCTION
+        IF frameOffset + frameSize > fileSize THEN EXIT FUNCTION
 
         FlicFrameOffsets64(frameStart + indexValue) = frameOffset
         frameOffset = frameOffset + frameSize
-    Next indexValue
+    NEXT indexValue
 
-    If formatType = ANIM_FORMAT_FLC Then
-        If frameOffset + FRAME_HEADER_SIZE <= fileSize Then
+    IF formatType = ANIM_FORMAT_FLC THEN
+        IF frameOffset + FRAME_HEADER_SIZE <= fileSize THEN
             frameSize = FlicRamReadULong(fileDataStart, frameOffset)
             frameType = FlicRamReadUShort(fileDataStart, frameOffset + 4)
             chunkCount = FlicRamReadUShort(fileDataStart, frameOffset + 6)
 
-            If frameSize >= FRAME_HEADER_SIZE Then
-                If frameType = FRAME_MAGIC Then
-                    If frameOffset + frameSize <= fileSize Then
+            IF frameSize >= FRAME_HEADER_SIZE THEN
+                IF frameType = FRAME_MAGIC THEN
+                    IF frameOffset + frameSize <= fileSize THEN
                         hasRing = -1
                         ringOffset = frameOffset
                         ringSize = frameSize
-                    End If
-                End If
-            End If
-        End If
-    End If
+                    END IF
+                END IF
+            END IF
+        END IF
+    END IF
 
     FlicBuildFrameIndex% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC reset decode state.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicResetDecodeState (flicId As Long)
-    If FlicValidId(flicId) = 0 Then Exit Sub
+SUB FlicResetDecodeState (flicId AS LONG)
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
 
     FlicSetDecodeContext flicId
     FlicResetPixels
@@ -1480,35 +1480,35 @@ Sub FlicResetDecodeState (flicId As Long)
     FlicItems(flicId).PaletteDirty = -1
     FlicItems(flicId).DirtyValid = 0
     FlicMarkDirtyFullFrame flicId
-End Sub
+END SUB
 
 ' Purpose: Decode or apply FLI/FLC chunk data to the current frame buffer.
 ' Parameters: flicId = working value for FLIC id; frameOffset = working value for frame offset.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicApplyFrameAtOffset% (flicId As Long, frameOffset As _Integer64)
+FUNCTION FlicApplyFrameAtOffset% (flicId AS LONG, frameOffset AS _INTEGER64)
     ' Variable: frameSize stores the working value for frame size.
-    Dim frameSize As _Integer64
+    DIM frameSize AS _INTEGER64
     ' Variable: frameType stores the working value for frame type.
-    Dim frameType As Long
+    DIM frameType AS LONG
     ' Variable: chunkCount stores the count used to size or iterate the current data set.
-    Dim chunkCount As Long
+    DIM chunkCount AS LONG
     ' Variable: framePayloadSize stores the working value for frame payload size.
-    Dim framePayloadSize As Long
+    DIM framePayloadSize AS LONG
     ' Variable: fileDataStart stores the buffer that holds raw, packed, or decoded byte data.
-    Dim fileDataStart As Long
+    DIM fileDataStart AS LONG
     ' Variable: fileSize stores the working value for file size.
-    Dim fileSize As _Integer64
+    DIM fileSize AS _INTEGER64
 
     FlicApplyFrameAtOffset% = 0
 
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If frameOffset < 0 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF frameOffset < 0 THEN EXIT FUNCTION
 
     fileDataStart = FlicItems(flicId).FileDataStart
     fileSize = FlicItems(flicId).FileDataSize
-    If fileDataStart < 0 Then Exit Function
-    If fileSize < 1 Then Exit Function
-    If frameOffset + FRAME_HEADER_SIZE > fileSize Then Exit Function
+    IF fileDataStart < 0 THEN EXIT FUNCTION
+    IF fileSize < 1 THEN EXIT FUNCTION
+    IF frameOffset + FRAME_HEADER_SIZE > fileSize THEN EXIT FUNCTION
 
     FlicSetDecodeContext flicId
 
@@ -1516,9 +1516,9 @@ Function FlicApplyFrameAtOffset% (flicId As Long, frameOffset As _Integer64)
     frameType = FlicRamReadUShort(fileDataStart, frameOffset + 4)
     chunkCount = FlicRamReadUShort(fileDataStart, frameOffset + 6)
 
-    If frameSize < FRAME_HEADER_SIZE Then Exit Function
-    If frameType <> FRAME_MAGIC Then Exit Function
-    If frameOffset + frameSize > fileSize Then Exit Function
+    IF frameSize < FRAME_HEADER_SIZE THEN EXIT FUNCTION
+    IF frameType <> FRAME_MAGIC THEN EXIT FUNCTION
+    IF frameOffset + frameSize > fileSize THEN EXIT FUNCTION
 
     framePayloadSize = frameSize - FRAME_HEADER_SIZE
     FlicFrameViewStart = fileDataStart + frameOffset + FRAME_HEADER_SIZE
@@ -1527,59 +1527,59 @@ Function FlicApplyFrameAtOffset% (flicId As Long, frameOffset As _Integer64)
 
     FlicDecodeFrameChunks frameSize, chunkCount
     FlicApplyFrameAtOffset% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC buf seek.
 ' Parameters: positionValue = working value for position value.
-Sub FlicBufSeek (positionValue As Long)
-    If positionValue < 0 Then positionValue = 0
-    If positionValue > FlicFrameViewLimit Then positionValue = FlicFrameViewLimit
+SUB FlicBufSeek (positionValue AS LONG)
+    IF positionValue < 0 THEN positionValue = 0
+    IF positionValue > FlicFrameViewLimit THEN positionValue = FlicFrameViewLimit
     FlicFrameViewPos = positionValue
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC buf tell.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicBufTell& ()
+FUNCTION FlicBufTell& ()
     FlicBufTell& = FlicFrameViewPos
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC buf read u byte.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicBufReadUByte% ()
-    If FlicFrameViewPos >= FlicFrameViewLimit Then
+FUNCTION FlicBufReadUByte% ()
+    IF FlicFrameViewPos >= FlicFrameViewLimit THEN
         FlicBufReadUByte% = 0
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     FlicBufReadUByte% = FlicFileData(FlicFrameViewStart + FlicFrameViewPos)
     FlicFrameViewPos = FlicFrameViewPos + 1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC buf read u short.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicBufReadUShort& ()
+FUNCTION FlicBufReadUShort& ()
     ' Variable: b0 stores the working value for b 0.
-    Dim b0 As Long
+    DIM b0 AS LONG
     ' Variable: b1 stores the working value for b 1.
-    Dim b1 As Long
+    DIM b1 AS LONG
 
     b0 = FlicBufReadUByte
     b1 = FlicBufReadUByte
 
     FlicBufReadUShort& = b0 + b1 * 256
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC buf read u long.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicBufReadULong&& ()
+FUNCTION FlicBufReadULong&& ()
     ' Variable: b0 stores the working value for b 0.
-    Dim b0 As _Integer64
+    DIM b0 AS _INTEGER64
     ' Variable: b1 stores the working value for b 1.
-    Dim b1 As _Integer64
+    DIM b1 AS _INTEGER64
     ' Variable: b2 stores the working value for b 2.
-    Dim b2 As _Integer64
+    DIM b2 AS _INTEGER64
     ' Variable: b3 stores the working value for b 3.
-    Dim b3 As _Integer64
+    DIM b3 AS _INTEGER64
 
     b0 = FlicBufReadUByte
     b1 = FlicBufReadUByte
@@ -1587,153 +1587,153 @@ Function FlicBufReadULong&& ()
     b3 = FlicBufReadUByte
 
     FlicBufReadULong&& = b0 + b1 * 256 + b2 * 65536 + b3 * 16777216
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC buf read s byte.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicBufReadSByte% ()
+FUNCTION FlicBufReadSByte% ()
     ' Variable: valueData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim valueData As Long
+    DIM valueData AS LONG
 
     valueData = FlicBufReadUByte
-    If valueData > 127 Then valueData = valueData - 256
+    IF valueData > 127 THEN valueData = valueData - 256
     FlicBufReadSByte% = valueData
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC buf read short.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicBufReadShort% ()
+FUNCTION FlicBufReadShort% ()
     ' Variable: valueData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim valueData As Long
+    DIM valueData AS LONG
 
     valueData = FlicBufReadUShort
-    If valueData > 32767 Then valueData = valueData - 65536
+    IF valueData > 32767 THEN valueData = valueData - 65536
     FlicBufReadShort% = valueData
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC ensure rendered frame.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicEnsureRenderedFrame% (flicId As Long, frameIndex As Long)
+FUNCTION FlicEnsureRenderedFrame% (flicId AS LONG, frameIndex AS LONG)
     FlicEnsureRenderedFrame% = 0
 
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= FlicItems(flicId).FrameCount Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= FlicItems(flicId).FrameCount THEN EXIT FUNCTION
 
-    If FlicItems(flicId).DecodedFrame = frameIndex Then
+    IF FlicItems(flicId).DecodedFrame = frameIndex THEN
         FlicItems(flicId).CurrentFrame = frameIndex
-        If FlicItems(flicId).ImageDirty Then
+        IF FlicItems(flicId).ImageDirty THEN
             FlicIndexedToImage flicId
             FlicItems(flicId).ImageDirty = 0
-        End If
+        END IF
         FlicEnsureRenderedFrame% = -1
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    If frameIndex = FlicItems(flicId).DecodedFrame + 1 Then
-        If FlicApplyFrameAtOffset(flicId, FlicFrameOffset64(flicId, frameIndex)) = 0 Then Exit Function
+    IF frameIndex = FlicItems(flicId).DecodedFrame + 1 THEN
+        IF FlicApplyFrameAtOffset(flicId, FlicFrameOffset64(flicId, frameIndex)) = 0 THEN EXIT FUNCTION
         FlicItems(flicId).DecodedFrame = frameIndex
         FlicItems(flicId).CurrentFrame = frameIndex
         FlicMaybeStoreSnapshot flicId, frameIndex
-    Else
+    ELSE
         FlicRebuildStateToFrame flicId, frameIndex
-        If FlicItems(flicId).DecodedFrame <> frameIndex Then Exit Function
-    End If
+        IF FlicItems(flicId).DecodedFrame <> frameIndex THEN EXIT FUNCTION
+    END IF
 
     FlicIndexedToImage flicId
     FlicItems(flicId).ImageDirty = 0
     FlicEnsureRenderedFrame% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC loop to start.
 ' Parameters: flicId = working value for FLIC id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicLoopToStart% (flicId As Long)
+FUNCTION FlicLoopToStart% (flicId AS LONG)
     FlicLoopToStart% = 0
 
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If FlicItems(flicId).FrameCount < 1 Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF FlicItems(flicId).FrameCount < 1 THEN EXIT FUNCTION
 
-    If FlicItems(flicId).FormatType = ANIM_FORMAT_FLC Then
-        If FlicItems(flicId).HasRingFrame Then
-            If FlicApplyFrameAtOffset(flicId, FlicItems(flicId).RingFrameOffset64) Then
+    IF FlicItems(flicId).FormatType = ANIM_FORMAT_FLC THEN
+        IF FlicItems(flicId).HasRingFrame THEN
+            IF FlicApplyFrameAtOffset(flicId, FlicItems(flicId).RingFrameOffset64) THEN
                 FlicItems(flicId).CurrentFrame = 0
                 FlicItems(flicId).DecodedFrame = 0
                 FlicIndexedToImage flicId
                 FlicItems(flicId).ImageDirty = 0
                 FlicLoopToStart% = -1
-                Exit Function
-            End If
-        End If
-    End If
+                EXIT FUNCTION
+            END IF
+        END IF
+    END IF
 
     FlicRebuildStateToFrame flicId, 0
-    If FlicItems(flicId).DecodedFrame <> 0 Then Exit Function
+    IF FlicItems(flicId).DecodedFrame <> 0 THEN EXIT FUNCTION
 
     FlicIndexedToImage flicId
     FlicItems(flicId).ImageDirty = 0
     FlicLoopToStart% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC create render image.
 ' Parameters: widthPx = decoded image width in pixels; heightPx = decoded image height in pixels.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicCreateRenderImage& (widthPx As Long, heightPx As Long)
+FUNCTION FlicCreateRenderImage& (widthPx AS LONG, heightPx AS LONG)
     ' Variable: handleValue stores the handle used to reference an external or QB64 resource.
-    Dim handleValue As Long
+    DIM handleValue AS LONG
 
     FlicCreateRenderImage& = -1
     handleValue = -1
 
-    If widthPx < 1 Then Exit Function
-    If heightPx < 1 Then Exit Function
+    IF widthPx < 1 THEN EXIT FUNCTION
+    IF heightPx < 1 THEN EXIT FUNCTION
 
-    handleValue = _NewImage(widthPx, heightPx, 32)
-    If handleValue = -1 Then Exit Function
+    handleValue = _NEWIMAGE(widthPx, heightPx, 32)
+    IF handleValue = -1 THEN EXIT FUNCTION
 
     FlicCreateRenderImage& = handleValue
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC ram read u byte.
 ' Parameters: fileDataStart = buffer that holds raw, packed, or decoded byte data; positionValue = working value for position value.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicRamReadUByte% (fileDataStart As Long, positionValue As _Integer64)
-    If fileDataStart < 0 Then
+FUNCTION FlicRamReadUByte% (fileDataStart AS LONG, positionValue AS _INTEGER64)
+    IF fileDataStart < 0 THEN
         FlicRamReadUByte% = 0
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     FlicRamReadUByte% = FlicFileData(fileDataStart + positionValue)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC ram read u short.
 ' Parameters: fileDataStart = buffer that holds raw, packed, or decoded byte data; positionValue = working value for position value.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicRamReadUShort& (fileDataStart As Long, positionValue As _Integer64)
+FUNCTION FlicRamReadUShort& (fileDataStart AS LONG, positionValue AS _INTEGER64)
     ' Variable: b0 stores the working value for b 0.
-    Dim b0 As Long
+    DIM b0 AS LONG
     ' Variable: b1 stores the working value for b 1.
-    Dim b1 As Long
+    DIM b1 AS LONG
 
     b0 = FlicRamReadUByte(fileDataStart, positionValue)
     b1 = FlicRamReadUByte(fileDataStart, positionValue + 1)
 
     FlicRamReadUShort& = b0 + b1 * 256
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC ram read u long.
 ' Parameters: fileDataStart = buffer that holds raw, packed, or decoded byte data; positionValue = working value for position value.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicRamReadULong&& (fileDataStart As Long, positionValue As _Integer64)
+FUNCTION FlicRamReadULong&& (fileDataStart AS LONG, positionValue AS _INTEGER64)
     ' Variable: b0 stores the working value for b 0.
-    Dim b0 As _Integer64
+    DIM b0 AS _INTEGER64
     ' Variable: b1 stores the working value for b 1.
-    Dim b1 As _Integer64
+    DIM b1 AS _INTEGER64
     ' Variable: b2 stores the working value for b 2.
-    Dim b2 As _Integer64
+    DIM b2 AS _INTEGER64
     ' Variable: b3 stores the working value for b 3.
-    Dim b3 As _Integer64
+    DIM b3 AS _INTEGER64
 
     b0 = FlicRamReadUByte(fileDataStart, positionValue)
     b1 = FlicRamReadUByte(fileDataStart, positionValue + 1)
@@ -1741,47 +1741,47 @@ Function FlicRamReadULong&& (fileDataStart As Long, positionValue As _Integer64)
     b3 = FlicRamReadUByte(fileDataStart, positionValue + 3)
 
     FlicRamReadULong&& = b0 + b1 * 256 + b2 * 65536 + b3 * 16777216
-End Function
+END FUNCTION
 
 ' Purpose: Read structured FLI/FLC chunks from the byte stream.
 ' Parameters: fileNum = working value for file num.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicReadUByte% (fileNum As Integer)
+FUNCTION FlicReadUByte% (fileNum AS INTEGER)
     ' Variable: valueData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim valueData As _Unsigned _Byte
+    DIM valueData AS _UNSIGNED _BYTE
 
     valueData = 0
-    Get #fileNum, , valueData
+    GET #fileNum, , valueData
     FlicReadUByte% = valueData
-End Function
+END FUNCTION
 
 ' Purpose: Read structured FLI/FLC chunks from the byte stream.
 ' Parameters: fileNum = working value for file num.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicReadUShort& (fileNum As Integer)
+FUNCTION FlicReadUShort& (fileNum AS INTEGER)
     ' Variable: b0 stores the working value for b 0.
-    Dim b0 As Long
+    DIM b0 AS LONG
     ' Variable: b1 stores the working value for b 1.
-    Dim b1 As Long
+    DIM b1 AS LONG
 
     b0 = FlicReadUByte(fileNum)
     b1 = FlicReadUByte(fileNum)
 
     FlicReadUShort& = b0 + b1 * 256
-End Function
+END FUNCTION
 
 ' Purpose: Read structured FLI/FLC chunks from the byte stream.
 ' Parameters: fileNum = working value for file num.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicReadULong&& (fileNum As Integer)
+FUNCTION FlicReadULong&& (fileNum AS INTEGER)
     ' Variable: b0 stores the working value for b 0.
-    Dim b0 As _Integer64
+    DIM b0 AS _INTEGER64
     ' Variable: b1 stores the working value for b 1.
-    Dim b1 As _Integer64
+    DIM b1 AS _INTEGER64
     ' Variable: b2 stores the working value for b 2.
-    Dim b2 As _Integer64
+    DIM b2 AS _INTEGER64
     ' Variable: b3 stores the working value for b 3.
-    Dim b3 As _Integer64
+    DIM b3 AS _INTEGER64
 
     b0 = FlicReadUByte(fileNum)
     b1 = FlicReadUByte(fileNum)
@@ -1789,64 +1789,64 @@ Function FlicReadULong&& (fileNum As Integer)
     b3 = FlicReadUByte(fileNum)
 
     FlicReadULong&& = b0 + b1 * 256 + b2 * 65536 + b3 * 16777216
-End Function
+END FUNCTION
 
 ' Purpose: Read structured FLI/FLC chunks from the byte stream.
 ' Parameters: fileNum = working value for file num.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicReadSByte% (fileNum As Integer)
+FUNCTION FlicReadSByte% (fileNum AS INTEGER)
     ' Variable: valueData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim valueData As Long
+    DIM valueData AS LONG
 
     valueData = FlicReadUByte(fileNum)
-    If valueData > 127 Then valueData = valueData - 256
+    IF valueData > 127 THEN valueData = valueData - 256
 
     FlicReadSByte% = valueData
-End Function
+END FUNCTION
 
 ' Purpose: Read structured FLI/FLC chunks from the byte stream.
 ' Parameters: fileNum = working value for file num.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicReadShort% (fileNum As Integer)
+FUNCTION FlicReadShort% (fileNum AS INTEGER)
     ' Variable: valueData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim valueData As Long
+    DIM valueData AS LONG
 
     valueData = FlicReadUShort(fileNum)
-    If valueData > 32767 Then valueData = valueData - 65536
+    IF valueData > 32767 THEN valueData = valueData - 65536
 
     FlicReadShort% = valueData
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC convert speed to ms.
 ' Parameters: formatType = working value for format type; rawSpeed = working value for raw speed.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicConvertSpeedToMS& (formatType As Long, rawSpeed As _Unsigned Long)
+FUNCTION FlicConvertSpeedToMS& (formatType AS LONG, rawSpeed AS _UNSIGNED LONG)
     ' Variable: converted stores the working value for converted.
-    Dim converted As _Unsigned Long
+    DIM converted AS _UNSIGNED LONG
 
     converted = rawSpeed
 
-    If formatType = ANIM_FORMAT_FLI Then
-        If converted < 1 Then converted = 1
+    IF formatType = ANIM_FORMAT_FLI THEN
+        IF converted < 1 THEN converted = 1
         converted = (converted * 1000) \ 70
-        If converted < 1 Then converted = 1
-    Else
-        If converted < 1 Then converted = 1
-    End If
+        IF converted < 1 THEN converted = 1
+    ELSE
+        IF converted < 1 THEN converted = 1
+    END IF
 
     FlicConvertSpeedToMS& = converted
-End Function
+END FUNCTION
 
 ' Purpose: Read structured FLI/FLC chunks from the byte stream.
 ' Parameters: fileNum = working value for file num; headerData = buffer that holds raw, packed, or decoded byte data; formatType = working value for format type.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicReadHeaderFromFile% (fileNum As Integer, headerData As FLICHeaderType, formatType As Long)
+FUNCTION FlicReadHeaderFromFile% (fileNum AS INTEGER, headerData AS FLICHeaderType, formatType AS LONG)
     ' Variable: fileLength stores the working value for file length.
-    Dim fileLength As _Integer64
+    DIM fileLength AS _INTEGER64
     ' Variable: rawSpeed stores the working value for raw speed.
-    Dim rawSpeed As _Unsigned Long
+    DIM rawSpeed AS _UNSIGNED LONG
     ' Variable: rawSpeed16 stores the working value for raw speed 16.
-    Dim rawSpeed16 As Long
+    DIM rawSpeed16 AS LONG
 
     FlicReadHeaderFromFile% = 0
     formatType = ANIM_FORMAT_NONE
@@ -1854,9 +1854,9 @@ Function FlicReadHeaderFromFile% (fileNum As Integer, headerData As FLICHeaderTy
     rawSpeed = 0
     rawSpeed16 = 0
 
-    If fileLength < 128 Then Exit Function
+    IF fileLength < 128 THEN EXIT FUNCTION
 
-    Seek #fileNum, 1
+    SEEK #fileNum, 1
 
     headerData.FileSize = FlicReadULong(fileNum)
     headerData.Magic = FlicReadUShort(fileNum)
@@ -1866,518 +1866,517 @@ Function FlicReadHeaderFromFile% (fileNum As Integer, headerData As FLICHeaderTy
     headerData.Depth = FlicReadUShort(fileNum)
     headerData.Flags = FlicReadUShort(fileNum)
 
-    If headerData.Magic = FLI_MAGIC Then
+    IF headerData.Magic = FLI_MAGIC THEN
         formatType = ANIM_FORMAT_FLI
         rawSpeed16 = FlicReadUShort(fileNum)
         rawSpeed = rawSpeed16
-    ElseIf headerData.Magic = FLC_MAGIC Then
+    ELSEIF headerData.Magic = FLC_MAGIC THEN
         formatType = ANIM_FORMAT_FLC
         rawSpeed = FlicReadULong(fileNum)
-    Else
-        Exit Function
-    End If
+    ELSE
+        EXIT FUNCTION
+    END IF
 
-    Seek #fileNum, 81
+    SEEK #fileNum, 81
     headerData.OfFrame1 = FlicReadULong(fileNum)
     headerData.OfFrame2 = FlicReadULong(fileNum)
 
-    If headerData.Width < 1 Then Exit Function
-    If headerData.Height < 1 Then Exit Function
-    If headerData.Frames < 1 Then Exit Function
+    IF headerData.Width < 1 THEN EXIT FUNCTION
+    IF headerData.Height < 1 THEN EXIT FUNCTION
+    IF headerData.Frames < 1 THEN EXIT FUNCTION
 
-    If formatType = ANIM_FORMAT_FLI Then
-        If headerData.Depth = 0 Then headerData.Depth = 8
-        If headerData.Depth <> 8 Then Exit Function
+    IF formatType = ANIM_FORMAT_FLI THEN
+        IF headerData.Depth = 0 THEN headerData.Depth = 8
+        IF headerData.Depth <> 8 THEN EXIT FUNCTION
         headerData.OfFrame1 = 128
         headerData.OfFrame2 = 0
-    Else
-        If headerData.Depth <> 8 Then Exit Function
-        If headerData.OfFrame1 = 0 Then headerData.OfFrame1 = 128
-    End If
+    ELSE
+        IF headerData.Depth <> 8 THEN EXIT FUNCTION
+        IF headerData.OfFrame1 = 0 THEN headerData.OfFrame1 = 128
+    END IF
 
-    If headerData.FileSize = 0 Then headerData.FileSize = fileLength
+    IF headerData.FileSize = 0 THEN headerData.FileSize = fileLength
     headerData.SpeedMS = FlicConvertSpeedToMS(formatType, rawSpeed)
 
     FlicReadHeaderFromFile% = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC reset palette.
-Sub FlicResetPalette ()
+SUB FlicResetPalette ()
     ' Variable: indexValue stores the working value for index value.
-    Dim indexValue As Long
+    DIM indexValue AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     ' Loop purpose: use indexValue as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For indexValue = 0 To 255
+    FOR indexValue = 0 TO 255
         FlicSetPaletteEntry indexValue, indexValue, indexValue, indexValue
-    Next indexValue
-End Sub
+    NEXT indexValue
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC reset pixels.
-Sub FlicResetPixels ()
+SUB FlicResetPixels ()
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
     ' Variable: pixelCount stores the count used to size or iterate the current data set.
-    Dim pixelCount As Long
+    DIM pixelCount AS LONG
     ' Variable: pixelMem stores the memory handle or memory-related helper value.
-    Dim pixelMem As _MEM
+    DIM pixelMem AS _MEM
     ' Variable: chunkBytes stores the working value for chunk bytes.
-    Dim chunkBytes As Long
+    DIM chunkBytes AS LONG
     ' Variable: fullChunkCount stores the count used to size or iterate the current data set.
-    Dim fullChunkCount As Long
+    DIM fullChunkCount AS LONG
     ' Variable: tailBytes stores the working value for tail bytes.
-    Dim tailBytes As Long
+    DIM tailBytes AS LONG
     ' Variable: writeOffset stores the working value for write offset.
-    Dim writeOffset As _Integer64
+    DIM writeOffset AS _INTEGER64
     ' Variable: chunkIndex stores the index variable used to address the current item.
-    Dim chunkIndex As Long
+    DIM chunkIndex AS LONG
     ' Variable: indexValue stores the working value for index value.
-    Dim indexValue As Long
+    DIM indexValue AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     slotId = FlicDecodeContextId
-    If FlicValidId(slotId) = 0 Then Exit Sub
+    IF FlicValidId(slotId) = 0 THEN EXIT SUB
 
     pixelStart = FlicItems(slotId).PixelStart
     pixelCount = FlicItems(slotId).PixelCount
-    If pixelCount < 1 Then Exit Sub
+    IF pixelCount < 1 THEN EXIT SUB
 
     chunkBytes = 262144
-    If pixelCount < chunkBytes Then chunkBytes = pixelCount
-    If FlicEnsureZeroFillBuffer(chunkBytes) = 0 Then Exit Sub
+    IF pixelCount < chunkBytes THEN chunkBytes = pixelCount
+    IF FlicEnsureZeroFillBuffer(chunkBytes) = 0 THEN EXIT SUB
 
-    pixelMem = _Mem(FlicPixelData())
-    If _MemExists(pixelMem) = 0 Then Exit Sub
+    pixelMem = _MEM(FlicPixelData())
+    IF _MEMEXISTS(pixelMem) = 0 THEN EXIT SUB
 
     fullChunkCount = pixelCount \ chunkBytes
-    tailBytes = pixelCount Mod chunkBytes
+    tailBytes = pixelCount MOD chunkBytes
     writeOffset = pixelMem.OFFSET + pixelStart
 
     ' Loop purpose: step through structured chunks in the current file block.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For chunkIndex = 1 To fullChunkCount
-        _MemPut pixelMem, writeOffset, FlicZeroFillData()
+    FOR chunkIndex = 1 TO fullChunkCount
+        _MEMPUT pixelMem, writeOffset, FlicZeroFillData()
         writeOffset = writeOffset + chunkBytes
-    Next chunkIndex
+    NEXT chunkIndex
 
-    If tailBytes > 0 Then
-        If FlicEnsureIoTailBuffer(tailBytes) = 0 Then
-            If _MemExists(pixelMem) Then _MemFree pixelMem
-            Exit Sub
-        End If
+    IF tailBytes > 0 THEN
+        IF FlicEnsureIoTailBuffer(tailBytes) = 0 THEN
+            IF _MEMEXISTS(pixelMem) THEN _MEMFREE pixelMem
+            EXIT SUB
+        END IF
         ' Loop purpose: walk through a byte-oriented range while parsing or transforming packed data.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For indexValue = 0 To tailBytes - 1
+        FOR indexValue = 0 TO tailBytes - 1
             FlicIoTailData(indexValue) = 0
-        Next indexValue
-        _MemPut pixelMem, writeOffset, FlicIoTailData()
-    End If
+        NEXT indexValue
+        _MEMPUT pixelMem, writeOffset, FlicIoTailData()
+    END IF
 
-    If _MemExists(pixelMem) Then _MemFree pixelMem
-End Sub
+    IF _MEMEXISTS(pixelMem) THEN _MEMFREE pixelMem
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC set palette entry.
 ' Parameters: indexValue = working value for index value; redValue = working value for red value; greenValue = working value for green value; blueValue = working value for blue value.
-Sub FlicSetPaletteEntry (indexValue As Long, redValue As Long, greenValue As Long, blueValue As Long)
+SUB FlicSetPaletteEntry (indexValue AS LONG, redValue AS LONG, greenValue AS LONG, blueValue AS LONG)
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     slotId = FlicDecodeContextId
-    If FlicValidId(slotId) = 0 Then Exit Sub
-    If indexValue < 0 Then Exit Sub
-    If indexValue > 255 Then Exit Sub
+    IF FlicValidId(slotId) = 0 THEN EXIT SUB
+    IF indexValue < 0 THEN EXIT SUB
+    IF indexValue > 255 THEN EXIT SUB
 
     FlicPaletteData(indexValue, slotId).R = redValue
     FlicPaletteData(indexValue, slotId).G = greenValue
     FlicPaletteData(indexValue, slotId).B = blueValue
     FlicPalette32Data(indexValue, slotId) = _RGB32(redValue, greenValue, blueValue)
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC indexed to image.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicIndexedToImage (flicId As Long)
+SUB FlicIndexedToImage (flicId AS LONG)
     ' Variable: imgMem stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imgMem As _MEM
+    DIM imgMem AS _MEM
     ' Variable: widthPx stores the decoded image width in pixels.
-    Dim widthPx As Long
+    DIM widthPx AS LONG
     ' Variable: heightPx stores the decoded image height in pixels.
-    Dim heightPx As Long
+    DIM heightPx AS LONG
     ' Variable: leftPx stores the working value for left px.
-    Dim leftPx As Long
+    DIM leftPx AS LONG
     ' Variable: topPx stores the working value for top px.
-    Dim topPx As Long
+    DIM topPx AS LONG
     ' Variable: rightPx stores the working value for right px.
-    Dim rightPx As Long
+    DIM rightPx AS LONG
     ' Variable: bottomPx stores the working value for bottom px.
-    Dim bottomPx As Long
+    DIM bottomPx AS LONG
     ' Variable: y stores the vertical pixel or coordinate index.
-    Dim y As Long
+    DIM y AS LONG
     ' Variable: x stores the horizontal pixel or coordinate index.
-    Dim x As Long
+    DIM x AS LONG
     ' Variable: rowWidth stores the width value used by this routine.
-    Dim rowWidth As Long
+    DIM rowWidth AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
     ' Variable: rowBaseIndex stores the index variable used to address the current item.
-    Dim rowBaseIndex As Long
+    DIM rowBaseIndex AS LONG
     ' Variable: rowPixelIndex stores the index variable used to address the current item.
-    Dim rowPixelIndex As Long
+    DIM rowPixelIndex AS LONG
     ' Variable: memOffset stores the memory handle or memory-related helper value.
-    Dim memOffset As _Integer64
+    DIM memOffset AS _INTEGER64
     ' Variable: memBaseOffset stores the memory handle or memory-related helper value.
-    Dim memBaseOffset As _Integer64
+    DIM memBaseOffset AS _INTEGER64
     ' Variable: colorIndex stores the index variable used to address the current item.
-    Dim colorIndex As Long
+    DIM colorIndex AS LONG
     ' Variable: neededBytes stores the working value for needed bytes.
-    Dim neededBytes As _Integer64
+    DIM neededBytes AS _INTEGER64
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
-    If FlicValidId(flicId) = 0 Then Exit Sub
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
 
     imageHandle = FlicItems(flicId).CanvasImage
-    If imageHandle > -2 Then Exit Sub
+    IF imageHandle > -2 THEN EXIT SUB
 
     widthPx = FlicItems(flicId).WidthPx
     heightPx = FlicItems(flicId).HeightPx
-    If widthPx < 1 Then Exit Sub
-    If heightPx < 1 Then Exit Sub
+    IF widthPx < 1 THEN EXIT SUB
+    IF heightPx < 1 THEN EXIT SUB
 
-    neededBytes = CLng(FlicItems(flicId).PixelCount) * 4
-    If neededBytes < 4 Then Exit Sub
+    neededBytes = CLNG(FlicItems(flicId).PixelCount) * 4
+    IF neededBytes < 4 THEN EXIT SUB
 
-    If FlicItems(flicId).PaletteDirty Then
+    IF FlicItems(flicId).PaletteDirty THEN
         FlicItems(flicId).DirtyValid = 0
         FlicMarkDirtyFullFrame flicId
-    End If
+    END IF
 
-    If FlicItems(flicId).DirtyValid = 0 Then Exit Sub
+    IF FlicItems(flicId).DirtyValid = 0 THEN EXIT SUB
 
     leftPx = FlicItems(flicId).DirtyLeft
     topPx = FlicItems(flicId).DirtyTop
     rightPx = FlicItems(flicId).DirtyRight
     bottomPx = FlicItems(flicId).DirtyBottom
     rowWidth = rightPx - leftPx + 1
-    If rowWidth < 1 Then Exit Sub
+    IF rowWidth < 1 THEN EXIT SUB
 
     FlicEnsureRow32Buffer rowWidth
 
     pixelStart = FlicItems(flicId).PixelStart
 
-    imgMem = _MemImage(imageHandle)
-    If imgMem.SIZE < neededBytes Then
-        _MemFree imgMem
-        Exit Sub
-    End If
+    imgMem = _MEMIMAGE(imageHandle)
+    IF imgMem.SIZE < neededBytes THEN
+        _MEMFREE imgMem
+        EXIT SUB
+    END IF
 
     memBaseOffset = imgMem.OFFSET
 
     ' Loop purpose: iterate through image rows or vertical positions.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For y = topPx To bottomPx
+    FOR y = topPx TO bottomPx
         rowBaseIndex = pixelStart + y * widthPx + leftPx
 
         ' Loop purpose: iterate through image columns, pixels, or horizontal positions.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For x = 0 To rowWidth - 1
+        FOR x = 0 TO rowWidth - 1
             rowPixelIndex = rowBaseIndex + x
             colorIndex = FlicPixelData(rowPixelIndex)
             FlicRow32Data(x) = FlicPalette32Data(colorIndex, flicId)
-        Next x
+        NEXT x
 
-        memOffset = memBaseOffset + (CLng(y) * widthPx + leftPx) * 4
-        _MemPut imgMem, memOffset, FlicRow32Data()
-    Next y
+        memOffset = memBaseOffset + (CLNG(y) * widthPx + leftPx) * 4
+        _MEMPUT imgMem, memOffset, FlicRow32Data()
+    NEXT y
 
-    _MemFree imgMem
+    _MEMFREE imgMem
 
     FlicItems(flicId).PaletteDirty = 0
     FlicItems(flicId).DirtyValid = 0
-End Sub
-
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC rebuild state to frame.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item.
-Sub FlicRebuildStateToFrame (flicId As Long, frameIndex As Long)
+SUB FlicRebuildStateToFrame (flicId AS LONG, frameIndex AS LONG)
     ' Variable: indexValue stores the working value for index value.
-    Dim indexValue As Long
+    DIM indexValue AS LONG
     ' Variable: restoredFrame stores the working value for restored frame.
-    Dim restoredFrame As Long
+    DIM restoredFrame AS LONG
 
-    If FlicValidId(flicId) = 0 Then Exit Sub
-    If frameIndex < 0 Then Exit Sub
-    If frameIndex >= FlicItems(flicId).FrameCount Then Exit Sub
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
+    IF frameIndex < 0 THEN EXIT SUB
+    IF frameIndex >= FlicItems(flicId).FrameCount THEN EXIT SUB
 
     restoredFrame = -1
-    If FlicRestoreNearestSnapshot(flicId, frameIndex, restoredFrame) = 0 Then
+    IF FlicRestoreNearestSnapshot(flicId, frameIndex, restoredFrame) = 0 THEN
         FlicResetDecodeState flicId
         restoredFrame = -1
-    End If
+    END IF
 
     indexValue = restoredFrame + 1
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While indexValue <= frameIndex
-        If FlicApplyFrameAtOffset(flicId, FlicFrameOffset64(flicId, indexValue)) = 0 Then Exit Sub
+    DO WHILE indexValue <= frameIndex
+        IF FlicApplyFrameAtOffset(flicId, FlicFrameOffset64(flicId, indexValue)) = 0 THEN EXIT SUB
         FlicItems(flicId).DecodedFrame = indexValue
         FlicMaybeStoreSnapshot flicId, indexValue
         indexValue = indexValue + 1
-    Loop
+    LOOP
 
     FlicItems(flicId).CurrentFrame = frameIndex
-End Sub
+END SUB
 
 ' Purpose: Decode or apply FLI/FLC chunk data to the current frame buffer.
 ' Parameters: frameOffset = working value for frame offset; frameSize = working value for frame size; chunkCount = count used to size or iterate the current data set.
-Sub FlicDecodeFrameChunks (frameSize As _Integer64, chunkCount As Long)
+SUB FlicDecodeFrameChunks (frameSize AS _INTEGER64, chunkCount AS LONG)
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: indexValue stores the working value for index value.
-    Dim indexValue As Long
+    DIM indexValue AS LONG
     ' Variable: chunkSize stores the size of the current chunk payload.
-    Dim chunkSize As _Integer64
+    DIM chunkSize AS _INTEGER64
     ' Variable: chunkType stores the working value for chunk type.
-    Dim chunkType As Long
+    DIM chunkType AS LONG
     ' Variable: chunkEndPosition stores the working value for chunk end position.
-    Dim chunkEndPosition As Long
+    DIM chunkEndPosition AS LONG
     ' Variable: frameEndPosition stores the working value for frame end position.
-    Dim frameEndPosition As Long
+    DIM frameEndPosition AS LONG
     ' Variable: currentPosition stores the working value for current position.
-    Dim currentPosition As Long
+    DIM currentPosition AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     slotId = FlicDecodeContextId
-    If FlicValidId(slotId) = 0 Then Exit Sub
-    If chunkCount < 0 Then Exit Sub
-    If frameSize < FRAME_HEADER_SIZE Then Exit Sub
-    If chunkCount = 0 Then Exit Sub
+    IF FlicValidId(slotId) = 0 THEN EXIT SUB
+    IF chunkCount < 0 THEN EXIT SUB
+    IF frameSize < FRAME_HEADER_SIZE THEN EXIT SUB
+    IF chunkCount = 0 THEN EXIT SUB
 
     frameEndPosition = FlicFrameViewLimit
 
     ' Loop purpose: step through structured chunks in the current file block.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For indexValue = 1 To chunkCount
+    FOR indexValue = 1 TO chunkCount
         currentPosition = FlicBufTell
-        If currentPosition + 6 > frameEndPosition Then Exit For
+        IF currentPosition + 6 > frameEndPosition THEN EXIT FOR
 
         chunkSize = FlicBufReadULong
         chunkType = FlicBufReadUShort
 
-        If chunkSize < 6 Then Exit For
+        IF chunkSize < 6 THEN EXIT FOR
 
         chunkEndPosition = currentPosition + chunkSize
-        If chunkEndPosition > frameEndPosition Then chunkEndPosition = frameEndPosition
+        IF chunkEndPosition > frameEndPosition THEN chunkEndPosition = frameEndPosition
 
-        Select Case chunkType
-            Case CHUNK_BLACK
+        SELECT CASE chunkType
+            CASE CHUNK_BLACK
                 FlicDecodeChunkBlack
 
-            Case CHUNK_COPY
+            CASE CHUNK_COPY
                 FlicDecodeChunkCopy chunkSize
 
-            Case CHUNK_COLOR_256
-                FlicDecodeChunkColor256 
+            CASE CHUNK_COLOR_256
+                FlicDecodeChunkColor256
 
-            Case CHUNK_COLOR_64
-                FlicDecodeChunkColor64 
+            CASE CHUNK_COLOR_64
+                FlicDecodeChunkColor64
 
-            Case CHUNK_BYTE_RUN
+            CASE CHUNK_BYTE_RUN
                 FlicDecodeChunkByteRun
 
-            Case CHUNK_DELTA_FLI
+            CASE CHUNK_DELTA_FLI
                 FlicDecodeChunkDeltaFLI
 
-            Case CHUNK_DELTA_FLC
-                If FlicItems(slotId).FormatType = ANIM_FORMAT_FLC Then
+            CASE CHUNK_DELTA_FLC
+                IF FlicItems(slotId).FormatType = ANIM_FORMAT_FLC THEN
                     FlicDecodeChunkDeltaFLC
-                End If
+                END IF
 
-            Case CHUNK_PSTAMP
+            CASE CHUNK_PSTAMP
                 ' skip
 
-            Case Else
+            CASE ELSE
                 ' skip unknown chunk
-        End Select
+        END SELECT
 
         FlicSkipChunk chunkEndPosition
-        If FlicBufTell >= frameEndPosition Then Exit For
-    Next indexValue
-End Sub
+        IF FlicBufTell >= frameEndPosition THEN EXIT FOR
+    NEXT indexValue
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC skip chunk.
 ' Parameters: chunkEndPosition = working value for chunk end position.
-Sub FlicSkipChunk (chunkEndPosition As _Integer64)
-    If chunkEndPosition < 0 Then Exit Sub
+SUB FlicSkipChunk (chunkEndPosition AS _INTEGER64)
+    IF chunkEndPosition < 0 THEN EXIT SUB
     FlicBufSeek chunkEndPosition
-End Sub
+END SUB
 
 ' Purpose: Decode or apply FLI/FLC chunk data to the current frame buffer.
-Sub FlicDecodeChunkBlack ()
+SUB FlicDecodeChunkBlack ()
     FlicResetPixels
     FlicMarkDirtyFullFrame FlicDecodeContextId
-End Sub
+END SUB
 
 ' Purpose: Decode or apply FLI/FLC chunk data to the current frame buffer.
 ' Parameters: chunkSize = size of the current chunk payload.
-Sub FlicDecodeChunkCopy (chunkSize As _Integer64)
+SUB FlicDecodeChunkCopy (chunkSize AS _INTEGER64)
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: pixelCount stores the count used to size or iterate the current data set.
-    Dim pixelCount As Long
+    DIM pixelCount AS LONG
     ' Variable: dataSize stores the buffer that holds raw, packed, or decoded byte data.
-    Dim dataSize As _Integer64
+    DIM dataSize AS _INTEGER64
     ' Variable: pixelIndex stores the index variable used to address the current item.
-    Dim pixelIndex As Long
+    DIM pixelIndex AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
     ' Variable: dataPosition stores the buffer that holds raw, packed, or decoded byte data.
-    Dim dataPosition As Long
+    DIM dataPosition AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     slotId = FlicDecodeContextId
-    If FlicValidId(slotId) = 0 Then Exit Sub
+    IF FlicValidId(slotId) = 0 THEN EXIT SUB
 
     pixelCount = FlicItems(slotId).PixelCount
     pixelStart = FlicItems(slotId).PixelStart
     dataSize = chunkSize - 6
-    If dataSize < pixelCount Then Exit Sub
+    IF dataSize < pixelCount THEN EXIT SUB
 
     dataPosition = FlicFrameViewPos
 
     ' Loop purpose: use pixelIndex as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For pixelIndex = 0 To pixelCount - 1
+    FOR pixelIndex = 0 TO pixelCount - 1
         FlicPixelData(pixelStart + pixelIndex) = FlicFileData(FlicFrameViewStart + dataPosition)
         dataPosition = dataPosition + 1
-    Next pixelIndex
+    NEXT pixelIndex
 
     FlicFrameViewPos = dataPosition
     FlicMarkDirtyFullFrame slotId
-End Sub
+END SUB
 
 ' Purpose: Decode or apply FLI/FLC chunk data to the current frame buffer.
 ' Parameters: chunkSize = size of the current chunk payload.
-Sub FlicDecodeChunkColor256 
+SUB FlicDecodeChunkColor256
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: packetCount stores the count used to size or iterate the current data set.
-    Dim packetCount As Long
+    DIM packetCount AS LONG
     ' Variable: packetIndex stores the index variable used to address the current item.
-    Dim packetIndex As Long
+    DIM packetIndex AS LONG
     ' Variable: skipCount stores the count used to size or iterate the current data set.
-    Dim skipCount As Long
+    DIM skipCount AS LONG
     ' Variable: copyCount stores the count used to size or iterate the current data set.
-    Dim copyCount As Long
+    DIM copyCount AS LONG
     ' Variable: colorIndex stores the index variable used to address the current item.
-    Dim colorIndex As Long
+    DIM colorIndex AS LONG
     ' Variable: writeCount stores the count used to size or iterate the current data set.
-    Dim writeCount As Long
+    DIM writeCount AS LONG
     ' Variable: writeIndex stores the index variable used to address the current item.
-    Dim writeIndex As Long
+    DIM writeIndex AS LONG
     ' Variable: redValue stores the working value for red value.
-    Dim redValue As Long
+    DIM redValue AS LONG
     ' Variable: greenValue stores the working value for green value.
-    Dim greenValue As Long
+    DIM greenValue AS LONG
     ' Variable: blueValue stores the working value for blue value.
-    Dim blueValue As Long
+    DIM blueValue AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     slotId = FlicDecodeContextId
-    If FlicValidId(slotId) = 0 Then Exit Sub
+    IF FlicValidId(slotId) = 0 THEN EXIT SUB
 
     packetCount = FlicBufReadUShort
     colorIndex = 0
 
     ' Loop purpose: use packetIndex as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For packetIndex = 1 To packetCount
+    FOR packetIndex = 1 TO packetCount
         skipCount = FlicBufReadUByte
         copyCount = FlicBufReadUByte
         colorIndex = colorIndex + skipCount
 
-        If copyCount = 0 Then
+        IF copyCount = 0 THEN
             writeCount = 256
-        Else
+        ELSE
             writeCount = copyCount
-        End If
+        END IF
 
         ' Loop purpose: use writeIndex as a counter/index while the routine processes a repeated set of values.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For writeIndex = 1 To writeCount
+        FOR writeIndex = 1 TO writeCount
             redValue = FlicBufReadUByte
             greenValue = FlicBufReadUByte
             blueValue = FlicBufReadUByte
 
-            If colorIndex >= 0 And colorIndex <= 255 Then
+            IF colorIndex >= 0 AND colorIndex <= 255 THEN
                 FlicSetPaletteEntry colorIndex, redValue, greenValue, blueValue
-            End If
+            END IF
 
             colorIndex = colorIndex + 1
-        Next writeIndex
-    Next packetIndex
+        NEXT writeIndex
+    NEXT packetIndex
     FlicItems(slotId).PaletteDirty = -1
     FlicMarkDirtyFullFrame slotId
-End Sub
+END SUB
 
 ' Purpose: Decode or apply FLI/FLC chunk data to the current frame buffer.
 ' Parameters: chunkSize = size of the current chunk payload.
-Sub FlicDecodeChunkColor64
+SUB FlicDecodeChunkColor64
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: packetCount stores the count used to size or iterate the current data set.
-    Dim packetCount As Long
+    DIM packetCount AS LONG
     ' Variable: packetIndex stores the index variable used to address the current item.
-    Dim packetIndex As Long
+    DIM packetIndex AS LONG
     ' Variable: skipCount stores the count used to size or iterate the current data set.
-    Dim skipCount As Long
+    DIM skipCount AS LONG
     ' Variable: copyCount stores the count used to size or iterate the current data set.
-    Dim copyCount As Long
+    DIM copyCount AS LONG
     ' Variable: colorIndex stores the index variable used to address the current item.
-    Dim colorIndex As Long
+    DIM colorIndex AS LONG
     ' Variable: writeCount stores the count used to size or iterate the current data set.
-    Dim writeCount As Long
+    DIM writeCount AS LONG
     ' Variable: writeIndex stores the index variable used to address the current item.
-    Dim writeIndex As Long
+    DIM writeIndex AS LONG
     ' Variable: redValue stores the working value for red value.
-    Dim redValue As Long
+    DIM redValue AS LONG
     ' Variable: greenValue stores the working value for green value.
-    Dim greenValue As Long
+    DIM greenValue AS LONG
     ' Variable: blueValue stores the working value for blue value.
-    Dim blueValue As Long
+    DIM blueValue AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     slotId = FlicDecodeContextId
-    If FlicValidId(slotId) = 0 Then Exit Sub
+    IF FlicValidId(slotId) = 0 THEN EXIT SUB
 
     packetCount = FlicBufReadUShort
     colorIndex = 0
 
     ' Loop purpose: use packetIndex as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For packetIndex = 1 To packetCount
+    FOR packetIndex = 1 TO packetCount
         skipCount = FlicBufReadUByte
         copyCount = FlicBufReadUByte
         colorIndex = colorIndex + skipCount
 
-        If copyCount = 0 Then
+        IF copyCount = 0 THEN
             writeCount = 256
-        Else
+        ELSE
             writeCount = copyCount
-        End If
+        END IF
 
         ' Loop purpose: use writeIndex as a counter/index while the routine processes a repeated set of values.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For writeIndex = 1 To writeCount
+        FOR writeIndex = 1 TO writeCount
             redValue = FlicBufReadUByte
             greenValue = FlicBufReadUByte
             blueValue = FlicBufReadUByte
@@ -2386,58 +2385,58 @@ Sub FlicDecodeChunkColor64
             greenValue = greenValue * 4
             blueValue = blueValue * 4
 
-            If redValue > 255 Then redValue = 255
-            If greenValue > 255 Then greenValue = 255
-            If blueValue > 255 Then blueValue = 255
+            IF redValue > 255 THEN redValue = 255
+            IF greenValue > 255 THEN greenValue = 255
+            IF blueValue > 255 THEN blueValue = 255
 
-            If colorIndex >= 0 And colorIndex <= 255 Then
+            IF colorIndex >= 0 AND colorIndex <= 255 THEN
                 FlicSetPaletteEntry colorIndex, redValue, greenValue, blueValue
-            End If
+            END IF
 
             colorIndex = colorIndex + 1
-        Next writeIndex
-    Next packetIndex
+        NEXT writeIndex
+    NEXT packetIndex
     FlicItems(slotId).PaletteDirty = -1
     FlicMarkDirtyFullFrame slotId
-End Sub
+END SUB
 
 ' Purpose: Decode or apply FLI/FLC chunk data to the current frame buffer.
-Sub FlicDecodeChunkByteRun ()
+SUB FlicDecodeChunkByteRun ()
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: y stores the vertical pixel or coordinate index.
-    Dim y As Long
+    DIM y AS LONG
     ' Variable: x stores the horizontal pixel or coordinate index.
-    Dim x As Long
+    DIM x AS LONG
     ' Variable: rowStart stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowStart As Long
+    DIM rowStart AS LONG
     ' Variable: pixelIndex stores the index variable used to address the current item.
-    Dim pixelIndex As Long
+    DIM pixelIndex AS LONG
     ' Variable: packetCount stores the count used to size or iterate the current data set.
-    Dim packetCount As Long
+    DIM packetCount AS LONG
     ' Variable: countByte stores the count used to size or iterate the current data set.
-    Dim countByte As Long
+    DIM countByte AS LONG
     ' Variable: signedCount stores the count used to size or iterate the current data set.
-    Dim signedCount As Long
+    DIM signedCount AS LONG
     ' Variable: literalCount stores the count used to size or iterate the current data set.
-    Dim literalCount As Long
+    DIM literalCount AS LONG
     ' Variable: repeatCount stores the count used to size or iterate the current data set.
-    Dim repeatCount As Long
+    DIM repeatCount AS LONG
     ' Variable: dataByte stores the buffer that holds raw, packed, or decoded byte data.
-    Dim dataByte As Long
+    DIM dataByte AS LONG
     ' Variable: copyIndex stores the index variable used to address the current item.
-    Dim copyIndex As Long
+    DIM copyIndex AS LONG
     ' Variable: widthPx stores the decoded image width in pixels.
-    Dim widthPx As Long
+    DIM widthPx AS LONG
     ' Variable: heightPx stores the decoded image height in pixels.
-    Dim heightPx As Long
+    DIM heightPx AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     slotId = FlicDecodeContextId
-    If FlicValidId(slotId) = 0 Then Exit Sub
+    IF FlicValidId(slotId) = 0 THEN EXIT SUB
 
     widthPx = FlicItems(slotId).WidthPx
     heightPx = FlicItems(slotId).HeightPx
@@ -2445,108 +2444,108 @@ Sub FlicDecodeChunkByteRun ()
 
     ' Loop purpose: iterate through image rows or vertical positions.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For y = 0 To heightPx - 1
+    FOR y = 0 TO heightPx - 1
         packetCount = FlicBufReadUByte
         x = 0
         rowStart = pixelStart + y * widthPx
 
         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-        Do While x < widthPx
+        DO WHILE x < widthPx
             countByte = FlicBufReadUByte
 
-            If countByte > 127 Then
+            IF countByte > 127 THEN
                 signedCount = countByte - 256
-            Else
+            ELSE
                 signedCount = countByte
-            End If
+            END IF
 
-            If signedCount > 0 Then
+            IF signedCount > 0 THEN
                 repeatCount = signedCount
                 dataByte = FlicBufReadUByte
 
                 ' Loop purpose: use copyIndex as a counter/index while the routine processes a repeated set of values.
                 ' The loop order matters because later statements expect the data to be visited sequentially.
-                For copyIndex = 1 To repeatCount
-                    If x < widthPx Then
+                FOR copyIndex = 1 TO repeatCount
+                    IF x < widthPx THEN
                         pixelIndex = rowStart + x
                         FlicPixelData(pixelIndex) = dataByte
                         x = x + 1
-                    End If
-                Next copyIndex
+                    END IF
+                NEXT copyIndex
 
-            ElseIf signedCount < 0 Then
+            ELSEIF signedCount < 0 THEN
                 literalCount = -signedCount
 
                 ' Loop purpose: use copyIndex as a counter/index while the routine processes a repeated set of values.
                 ' The loop order matters because later statements expect the data to be visited sequentially.
-                For copyIndex = 1 To literalCount
+                FOR copyIndex = 1 TO literalCount
                     dataByte = FlicBufReadUByte
 
-                    If x < widthPx Then
+                    IF x < widthPx THEN
                         pixelIndex = rowStart + x
                         FlicPixelData(pixelIndex) = dataByte
                         x = x + 1
-                    End If
-                Next copyIndex
-            End If
-        Loop
-    Next y
+                    END IF
+                NEXT copyIndex
+            END IF
+        LOOP
+    NEXT y
     FlicMarkDirtyFullFrame slotId
-End Sub
+END SUB
 
 ' Purpose: Decode or apply FLI/FLC chunk data to the current frame buffer.
-Sub FlicDecodeChunkDeltaFLI ()
+SUB FlicDecodeChunkDeltaFLI ()
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: skipLines stores the working value for skip lines.
-    Dim skipLines As Long
+    DIM skipLines AS LONG
     ' Variable: changeLines stores the working value for change lines.
-    Dim changeLines As Long
+    DIM changeLines AS LONG
     ' Variable: y stores the vertical pixel or coordinate index.
-    Dim y As Long
+    DIM y AS LONG
     ' Variable: packetCount stores the count used to size or iterate the current data set.
-    Dim packetCount As Long
+    DIM packetCount AS LONG
     ' Variable: packetIndex stores the index variable used to address the current item.
-    Dim packetIndex As Long
+    DIM packetIndex AS LONG
     ' Variable: skipCount stores the count used to size or iterate the current data set.
-    Dim skipCount As Long
+    DIM skipCount AS LONG
     ' Variable: sizeCount stores the count used to size or iterate the current data set.
-    Dim sizeCount As Long
+    DIM sizeCount AS LONG
     ' Variable: literalCount stores the count used to size or iterate the current data set.
-    Dim literalCount As Long
+    DIM literalCount AS LONG
     ' Variable: repeatCount stores the count used to size or iterate the current data set.
-    Dim repeatCount As Long
+    DIM repeatCount AS LONG
     ' Variable: dataByte stores the buffer that holds raw, packed, or decoded byte data.
-    Dim dataByte As Long
+    DIM dataByte AS LONG
     ' Variable: x stores the horizontal pixel or coordinate index.
-    Dim x As Long
+    DIM x AS LONG
     ' Variable: rowStart stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowStart As Long
+    DIM rowStart AS LONG
     ' Variable: pixelOffset stores the working value for pixel offset.
-    Dim pixelOffset As Long
+    DIM pixelOffset AS LONG
     ' Variable: copyIndex stores the index variable used to address the current item.
-    Dim copyIndex As Long
+    DIM copyIndex AS LONG
     ' Variable: rowChanged stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowChanged As Integer
+    DIM rowChanged AS INTEGER
     ' Variable: rowDirtyLeft stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowDirtyLeft As Long
+    DIM rowDirtyLeft AS LONG
     ' Variable: rowDirtyRight stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowDirtyRight As Long
+    DIM rowDirtyRight AS LONG
     ' Variable: rowWriteStart stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowWriteStart As Long
+    DIM rowWriteStart AS LONG
     ' Variable: rowWriteEnd stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowWriteEnd As Long
+    DIM rowWriteEnd AS LONG
     ' Variable: widthPx stores the decoded image width in pixels.
-    Dim widthPx As Long
+    DIM widthPx AS LONG
     ' Variable: heightPx stores the decoded image height in pixels.
-    Dim heightPx As Long
+    DIM heightPx AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     slotId = FlicDecodeContextId
-    If FlicValidId(slotId) = 0 Then Exit Sub
+    IF FlicValidId(slotId) = 0 THEN EXIT SUB
 
     widthPx = FlicItems(slotId).WidthPx
     heightPx = FlicItems(slotId).HeightPx
@@ -2557,8 +2556,8 @@ Sub FlicDecodeChunkDeltaFLI ()
     y = skipLines
 
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While changeLines > 0
-        If y >= heightPx Then Exit Do
+    DO WHILE changeLines > 0
+        IF y >= heightPx THEN EXIT DO
 
         packetCount = FlicBufReadUByte
         x = 0
@@ -2569,40 +2568,40 @@ Sub FlicDecodeChunkDeltaFLI ()
 
         ' Loop purpose: use packetIndex as a counter/index while the routine processes a repeated set of values.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For packetIndex = 1 To packetCount
+        FOR packetIndex = 1 TO packetCount
             skipCount = FlicBufReadUByte
             x = x + skipCount
 
             sizeCount = FlicBufReadSByte
 
-            If sizeCount > 0 Then
+            IF sizeCount > 0 THEN
                 literalCount = sizeCount
                 rowWriteStart = x
                 rowWriteEnd = x + literalCount - 1
 
                 ' Loop purpose: use copyIndex as a counter/index while the routine processes a repeated set of values.
                 ' The loop order matters because later statements expect the data to be visited sequentially.
-                For copyIndex = 1 To literalCount
+                FOR copyIndex = 1 TO literalCount
                     dataByte = FlicBufReadUByte
 
-                    If x < widthPx Then
+                    IF x < widthPx THEN
                         pixelOffset = rowStart + x
                         FlicPixelData(pixelOffset) = dataByte
-                    End If
+                    END IF
 
                     x = x + 1
-                Next copyIndex
+                NEXT copyIndex
 
-                If rowWriteStart < widthPx Then
-                    If rowWriteEnd >= widthPx Then rowWriteEnd = widthPx - 1
-                    If rowWriteEnd >= rowWriteStart Then
-                        If rowWriteStart < rowDirtyLeft Then rowDirtyLeft = rowWriteStart
-                        If rowWriteEnd > rowDirtyRight Then rowDirtyRight = rowWriteEnd
+                IF rowWriteStart < widthPx THEN
+                    IF rowWriteEnd >= widthPx THEN rowWriteEnd = widthPx - 1
+                    IF rowWriteEnd >= rowWriteStart THEN
+                        IF rowWriteStart < rowDirtyLeft THEN rowDirtyLeft = rowWriteStart
+                        IF rowWriteEnd > rowDirtyRight THEN rowDirtyRight = rowWriteEnd
                         rowChanged = -1
-                    End If
-                End If
+                    END IF
+                END IF
 
-            ElseIf sizeCount < 0 Then
+            ELSEIF sizeCount < 0 THEN
                 repeatCount = -sizeCount
                 dataByte = FlicBufReadUByte
                 rowWriteStart = x
@@ -2610,95 +2609,94 @@ Sub FlicDecodeChunkDeltaFLI ()
 
                 ' Loop purpose: use copyIndex as a counter/index while the routine processes a repeated set of values.
                 ' The loop order matters because later statements expect the data to be visited sequentially.
-                For copyIndex = 1 To repeatCount
-                    If x < widthPx Then
+                FOR copyIndex = 1 TO repeatCount
+                    IF x < widthPx THEN
                         pixelOffset = rowStart + x
                         FlicPixelData(pixelOffset) = dataByte
-                    End If
+                    END IF
 
                     x = x + 1
-                Next copyIndex
+                NEXT copyIndex
 
-                If rowWriteStart < widthPx Then
-                    If rowWriteEnd >= widthPx Then rowWriteEnd = widthPx - 1
-                    If rowWriteEnd >= rowWriteStart Then
-                        If rowWriteStart < rowDirtyLeft Then rowDirtyLeft = rowWriteStart
-                        If rowWriteEnd > rowDirtyRight Then rowDirtyRight = rowWriteEnd
+                IF rowWriteStart < widthPx THEN
+                    IF rowWriteEnd >= widthPx THEN rowWriteEnd = widthPx - 1
+                    IF rowWriteEnd >= rowWriteStart THEN
+                        IF rowWriteStart < rowDirtyLeft THEN rowDirtyLeft = rowWriteStart
+                        IF rowWriteEnd > rowDirtyRight THEN rowDirtyRight = rowWriteEnd
                         rowChanged = -1
-                    End If
-                End If
-            End If
-        Next packetIndex
+                    END IF
+                END IF
+            END IF
+        NEXT packetIndex
 
-        If rowChanged Then
+        IF rowChanged THEN
             FlicMarkDirtyRect slotId, rowDirtyLeft, y, rowDirtyRight, y
-        End If
+        END IF
 
         y = y + 1
         changeLines = changeLines - 1
-    Loop
-End Sub
-
+    LOOP
+END SUB
 
 ' Purpose: Decode or apply FLI/FLC chunk data to the current frame buffer.
-Sub FlicDecodeChunkDeltaFLC ()
+SUB FlicDecodeChunkDeltaFLC ()
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: linesRemaining stores the working value for lines remaining.
-    Dim linesRemaining As Long
+    DIM linesRemaining AS LONG
     ' Variable: y stores the vertical pixel or coordinate index.
-    Dim y As Long
+    DIM y AS LONG
     ' Variable: opcodeValue stores the working value for opcode value.
-    Dim opcodeValue As Long
+    DIM opcodeValue AS LONG
     ' Variable: opcodeType stores the working value for opcode type.
-    Dim opcodeType As Long
+    DIM opcodeType AS LONG
     ' Variable: signedOpcode stores the working value for signed opcode.
-    Dim signedOpcode As Long
+    DIM signedOpcode AS LONG
     ' Variable: packetCount stores the count used to size or iterate the current data set.
-    Dim packetCount As Long
+    DIM packetCount AS LONG
     ' Variable: packetIndex stores the index variable used to address the current item.
-    Dim packetIndex As Long
+    DIM packetIndex AS LONG
     ' Variable: skipCount stores the count used to size or iterate the current data set.
-    Dim skipCount As Long
+    DIM skipCount AS LONG
     ' Variable: rleCount stores the count used to size or iterate the current data set.
-    Dim rleCount As Long
+    DIM rleCount AS LONG
     ' Variable: repeatCount stores the count used to size or iterate the current data set.
-    Dim repeatCount As Long
+    DIM repeatCount AS LONG
     ' Variable: wordValue stores the working value for word value.
-    Dim wordValue As Long
+    DIM wordValue AS LONG
     ' Variable: lowByte stores the working value for low byte.
-    Dim lowByte As Long
+    DIM lowByte AS LONG
     ' Variable: highByte stores the working value for high byte.
-    Dim highByte As Long
+    DIM highByte AS LONG
     ' Variable: x stores the horizontal pixel or coordinate index.
-    Dim x As Long
+    DIM x AS LONG
     ' Variable: rowStart stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowStart As Long
+    DIM rowStart AS LONG
     ' Variable: pixelOffset stores the working value for pixel offset.
-    Dim pixelOffset As Long
+    DIM pixelOffset AS LONG
     ' Variable: copyIndex stores the index variable used to address the current item.
-    Dim copyIndex As Long
+    DIM copyIndex AS LONG
     ' Variable: rowChanged stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowChanged As Integer
+    DIM rowChanged AS INTEGER
     ' Variable: rowDirtyLeft stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowDirtyLeft As Long
+    DIM rowDirtyLeft AS LONG
     ' Variable: rowDirtyRight stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowDirtyRight As Long
+    DIM rowDirtyRight AS LONG
     ' Variable: rowWriteStart stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowWriteStart As Long
+    DIM rowWriteStart AS LONG
     ' Variable: rowWriteEnd stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowWriteEnd As Long
+    DIM rowWriteEnd AS LONG
     ' Variable: widthPx stores the decoded image width in pixels.
-    Dim widthPx As Long
+    DIM widthPx AS LONG
     ' Variable: heightPx stores the decoded image height in pixels.
-    Dim heightPx As Long
+    DIM heightPx AS LONG
     ' Variable: pixelStart stores the working value for pixel start.
-    Dim pixelStart As Long
+    DIM pixelStart AS LONG
 
-    If FlicDecodeContextId < 0 Then Exit Sub
+    IF FlicDecodeContextId < 0 THEN EXIT SUB
 
     slotId = FlicDecodeContextId
-    If FlicValidId(slotId) = 0 Then Exit Sub
+    IF FlicValidId(slotId) = 0 THEN EXIT SUB
 
     widthPx = FlicItems(slotId).WidthPx
     heightPx = FlicItems(slotId).HeightPx
@@ -2708,334 +2706,333 @@ Sub FlicDecodeChunkDeltaFLC ()
     y = 0
 
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While linesRemaining > 0
+    DO WHILE linesRemaining > 0
         rowChanged = 0
         rowDirtyLeft = widthPx
         rowDirtyRight = -1
 
         ' Loop purpose: repeat this block until an internal exit condition decides that the current stage is complete.
-        Do
+        DO
             opcodeValue = FlicBufReadUShort
-            opcodeType = opcodeValue And DELTA_OPCODE_MASK
+            opcodeType = opcodeValue AND DELTA_OPCODE_MASK
 
-            If opcodeType = DELTA_OPCODE_PACKET Then
-                packetCount = opcodeValue And DELTA_PACKET_MASK
-                Exit Do
-            End If
+            IF opcodeType = DELTA_OPCODE_PACKET THEN
+                packetCount = opcodeValue AND DELTA_PACKET_MASK
+                EXIT DO
+            END IF
 
-            If opcodeType = DELTA_OPCODE_LASTPIXEL Then
-                If y >= 0 And y < heightPx Then
+            IF opcodeType = DELTA_OPCODE_LASTPIXEL THEN
+                IF y >= 0 AND y < heightPx THEN
                     rowStart = pixelStart + y * widthPx
                     pixelOffset = rowStart + widthPx - 1
-                    FlicPixelData(pixelOffset) = opcodeValue And 255
-                    If widthPx > 0 Then
-                        If widthPx - 1 < rowDirtyLeft Then rowDirtyLeft = widthPx - 1
-                        If widthPx - 1 > rowDirtyRight Then rowDirtyRight = widthPx - 1
+                    FlicPixelData(pixelOffset) = opcodeValue AND 255
+                    IF widthPx > 0 THEN
+                        IF widthPx - 1 < rowDirtyLeft THEN rowDirtyLeft = widthPx - 1
+                        IF widthPx - 1 > rowDirtyRight THEN rowDirtyRight = widthPx - 1
                         rowChanged = -1
-                    End If
-                End If
+                    END IF
+                END IF
 
-            ElseIf opcodeType = DELTA_OPCODE_LINESKIP Then
+            ELSEIF opcodeType = DELTA_OPCODE_LINESKIP THEN
                 signedOpcode = opcodeValue
-                If signedOpcode > 32767 Then signedOpcode = signedOpcode - 65536
+                IF signedOpcode > 32767 THEN signedOpcode = signedOpcode - 65536
 
-                If signedOpcode < 0 Then
+                IF signedOpcode < 0 THEN
                     y = y + (-signedOpcode)
-                Else
-                    Exit Sub
-                End If
+                ELSE
+                    EXIT SUB
+                END IF
 
-            Else
-                Exit Sub
-            End If
-        Loop
+            ELSE
+                EXIT SUB
+            END IF
+        LOOP
 
-        If y >= 0 And y < heightPx Then
+        IF y >= 0 AND y < heightPx THEN
             rowStart = pixelStart + y * widthPx
-        Else
+        ELSE
             rowStart = 0
-        End If
+        END IF
 
         x = 0
 
         ' Loop purpose: use packetIndex as a counter/index while the routine processes a repeated set of values.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For packetIndex = 1 To packetCount
+        FOR packetIndex = 1 TO packetCount
             skipCount = FlicBufReadUByte
             x = x + skipCount
 
             rleCount = FlicBufReadSByte
 
-            If rleCount > 0 Then
+            IF rleCount > 0 THEN
                 rowWriteStart = x
                 rowWriteEnd = x + rleCount * 2 - 1
 
                 ' Loop purpose: use copyIndex as a counter/index while the routine processes a repeated set of values.
                 ' The loop order matters because later statements expect the data to be visited sequentially.
-                For copyIndex = 1 To rleCount
+                FOR copyIndex = 1 TO rleCount
                     wordValue = FlicBufReadUShort
-                    lowByte = wordValue And 255
-                    highByte = (wordValue \ 256) And 255
+                    lowByte = wordValue AND 255
+                    highByte = (wordValue \ 256) AND 255
 
-                    If y >= 0 And y < heightPx Then
-                        If x < widthPx Then
+                    IF y >= 0 AND y < heightPx THEN
+                        IF x < widthPx THEN
                             pixelOffset = rowStart + x
                             FlicPixelData(pixelOffset) = lowByte
-                        End If
+                        END IF
                         x = x + 1
 
-                        If x < widthPx Then
+                        IF x < widthPx THEN
                             pixelOffset = rowStart + x
                             FlicPixelData(pixelOffset) = highByte
-                        End If
+                        END IF
                         x = x + 1
-                    Else
+                    ELSE
                         x = x + 2
-                    End If
-                Next copyIndex
+                    END IF
+                NEXT copyIndex
 
-                If y >= 0 And y < heightPx Then
-                    If rowWriteStart < widthPx Then
-                        If rowWriteEnd >= widthPx Then rowWriteEnd = widthPx - 1
-                        If rowWriteEnd >= rowWriteStart Then
-                            If rowWriteStart < rowDirtyLeft Then rowDirtyLeft = rowWriteStart
-                            If rowWriteEnd > rowDirtyRight Then rowDirtyRight = rowWriteEnd
+                IF y >= 0 AND y < heightPx THEN
+                    IF rowWriteStart < widthPx THEN
+                        IF rowWriteEnd >= widthPx THEN rowWriteEnd = widthPx - 1
+                        IF rowWriteEnd >= rowWriteStart THEN
+                            IF rowWriteStart < rowDirtyLeft THEN rowDirtyLeft = rowWriteStart
+                            IF rowWriteEnd > rowDirtyRight THEN rowDirtyRight = rowWriteEnd
                             rowChanged = -1
-                        End If
-                    End If
-                End If
+                        END IF
+                    END IF
+                END IF
 
-            ElseIf rleCount < 0 Then
+            ELSEIF rleCount < 0 THEN
                 repeatCount = -rleCount
                 wordValue = FlicBufReadUShort
-                lowByte = wordValue And 255
-                highByte = (wordValue \ 256) And 255
+                lowByte = wordValue AND 255
+                highByte = (wordValue \ 256) AND 255
                 rowWriteStart = x
                 rowWriteEnd = x + repeatCount * 2 - 1
 
                 ' Loop purpose: use copyIndex as a counter/index while the routine processes a repeated set of values.
                 ' The loop order matters because later statements expect the data to be visited sequentially.
-                For copyIndex = 1 To repeatCount
-                    If y >= 0 And y < heightPx Then
-                        If x < widthPx Then
+                FOR copyIndex = 1 TO repeatCount
+                    IF y >= 0 AND y < heightPx THEN
+                        IF x < widthPx THEN
                             pixelOffset = rowStart + x
                             FlicPixelData(pixelOffset) = lowByte
-                        End If
+                        END IF
                         x = x + 1
 
-                        If x < widthPx Then
+                        IF x < widthPx THEN
                             pixelOffset = rowStart + x
                             FlicPixelData(pixelOffset) = highByte
-                        End If
+                        END IF
                         x = x + 1
-                    Else
+                    ELSE
                         x = x + 2
-                    End If
-                Next copyIndex
+                    END IF
+                NEXT copyIndex
 
-                If y >= 0 And y < heightPx Then
-                    If rowWriteStart < widthPx Then
-                        If rowWriteEnd >= widthPx Then rowWriteEnd = widthPx - 1
-                        If rowWriteEnd >= rowWriteStart Then
-                            If rowWriteStart < rowDirtyLeft Then rowDirtyLeft = rowWriteStart
-                            If rowWriteEnd > rowDirtyRight Then rowDirtyRight = rowWriteEnd
+                IF y >= 0 AND y < heightPx THEN
+                    IF rowWriteStart < widthPx THEN
+                        IF rowWriteEnd >= widthPx THEN rowWriteEnd = widthPx - 1
+                        IF rowWriteEnd >= rowWriteStart THEN
+                            IF rowWriteStart < rowDirtyLeft THEN rowDirtyLeft = rowWriteStart
+                            IF rowWriteEnd > rowDirtyRight THEN rowDirtyRight = rowWriteEnd
                             rowChanged = -1
-                        End If
-                    End If
-                End If
-            End If
-        Next packetIndex
+                        END IF
+                    END IF
+                END IF
+            END IF
+        NEXT packetIndex
 
-        If rowChanged Then
+        IF rowChanged THEN
             FlicMarkDirtyRect slotId, rowDirtyLeft, y, rowDirtyRight, y
-        End If
+        END IF
 
         y = y + 1
         linesRemaining = linesRemaining - 1
-    Loop
-End Sub
-
+    LOOP
+END SUB
 
 ' Purpose: Seek to a specific FLI/FLC frame or time position.
 ' Parameters: flicId = working value for FLIC id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicSeekFrame% (flicId As Long, frameIndex As Long)
+FUNCTION FlicSeekFrame% (flicId AS LONG, frameIndex AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
     FlicSeekFrame = 0
-    If FlicValidId(flicId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= FlicItems(flicId).FrameCount Then Exit Function
+    IF FlicValidId(flicId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= FlicItems(flicId).FrameCount THEN EXIT FUNCTION
 
-    If FlicEnsureRenderedFrame(flicId, frameIndex) = 0 Then Exit Function
+    IF FlicEnsureRenderedFrame(flicId, frameIndex) = 0 THEN EXIT FUNCTION
 
     delaySec = FlicGetFrameDelay(flicId, frameIndex) / 1000#
-    If delaySec <= 0 Then delaySec = .03
+    IF delaySec <= 0 THEN delaySec = .03
 
-    nowValue = Timer
+    nowValue = TIMER
     FlicItems(flicId).CurrentFrame = frameIndex
 
-    If FlicItems(flicId).Playing Then
-        If FlicItems(flicId).Paused Then
+    IF FlicItems(flicId).Playing THEN
+        IF FlicItems(flicId).Paused THEN
             FlicItems(flicId).RemainingDelay = delaySec
             FlicItems(flicId).LastRawTimer = nowValue
-        Else
+        ELSE
             FlicItems(flicId).LastTick = nowValue
             FlicItems(flicId).LastRawTimer = nowValue
             FlicItems(flicId).NextTick = FlicTimeAdd(nowValue, delaySec)
             FlicItems(flicId).RemainingDelay = 0
-        End If
-    Else
+        END IF
+    ELSE
         FlicItems(flicId).NextTick = 0
         FlicItems(flicId).RemainingDelay = 0
         FlicItems(flicId).LastRawTimer = 0
-    End If
+    END IF
 
     FlicSeekFrame = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC elapsed since.
 ' Parameters: previousTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicElapsedSince# (previousTime As Double, currentTime As Double)
+FUNCTION FlicElapsedSince# (previousTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: elapsedSec stores the working value for elapsed sec.
-    Dim elapsedSec As Double
+    DIM elapsedSec AS DOUBLE
 
     ' Keep the midnight wrap behavior intact while measuring TIMER progress.
     elapsedSec = currentTime - previousTime
-    If elapsedSec < 0 Then elapsedSec = elapsedSec + 86400#
+    IF elapsedSec < 0 THEN elapsedSec = elapsedSec + 86400#
 
     FlicElapsedSince = elapsedSec
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC clock jump limit.
 ' Parameters: flicId = working value for FLIC id; previousTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicClockJumpLimit# (flicId As Long, previousTime As Double)
+FUNCTION FlicClockJumpLimit# (flicId AS LONG, previousTime AS DOUBLE)
     ' Variable: limitSec stores the working value for limit sec.
-    Dim limitSec As Double
+    DIM limitSec AS DOUBLE
 
     limitSec = FlicTimeRemaining(FlicItems(flicId).NextTick, previousTime)
-    If limitSec <= 0 Then
+    IF limitSec <= 0 THEN
         limitSec = FlicGetFrameDelay(flicId, FlicItems(flicId).CurrentFrame) / 1000#
-        If limitSec <= 0 Then limitSec = .03
-    End If
+        IF limitSec <= 0 THEN limitSec = .03
+    END IF
 
     ' Allow ordinary frame jitter, but treat large raw TIMER jumps as a resync event.
     limitSec = limitSec + 1#
-    If limitSec < 2# Then limitSec = 2#
-    If limitSec > 10# Then limitSec = 10#
+    IF limitSec < 2# THEN limitSec = 2#
+    IF limitSec > 10# THEN limitSec = 10#
 
     FlicClockJumpLimit = limitSec
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC clock jumped.
 ' Parameters: flicId = working value for FLIC id; previousTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicClockJumped% (flicId As Long, previousTime As Double, currentTime As Double)
+FUNCTION FlicClockJumped% (flicId AS LONG, previousTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: jumpFlag stores the working value for jump flag.
-    Dim jumpFlag As Integer
+    DIM jumpFlag AS INTEGER
     ' Variable: elapsedSec stores the working value for elapsed sec.
-    Dim elapsedSec As Double
+    DIM elapsedSec AS DOUBLE
     ' Variable: limitSec stores the working value for limit sec.
-    Dim limitSec As Double
+    DIM limitSec AS DOUBLE
 
     jumpFlag = 0
     elapsedSec = FlicElapsedSince(previousTime, currentTime)
     limitSec = FlicClockJumpLimit(flicId, previousTime)
-    If elapsedSec > limitSec Then jumpFlag = -1
+    IF elapsedSec > limitSec THEN jumpFlag = -1
 
     FlicClockJumped = jumpFlag
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC resync after clock jump.
 ' Parameters: flicId = working value for FLIC id; currentTime = time-related value used by the current routine.
-Sub FlicResyncAfterClockJump (flicId As Long, currentTime As Double)
+SUB FlicResyncAfterClockJump (flicId AS LONG, currentTime AS DOUBLE)
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: previousTime stores the time-related value used by the current routine.
-    Dim previousTime As Double
+    DIM previousTime AS DOUBLE
 
-    If FlicValidId(flicId) = 0 Then Exit Sub
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
 
     ' Re-anchor the current frame after a manual clock change or large TIMER discontinuity.
     previousTime = FlicItems(flicId).LastRawTimer
     delaySec = FlicTimeRemaining(FlicItems(flicId).NextTick, previousTime)
-    If delaySec <= 0 Then
+    IF delaySec <= 0 THEN
         delaySec = FlicGetFrameDelay(flicId, FlicItems(flicId).CurrentFrame) / 1000#
-        If delaySec <= 0 Then delaySec = .03
-    End If
+        IF delaySec <= 0 THEN delaySec = .03
+    END IF
 
     FlicItems(flicId).LastTick = currentTime
     FlicItems(flicId).NextTick = FlicTimeAdd(currentTime, delaySec)
     FlicItems(flicId).LastRawTimer = currentTime
-End Sub
+END SUB
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC time add.
 ' Parameters: baseTime = time-related value used by the current routine; deltaSec = working value for delta sec.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicTimeAdd# (baseTime As Double, deltaSec As Double)
+FUNCTION FlicTimeAdd# (baseTime AS DOUBLE, deltaSec AS DOUBLE)
     ' Variable: resultTime stores the time-related value used by the current routine.
-    Dim resultTime As Double
+    DIM resultTime AS DOUBLE
 
     ' Add seconds to a TIMER value and wrap across midnight.
     ' QB64PE should not use the function name inside expressions here.
     resultTime = baseTime + deltaSec
-    If resultTime >= 86400# Then resultTime = resultTime - 86400#
+    IF resultTime >= 86400# THEN resultTime = resultTime - 86400#
 
     FlicTimeAdd = resultTime
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC time remaining.
 ' Parameters: targetTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicTimeRemaining# (targetTime As Double, currentTime As Double)
+FUNCTION FlicTimeRemaining# (targetTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: resultTime stores the time-related value used by the current routine.
-    Dim resultTime As Double
+    DIM resultTime AS DOUBLE
     ' Variable: reachedFlag stores the working value for reached flag.
-    Dim reachedFlag As Integer
+    DIM reachedFlag AS INTEGER
 
     ' Preserve the leftover part of the current frame when pause is pressed.
     ' Use a local variable so the function name is only assigned at the end.
     resultTime = 0
     reachedFlag = FlicTimerReached(targetTime, currentTime)
-    If reachedFlag Then
+    IF reachedFlag THEN
         FlicTimeRemaining = resultTime
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     resultTime = targetTime - currentTime
-    If resultTime < 0 Then resultTime = resultTime + 86400#
+    IF resultTime < 0 THEN resultTime = resultTime + 86400#
 
     FlicTimeRemaining = resultTime
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC timer reached.
 ' Parameters: targetTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function FlicTimerReached% (targetTime As Double, currentTime As Double)
+FUNCTION FlicTimerReached% (targetTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: reachedFlag stores the working value for reached flag.
-    Dim reachedFlag As Integer
+    DIM reachedFlag AS INTEGER
 
     ' Use a local variable so the function name is only assigned at the end.
     reachedFlag = 0
 
-    If currentTime >= targetTime Then
+    IF currentTime >= targetTime THEN
         reachedFlag = -1
-    ElseIf targetTime - currentTime > 43200# Then
+    ELSEIF targetTime - currentTime > 43200# THEN
         reachedFlag = -1
-    End If
+    END IF
 
     FlicTimerReached = reachedFlag
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the FLIC/FLC backend: handle FLIC make default stop state.
 ' Parameters: flicId = working value for FLIC id.
-Sub FlicMakeDefaultStopState (flicId As Long)
-    If FlicValidId(flicId) = 0 Then Exit Sub
+SUB FlicMakeDefaultStopState (flicId AS LONG)
+    IF FlicValidId(flicId) = 0 THEN EXIT SUB
 
     FlicItems(flicId).Playing = 0
     FlicItems(flicId).Paused = 0
@@ -3045,4 +3042,5 @@ Sub FlicMakeDefaultStopState (flicId As Long)
     FlicItems(flicId).RemainingDelay = 0
     FlicItems(flicId).LastRawTimer = 0
     FlicResetDecodeState flicId
-End Sub
+END SUB
+

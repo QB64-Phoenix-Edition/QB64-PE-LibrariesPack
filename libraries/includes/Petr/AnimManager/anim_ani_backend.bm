@@ -1,123 +1,121 @@
-$INCLUDEONCE
-
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 ' =========================================================
 ' Commented source copy for the Windows ANI backend.
 ' Explanatory comments were added in English without altering executable code.
 ' =========================================================
+' ANI cursor backend for RIFF ACON files
+' Public names use Ani... prefix.
+
+$INCLUDEONCE
 
 ' Purpose: Open a Windows ANI file, parse RIFF chunks, and prepare playback.
 ' Parameters: fileName = string holding a file path or a human-readable name.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniOpen& (fileName As String)
+FUNCTION AniOpen& (fileName AS STRING)
     AniOpen = AniOpenLimit(fileName, 0, 0, 0)
-End Function
+END FUNCTION
 
 ' Purpose: Open a Windows ANI file, parse RIFF chunks, and prepare playback.
 ' Parameters: fileName = string holding a file path or a human-readable name; maxWidth = maximum allowed width; maxHeight = maximum allowed height; maxFrames = maximum allowed frames.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long, maxFrames As Long)
+FUNCTION AniOpenLimit& (fileName AS STRING, maxWidth AS LONG, maxHeight AS LONG, maxFrames AS LONG)
     ' Constant: AF_ICON is a ANI/RIFF constant used while parsing Windows animated cursor files.
-    Const AF_ICON = 1
+    CONST AF_ICON = 1
     ' Constant: FALLBACK_JIF is a named constant for fallback jif.
-    Const FALLBACK_JIF = 6
+    CONST FALLBACK_JIF = 6
 
     ' Variable: slotId stores the working value for slot id.
-    Dim slotId As Long
+    DIM slotId AS LONG
     ' Variable: fileNum stores the working value for file num.
-    Dim fileNum As Integer
+    DIM fileNum AS INTEGER
     ' Variable: fileLen stores the working value for file len.
-    Dim fileLen As Long
+    DIM fileLen AS LONG
     ' Variable: ofs stores the current offset into packed or unpacked data.
-    Dim ofs As Long
+    DIM ofs AS LONG
     ' Variable: chunkSize stores the size of the current chunk payload.
-    Dim chunkSize As Long
+    DIM chunkSize AS LONG
     ' Variable: chunkDataOfs stores the buffer that holds raw, packed, or decoded byte data.
-    Dim chunkDataOfs As Long
+    DIM chunkDataOfs AS LONG
     ' Variable: chunkNext stores the working value for chunk next.
-    Dim chunkNext As Long
+    DIM chunkNext AS LONG
     ' Variable: ptr stores the working value for ptr.
-    Dim ptr As Long
+    DIM ptr AS LONG
     ' Variable: listEnd stores the working value for list end.
-    Dim listEnd As Long
+    DIM listEnd AS LONG
     ' Variable: subSize stores the working value for sub size.
-    Dim subSize As Long
+    DIM subSize AS LONG
     ' Variable: subDataOfs stores the buffer that holds raw, packed, or decoded byte data.
-    Dim subDataOfs As Long
+    DIM subDataOfs AS LONG
     ' Variable: subNext stores the working value for sub next.
-    Dim subNext As Long
+    DIM subNext AS LONG
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
     ' Variable: loadedFrameCount stores the total number of frames available for the current animation.
-    Dim loadedFrameCount As Long
+    DIM loadedFrameCount AS LONG
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
     ' Variable: stepSlot stores the slot number inside the module-wide storage arrays.
-    Dim stepSlot As Long
+    DIM stepSlot AS LONG
     ' Variable: frameIndex stores the index variable used to address the current item.
-    Dim frameIndex As Long
+    DIM frameIndex AS LONG
     ' Variable: seqCount stores the count used to size or iterate the current data set.
-    Dim seqCount As Long
+    DIM seqCount AS LONG
     ' Variable: rateCount stores the count used to size or iterate the current data set.
-    Dim rateCount As Long
+    DIM rateCount AS LONG
     ' Variable: stepCount stores the count used to size or iterate the current data set.
-    Dim stepCount As Long
+    DIM stepCount AS LONG
     ' Variable: cFrames stores the dynamic array that stores per-frame data or cached frame metadata.
-    Dim cFrames As Long
+    DIM cFrames AS LONG
     ' Variable: cSteps stores the working value for c steps.
-    Dim cSteps As Long
+    DIM cSteps AS LONG
     ' Variable: defaultRate stores the working value for default rate.
-    Dim defaultRate As Long
+    DIM defaultRate AS LONG
     ' Variable: flags stores the working value for flags.
-    Dim flags As Long
+    DIM flags AS LONG
     ' Variable: anihFound stores the working value for anih found.
-    Dim anihFound As Integer
+    DIM anihFound AS INTEGER
     ' Variable: currentWidth stores the width value used by this routine.
-    Dim currentWidth As Long
+    DIM currentWidth AS LONG
     ' Variable: currentHeight stores the height value used by this routine.
-    Dim currentHeight As Long
+    DIM currentHeight AS LONG
     ' Variable: canvasWidth stores the width value used by this routine.
-    Dim canvasWidth As Long
+    DIM canvasWidth AS LONG
     ' Variable: canvasHeight stores the height value used by this routine.
-    Dim canvasHeight As Long
+    DIM canvasHeight AS LONG
     ' Variable: leftExtent stores the working value for left extent.
-    Dim leftExtent As Long
+    DIM leftExtent AS LONG
     ' Variable: topExtent stores the working value for top extent.
-    Dim topExtent As Long
+    DIM topExtent AS LONG
     ' Variable: rightExtent stores the working value for right extent.
-    Dim rightExtent As Long
+    DIM rightExtent AS LONG
     ' Variable: bottomExtent stores the working value for bottom extent.
-    Dim bottomExtent As Long
+    DIM bottomExtent AS LONG
     ' Variable: decodeHotX stores the working value for decode hot x.
-    Dim decodeHotX As Long
+    DIM decodeHotX AS LONG
     ' Variable: decodeHotY stores the working value for decode hot y.
-    Dim decodeHotY As Long
+    DIM decodeHotY AS LONG
     ' Variable: imgHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imgHandle As Long
+    DIM imgHandle AS LONG
     ' Variable: seqValue stores the working value for seq value.
-    Dim seqValue As Long
+    DIM seqValue AS LONG
     ' Variable: delayValue stores the frame delay or timing value.
-    Dim delayValue As Long
+    DIM delayValue AS LONG
     ' Variable: chosenFrameIndex stores the index variable used to address the current item.
-    Dim chosenFrameIndex As Long
+    DIM chosenFrameIndex AS LONG
     ' Variable: chunkId stores the working value for chunk id.
-    Dim chunkId As String
+    DIM chunkId AS STRING
     ' Variable: listType stores the working value for list type.
-    Dim listType As String
+    DIM listType AS STRING
     ' Variable: subId stores the working value for sub id.
-    Dim subId As String
+    DIM subId AS STRING
     ' Variable: oneErr stores the working value for one err.
-    Dim oneErr As String
+    DIM oneErr AS STRING
 
     ' dynamic array: buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    ReDim buf(0) As _Unsigned _Byte
+    REDIM buf(0) AS _UNSIGNED _BYTE
     ' dynamic array: seqRaw is resized here to hold the working value for seq raw.
-    ReDim seqRaw(0) As Long
+    REDIM seqRaw(0) AS LONG
     ' dynamic array: rateRaw is resized here to hold the working value for rate raw.
-    ReDim rateRaw(0) As Long
+    REDIM rateRaw(0) AS LONG
 
     AniOpenLimit = -1
     slotId = -1
@@ -136,137 +134,137 @@ Function AniOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long,
     rightExtent = 0
     bottomExtent = 0
 
-    If _FileExists(fileName) = 0 Then Exit Function
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT FUNCTION
 
-    fileNum = FreeFile
-    Open fileName For Binary As #fileNum
+    fileNum = FREEFILE
+    OPEN fileName FOR BINARY AS #fileNum
     fileLen = LOF(fileNum)
 
-    If fileLen < 12 Then
-        Close #fileNum
-        Exit Function
-    End If
+    IF fileLen < 12 THEN
+        CLOSE #fileNum
+        EXIT FUNCTION
+    END IF
 
     ' dynamic array: buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    ReDim buf(fileLen - 1) As _Unsigned _Byte
-    Get #fileNum, 1, buf()
-    Close #fileNum
+    REDIM buf(fileLen - 1) AS _UNSIGNED _BYTE
+    GET #fileNum, 1, buf()
+    CLOSE #fileNum
 
-    If AniReadFourCC$(buf(), 0) <> "RIFF" Then Exit Function
-    If AniReadFourCC$(buf(), 8) <> "ACON" Then Exit Function
+    IF AniReadFourCC$(buf(), 0) <> "RIFF" THEN EXIT FUNCTION
+    IF AniReadFourCC$(buf(), 8) <> "ACON" THEN EXIT FUNCTION
 
     ofs = 12
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While ofs + 7 < fileLen
+    DO WHILE ofs + 7 < fileLen
         chunkId = AniReadFourCC$(buf(), ofs)
         chunkSize = AniReadU32&(buf(), ofs + 4)
         chunkDataOfs = ofs + 8
         chunkNext = chunkDataOfs + chunkSize
-        If (chunkSize And 1) <> 0 Then chunkNext = chunkNext + 1
-        If chunkDataOfs < 0 Or chunkNext > fileLen Then Exit Function
+        IF (chunkSize AND 1) <> 0 THEN chunkNext = chunkNext + 1
+        IF chunkDataOfs < 0 OR chunkNext > fileLen THEN EXIT FUNCTION
 
-        Select Case chunkId
-            Case "anih"
-                If chunkSize < 36 Then Exit Function
+        SELECT CASE chunkId
+            CASE "anih"
+                IF chunkSize < 36 THEN EXIT FUNCTION
                 cFrames = AniReadU32&(buf(), chunkDataOfs + 4)
                 cSteps = AniReadU32&(buf(), chunkDataOfs + 8)
                 defaultRate = AniReadU32&(buf(), chunkDataOfs + 28)
                 flags = AniReadU32&(buf(), chunkDataOfs + 32)
                 anihFound = -1
 
-            Case "rate"
+            CASE "rate"
                 rateCount = chunkSize \ 4
-                If rateCount > 0 Then
+                IF rateCount > 0 THEN
                     ' dynamic array: rateRaw is resized here to hold the working value for rate raw.
-                    ReDim rateRaw(rateCount - 1) As Long
+                    REDIM rateRaw(rateCount - 1) AS LONG
                     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
                     ' The loop order matters because later statements expect the data to be visited sequentially.
-                    For i = 0 To rateCount - 1
+                    FOR i = 0 TO rateCount - 1
                         rateRaw(i) = AniReadU32&(buf(), chunkDataOfs + i * 4)
-                    Next i
-                End If
+                    NEXT i
+                END IF
 
-            Case "seq "
+            CASE "seq "
                 seqCount = chunkSize \ 4
-                If seqCount > 0 Then
+                IF seqCount > 0 THEN
                     ' dynamic array: seqRaw is resized here to hold the working value for seq raw.
-                    ReDim seqRaw(seqCount - 1) As Long
+                    REDIM seqRaw(seqCount - 1) AS LONG
                     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
                     ' The loop order matters because later statements expect the data to be visited sequentially.
-                    For i = 0 To seqCount - 1
+                    FOR i = 0 TO seqCount - 1
                         seqRaw(i) = AniReadU32&(buf(), chunkDataOfs + i * 4)
-                    Next i
-                End If
+                    NEXT i
+                END IF
 
-            Case "LIST"
-                If chunkSize >= 4 Then
+            CASE "LIST"
+                IF chunkSize >= 4 THEN
                     listType = AniReadFourCC$(buf(), chunkDataOfs)
-                    If listType = "fram" Then
+                    IF listType = "fram" THEN
                         ptr = chunkDataOfs + 4
                         listEnd = chunkDataOfs + chunkSize
                         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-                        Do While ptr + 7 < listEnd
+                        DO WHILE ptr + 7 < listEnd
                             subId = AniReadFourCC$(buf(), ptr)
                             subSize = AniReadU32&(buf(), ptr + 4)
                             subDataOfs = ptr + 8
                             subNext = subDataOfs + subSize
-                            If (subSize And 1) <> 0 Then subNext = subNext + 1
-                            If subNext > listEnd Then Exit Function
+                            IF (subSize AND 1) <> 0 THEN subNext = subNext + 1
+                            IF subNext > listEnd THEN EXIT FUNCTION
 
-                            If subId = "icon" Then
+                            IF subId = "icon" THEN
                                 loadedFrameCount = loadedFrameCount + 1
-                            End If
+                            END IF
 
                             ptr = subNext
-                        Loop
-                    End If
-                End If
-        End Select
+                        LOOP
+                    END IF
+                END IF
+        END SELECT
 
         ofs = chunkNext
-    Loop
+    LOOP
 
-    If anihFound = 0 Then Exit Function
-    If (flags And AF_ICON) = 0 Then Exit Function
-    If loadedFrameCount < 1 Then Exit Function
-    If defaultRate < 1 Then defaultRate = FALLBACK_JIF
+    IF anihFound = 0 THEN EXIT FUNCTION
+    IF (flags AND AF_ICON) = 0 THEN EXIT FUNCTION
+    IF loadedFrameCount < 1 THEN EXIT FUNCTION
+    IF defaultRate < 1 THEN defaultRate = FALLBACK_JIF
 
-    If cFrames <= 0 Then cFrames = loadedFrameCount
-    If cSteps <= 0 Then
-        If seqCount > 0 Then
+    IF cFrames <= 0 THEN cFrames = loadedFrameCount
+    IF cSteps <= 0 THEN
+        IF seqCount > 0 THEN
             cSteps = seqCount
-        Else
+        ELSE
             cSteps = loadedFrameCount
-        End If
-    End If
+        END IF
+    END IF
 
     stepCount = cSteps
-    If stepCount < 1 Then stepCount = loadedFrameCount
-    If maxFrames > 0 Then
-        If stepCount > maxFrames Then stepCount = maxFrames
-    End If
-    If stepCount < 1 Then Exit Function
+    IF stepCount < 1 THEN stepCount = loadedFrameCount
+    IF maxFrames > 0 THEN
+        IF stepCount > maxFrames THEN stepCount = maxFrames
+    END IF
+    IF stepCount < 1 THEN EXIT FUNCTION
 
     slotId = AniAllocSlot
-    If slotId < 0 Then Exit Function
+    IF slotId < 0 THEN EXIT FUNCTION
     AniInitSlot slotId
 
     frameSlot = AniAllocFrameBlock(loadedFrameCount)
-    If frameSlot < 0 Then
+    IF frameSlot < 0 THEN
         AniSetError slotId, "AniOpenLimit: frame allocation failed"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     AniItems(slotId).Used = -1
     AniItems(slotId).FrameStart = frameSlot
     AniItems(slotId).UniqueFrameCount = loadedFrameCount
 
     stepSlot = AniAllocStepBlock(stepCount)
-    If stepSlot < 0 Then
+    IF stepSlot < 0 THEN
         AniSetError slotId, "AniOpenLimit: step allocation failed"
         AniClose slotId
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     AniItems(slotId).StepStart = stepSlot
     AniItems(slotId).StepCount = stepCount
@@ -274,127 +272,127 @@ Function AniOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long,
     ofs = 12
     frameIndex = 0
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While ofs + 7 < fileLen
+    DO WHILE ofs + 7 < fileLen
         chunkId = AniReadFourCC$(buf(), ofs)
         chunkSize = AniReadU32&(buf(), ofs + 4)
         chunkDataOfs = ofs + 8
         chunkNext = chunkDataOfs + chunkSize
-        If (chunkSize And 1) <> 0 Then chunkNext = chunkNext + 1
+        IF (chunkSize AND 1) <> 0 THEN chunkNext = chunkNext + 1
 
-        Select Case chunkId
-            Case "LIST"
-                If chunkSize >= 4 Then
+        SELECT CASE chunkId
+            CASE "LIST"
+                IF chunkSize >= 4 THEN
                     listType = AniReadFourCC$(buf(), chunkDataOfs)
-                    If listType = "fram" Then
+                    IF listType = "fram" THEN
                         ptr = chunkDataOfs + 4
                         listEnd = chunkDataOfs + chunkSize
                         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-                        Do While ptr + 7 < listEnd
+                        DO WHILE ptr + 7 < listEnd
                             subId = AniReadFourCC$(buf(), ptr)
                             subSize = AniReadU32&(buf(), ptr + 4)
                             subDataOfs = ptr + 8
                             subNext = subDataOfs + subSize
-                            If (subSize And 1) <> 0 Then subNext = subNext + 1
+                            IF (subSize AND 1) <> 0 THEN subNext = subNext + 1
 
-                            If subId = "icon" Then
+                            IF subId = "icon" THEN
                                 oneErr = ""
                                 imgHandle = 0
                                 decodeHotX = 0
                                 decodeHotY = 0
-                                If AniDecodeIconChunk(buf(), subDataOfs, subSize, imgHandle, decodeHotX, decodeHotY, currentWidth, currentHeight, maxWidth, maxHeight, oneErr) = 0 Then
+                                IF AniDecodeIconChunk(buf(), subDataOfs, subSize, imgHandle, decodeHotX, decodeHotY, currentWidth, currentHeight, maxWidth, maxHeight, oneErr) = 0 THEN
                                     AniSetError slotId, oneErr
                                     AniClose slotId
-                                    Exit Function
-                                End If
+                                    EXIT FUNCTION
+                                END IF
 
                                 AniFrames(frameSlot + frameIndex).Used = -1
                                 AniFrames(frameSlot + frameIndex).ImageHandle = imgHandle
                                 AniFrames(frameSlot + frameIndex).HotX = decodeHotX
                                 AniFrames(frameSlot + frameIndex).HotY = decodeHotY
 
-                                If decodeHotX > leftExtent Then leftExtent = decodeHotX
-                                If decodeHotY > topExtent Then topExtent = decodeHotY
-                                If currentWidth - decodeHotX > rightExtent Then rightExtent = currentWidth - decodeHotX
-                                If currentHeight - decodeHotY > bottomExtent Then bottomExtent = currentHeight - decodeHotY
+                                IF decodeHotX > leftExtent THEN leftExtent = decodeHotX
+                                IF decodeHotY > topExtent THEN topExtent = decodeHotY
+                                IF currentWidth - decodeHotX > rightExtent THEN rightExtent = currentWidth - decodeHotX
+                                IF currentHeight - decodeHotY > bottomExtent THEN bottomExtent = currentHeight - decodeHotY
 
                                 frameIndex = frameIndex + 1
-                            End If
+                            END IF
 
                             ptr = subNext
-                        Loop
-                    End If
-                End If
-        End Select
+                        LOOP
+                    END IF
+                END IF
+        END SELECT
 
         ofs = chunkNext
-    Loop
+    LOOP
 
     canvasWidth = leftExtent + rightExtent
     canvasHeight = topExtent + bottomExtent
-    If canvasWidth < 1 Then canvasWidth = 1
-    If canvasHeight < 1 Then canvasHeight = 1
+    IF canvasWidth < 1 THEN canvasWidth = 1
+    IF canvasHeight < 1 THEN canvasHeight = 1
 
-    If maxWidth > 0 Then
-        If canvasWidth > maxWidth Then
+    IF maxWidth > 0 THEN
+        IF canvasWidth > maxWidth THEN
             AniSetError slotId, "AniOpenLimit: normalized ANI width exceeds limit"
             AniClose slotId
-            Exit Function
-        End If
-    End If
+            EXIT FUNCTION
+        END IF
+    END IF
 
-    If maxHeight > 0 Then
-        If canvasHeight > maxHeight Then
+    IF maxHeight > 0 THEN
+        IF canvasHeight > maxHeight THEN
             AniSetError slotId, "AniOpenLimit: normalized ANI height exceeds limit"
             AniClose slotId
-            Exit Function
-        End If
-    End If
+            EXIT FUNCTION
+        END IF
+    END IF
 
-    If AniNormalizeFrames(frameSlot, loadedFrameCount, canvasWidth, canvasHeight, leftExtent, topExtent) = 0 Then
+    IF AniNormalizeFrames(frameSlot, loadedFrameCount, canvasWidth, canvasHeight, leftExtent, topExtent) = 0 THEN
         AniSetError slotId, "AniOpenLimit: frame normalization failed"
         AniClose slotId
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To stepCount - 1
-        If seqCount > 0 Then
-            If i <= UBound(seqRaw) Then
+    FOR i = 0 TO stepCount - 1
+        IF seqCount > 0 THEN
+            IF i <= UBOUND(seqRaw) THEN
                 seqValue = seqRaw(i)
-            Else
+            ELSE
                 seqValue = 0
-            End If
-        Else
+            END IF
+        ELSE
             seqValue = i
-        End If
+        END IF
 
-        If loadedFrameCount > 0 Then
-            seqValue = seqValue Mod loadedFrameCount
-            If seqValue < 0 Then seqValue = 0
-        Else
+        IF loadedFrameCount > 0 THEN
+            seqValue = seqValue MOD loadedFrameCount
+            IF seqValue < 0 THEN seqValue = 0
+        ELSE
             seqValue = 0
-        End If
+        END IF
 
         AniSteps(stepSlot + i).Used = -1
         AniSteps(stepSlot + i).FrameIndex = seqValue
 
         delayValue = defaultRate
-        If rateCount > 0 Then
-            If rateCount = stepCount Then
+        IF rateCount > 0 THEN
+            IF rateCount = stepCount THEN
                 delayValue = rateRaw(i)
-            ElseIf rateCount = loadedFrameCount Then
+            ELSEIF rateCount = loadedFrameCount THEN
                 chosenFrameIndex = seqValue
-                If chosenFrameIndex >= 0 And chosenFrameIndex <= UBound(rateRaw) Then
+                IF chosenFrameIndex >= 0 AND chosenFrameIndex <= UBOUND(rateRaw) THEN
                     delayValue = rateRaw(chosenFrameIndex)
-                End If
-            ElseIf i <= UBound(rateRaw) Then
+                END IF
+            ELSEIF i <= UBOUND(rateRaw) THEN
                 delayValue = rateRaw(i)
-            End If
-        End If
-        If delayValue < 1 Then delayValue = FALLBACK_JIF
+            END IF
+        END IF
+        IF delayValue < 1 THEN delayValue = FALLBACK_JIF
         AniSteps(stepSlot + i).DelayJif = delayValue
-    Next i
+    NEXT i
 
     AniItems(slotId).Used = -1
     AniItems(slotId).WidthPx = canvasWidth
@@ -414,69 +412,69 @@ Function AniOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long,
     AniSetError slotId, ""
 
     AniOpenLimit = slotId
-End Function
+END FUNCTION
 
 ' Purpose: Read ANI metadata without fully opening the animation.
 ' Parameters: fileName = string holding a file path or a human-readable name; ok = success flag returned by the current routine; isAni = Boolean-like flag used by the current routine; widthPx = decoded image width in pixels; heightPx = decoded image height in pixels; frameCount = total number of frames available for the current animation.
-Sub AniProbe (fileName As String, ok As Integer, isAni As Integer, widthPx As Long, heightPx As Long, frameCount As Long)
+SUB AniProbe (fileName AS STRING, ok AS INTEGER, isAni AS INTEGER, widthPx AS LONG, heightPx AS LONG, frameCount AS LONG)
     ' Constant: AF_ICON is a ANI/RIFF constant used while parsing Windows animated cursor files.
-    Const AF_ICON = 1
+    CONST AF_ICON = 1
 
     ' Variable: fileNum stores the working value for file num.
-    Dim fileNum As Integer
+    DIM fileNum AS INTEGER
     ' Variable: fileLen stores the working value for file len.
-    Dim fileLen As Long
+    DIM fileLen AS LONG
     ' Variable: ofs stores the current offset into packed or unpacked data.
-    Dim ofs As Long
+    DIM ofs AS LONG
     ' Variable: chunkSize stores the size of the current chunk payload.
-    Dim chunkSize As Long
+    DIM chunkSize AS LONG
     ' Variable: chunkDataOfs stores the buffer that holds raw, packed, or decoded byte data.
-    Dim chunkDataOfs As Long
+    DIM chunkDataOfs AS LONG
     ' Variable: chunkNext stores the working value for chunk next.
-    Dim chunkNext As Long
+    DIM chunkNext AS LONG
     ' Variable: ptr stores the working value for ptr.
-    Dim ptr As Long
+    DIM ptr AS LONG
     ' Variable: listEnd stores the working value for list end.
-    Dim listEnd As Long
+    DIM listEnd AS LONG
     ' Variable: subSize stores the working value for sub size.
-    Dim subSize As Long
+    DIM subSize AS LONG
     ' Variable: subDataOfs stores the buffer that holds raw, packed, or decoded byte data.
-    Dim subDataOfs As Long
+    DIM subDataOfs AS LONG
     ' Variable: subNext stores the working value for sub next.
-    Dim subNext As Long
+    DIM subNext AS LONG
     ' Variable: loadedFrameCount stores the total number of frames available for the current animation.
-    Dim loadedFrameCount As Long
+    DIM loadedFrameCount AS LONG
     ' Variable: cSteps stores the working value for c steps.
-    Dim cSteps As Long
+    DIM cSteps AS LONG
     ' Variable: flags stores the working value for flags.
-    Dim flags As Long
+    DIM flags AS LONG
     ' Variable: anihFound stores the working value for anih found.
-    Dim anihFound As Integer
+    DIM anihFound AS INTEGER
     ' Variable: chunkId stores the working value for chunk id.
-    Dim chunkId As String
+    DIM chunkId AS STRING
     ' Variable: listType stores the working value for list type.
-    Dim listType As String
+    DIM listType AS STRING
     ' Variable: subId stores the working value for sub id.
-    Dim subId As String
+    DIM subId AS STRING
     ' Variable: entryWidth stores the width value used by this routine.
-    Dim entryWidth As Long
+    DIM entryWidth AS LONG
     ' Variable: entryHeight stores the height value used by this routine.
-    Dim entryHeight As Long
+    DIM entryHeight AS LONG
     ' Variable: entryHotX stores the working value for entry hot x.
-    Dim entryHotX As Long
+    DIM entryHotX AS LONG
     ' Variable: entryHotY stores the working value for entry hot y.
-    Dim entryHotY As Long
+    DIM entryHotY AS LONG
     ' Variable: leftExtent stores the working value for left extent.
-    Dim leftExtent As Long
+    DIM leftExtent AS LONG
     ' Variable: topExtent stores the working value for top extent.
-    Dim topExtent As Long
+    DIM topExtent AS LONG
     ' Variable: rightExtent stores the working value for right extent.
-    Dim rightExtent As Long
+    DIM rightExtent AS LONG
     ' Variable: bottomExtent stores the working value for bottom extent.
-    Dim bottomExtent As Long
+    DIM bottomExtent AS LONG
 
     ' dynamic array: buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    ReDim buf(0) As _Unsigned _Byte
+    REDIM buf(0) AS _UNSIGNED _BYTE
 
     ok = 0
     isAni = 0
@@ -494,126 +492,126 @@ Sub AniProbe (fileName As String, ok As Integer, isAni As Integer, widthPx As Lo
     rightExtent = 0
     bottomExtent = 0
 
-    If _FileExists(fileName) = 0 Then Exit Sub
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT SUB
 
-    fileNum = FreeFile
-    Open fileName For Binary As #fileNum
+    fileNum = FREEFILE
+    OPEN fileName FOR BINARY AS #fileNum
     fileLen = LOF(fileNum)
-    If fileLen < 12 Then
-        Close #fileNum
-        Exit Sub
-    End If
+    IF fileLen < 12 THEN
+        CLOSE #fileNum
+        EXIT SUB
+    END IF
 
     ' dynamic array: buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    ReDim buf(fileLen - 1) As _Unsigned _Byte
-    Get #fileNum, 1, buf()
-    Close #fileNum
+    REDIM buf(fileLen - 1) AS _UNSIGNED _BYTE
+    GET #fileNum, 1, buf()
+    CLOSE #fileNum
 
-    If AniReadFourCC$(buf(), 0) <> "RIFF" Then Exit Sub
-    If AniReadFourCC$(buf(), 8) <> "ACON" Then Exit Sub
+    IF AniReadFourCC$(buf(), 0) <> "RIFF" THEN EXIT SUB
+    IF AniReadFourCC$(buf(), 8) <> "ACON" THEN EXIT SUB
 
     ofs = 12
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While ofs + 7 < fileLen
+    DO WHILE ofs + 7 < fileLen
         chunkId = AniReadFourCC$(buf(), ofs)
         chunkSize = AniReadU32&(buf(), ofs + 4)
         chunkDataOfs = ofs + 8
         chunkNext = chunkDataOfs + chunkSize
-        If (chunkSize And 1) <> 0 Then chunkNext = chunkNext + 1
-        If chunkNext > fileLen Then Exit Sub
+        IF (chunkSize AND 1) <> 0 THEN chunkNext = chunkNext + 1
+        IF chunkNext > fileLen THEN EXIT SUB
 
-        Select Case chunkId
-            Case "anih"
-                If chunkSize < 36 Then Exit Sub
+        SELECT CASE chunkId
+            CASE "anih"
+                IF chunkSize < 36 THEN EXIT SUB
                 cSteps = AniReadU32&(buf(), chunkDataOfs + 8)
                 flags = AniReadU32&(buf(), chunkDataOfs + 32)
                 anihFound = -1
 
-            Case "seq "
-                If cSteps <= 0 Then cSteps = chunkSize \ 4
+            CASE "seq "
+                IF cSteps <= 0 THEN cSteps = chunkSize \ 4
 
-            Case "LIST"
-                If chunkSize >= 4 Then
+            CASE "LIST"
+                IF chunkSize >= 4 THEN
                     listType = AniReadFourCC$(buf(), chunkDataOfs)
-                    If listType = "fram" Then
+                    IF listType = "fram" THEN
                         ptr = chunkDataOfs + 4
                         listEnd = chunkDataOfs + chunkSize
                         ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-                        Do While ptr + 7 < listEnd
+                        DO WHILE ptr + 7 < listEnd
                             subId = AniReadFourCC$(buf(), ptr)
                             subSize = AniReadU32&(buf(), ptr + 4)
                             subDataOfs = ptr + 8
                             subNext = subDataOfs + subSize
-                            If (subSize And 1) <> 0 Then subNext = subNext + 1
-                            If subNext > listEnd Then Exit Sub
+                            IF (subSize AND 1) <> 0 THEN subNext = subNext + 1
+                            IF subNext > listEnd THEN EXIT SUB
 
-                            If subId = "icon" Then
-                                If AniMeasureIconChunk(buf(), subDataOfs, subSize, entryWidth, entryHeight, entryHotX, entryHotY) = 0 Then Exit Sub
+                            IF subId = "icon" THEN
+                                IF AniMeasureIconChunk(buf(), subDataOfs, subSize, entryWidth, entryHeight, entryHotX, entryHotY) = 0 THEN EXIT SUB
                                 loadedFrameCount = loadedFrameCount + 1
-                                If entryHotX > leftExtent Then leftExtent = entryHotX
-                                If entryHotY > topExtent Then topExtent = entryHotY
-                                If entryWidth - entryHotX > rightExtent Then rightExtent = entryWidth - entryHotX
-                                If entryHeight - entryHotY > bottomExtent Then bottomExtent = entryHeight - entryHotY
-                            End If
+                                IF entryHotX > leftExtent THEN leftExtent = entryHotX
+                                IF entryHotY > topExtent THEN topExtent = entryHotY
+                                IF entryWidth - entryHotX > rightExtent THEN rightExtent = entryWidth - entryHotX
+                                IF entryHeight - entryHotY > bottomExtent THEN bottomExtent = entryHeight - entryHotY
+                            END IF
 
                             ptr = subNext
-                        Loop
-                    End If
-                End If
-        End Select
+                        LOOP
+                    END IF
+                END IF
+        END SELECT
 
         ofs = chunkNext
-    Loop
+    LOOP
 
-    If anihFound = 0 Then Exit Sub
-    If (flags And AF_ICON) = 0 Then Exit Sub
-    If loadedFrameCount < 1 Then Exit Sub
-    If cSteps <= 0 Then cSteps = loadedFrameCount
-    If cSteps < 1 Then Exit Sub
+    IF anihFound = 0 THEN EXIT SUB
+    IF (flags AND AF_ICON) = 0 THEN EXIT SUB
+    IF loadedFrameCount < 1 THEN EXIT SUB
+    IF cSteps <= 0 THEN cSteps = loadedFrameCount
+    IF cSteps < 1 THEN EXIT SUB
 
     widthPx = leftExtent + rightExtent
     heightPx = topExtent + bottomExtent
-    If widthPx < 1 Then widthPx = 1
-    If heightPx < 1 Then heightPx = 1
+    IF widthPx < 1 THEN widthPx = 1
+    IF heightPx < 1 THEN heightPx = 1
     frameCount = cSteps
     isAni = -1
     ok = -1
-End Sub
+END SUB
 
 ' Purpose: Release all resources owned by one ANI decoder instance.
 ' Parameters: aniId = working value for ANI id.
-Sub AniClose (aniId As Long)
+SUB AniClose (aniId AS LONG)
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
     ' Variable: stepSlot stores the slot number inside the module-wide storage arrays.
-    Dim stepSlot As Long
+    DIM stepSlot AS LONG
 
-    If AniValidId(aniId) = 0 Then Exit Sub
+    IF AniValidId(aniId) = 0 THEN EXIT SUB
 
     frameSlot = AniItems(aniId).FrameStart
     ' Loop purpose: iterate through animation frames while building, seeking, or updating playback state.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To AniItems(aniId).UniqueFrameCount - 1
-        If frameSlot + i >= 0 And frameSlot + i <= UBound(AniFrames) Then
-            If AniFrames(frameSlot + i).ImageHandle <= -2 Then _FreeImage AniFrames(frameSlot + i).ImageHandle: AniFrames(frameSlot + i).ImageHandle = 0
+    FOR i = 0 TO AniItems(aniId).UniqueFrameCount - 1
+        IF frameSlot + i >= 0 AND frameSlot + i <= UBOUND(AniFrames) THEN
+            IF AniFrames(frameSlot + i).ImageHandle <= -2 THEN _FREEIMAGE AniFrames(frameSlot + i).ImageHandle: AniFrames(frameSlot + i).ImageHandle = 0
             AniFrames(frameSlot + i).Used = 0
             AniFrames(frameSlot + i).HotX = 0
             AniFrames(frameSlot + i).HotY = 0
-        End If
-    Next i
+        END IF
+    NEXT i
 
     stepSlot = AniItems(aniId).StepStart
     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To AniItems(aniId).StepCount - 1
-        If stepSlot + i >= 0 And stepSlot + i <= UBound(AniSteps) Then
+    FOR i = 0 TO AniItems(aniId).StepCount - 1
+        IF stepSlot + i >= 0 AND stepSlot + i <= UBOUND(AniSteps) THEN
             AniSteps(stepSlot + i).Used = 0
             AniSteps(stepSlot + i).FrameIndex = 0
             AniSteps(stepSlot + i).DelayJif = 0
-        End If
-    Next i
+        END IF
+    NEXT i
 
     AniItems(aniId).Used = 0
     AniItems(aniId).WidthPx = 0
@@ -631,22 +629,22 @@ Sub AniClose (aniId As Long)
     AniItems(aniId).LastRawTimer = 0
     AniItems(aniId).LoopIteration = 0
     AniErrorTexts(aniId) = ""
-End Sub
+END SUB
 
 ' Purpose: Start ANI playback timing.
 ' Parameters: aniId = working value for ANI id.
-Sub AniPlay (aniId As Long)
+SUB AniPlay (aniId AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
-    If AniValidId(aniId) = 0 Then Exit Sub
-    If AniItems(aniId).StepCount < 1 Then Exit Sub
+    IF AniValidId(aniId) = 0 THEN EXIT SUB
+    IF AniItems(aniId).StepCount < 1 THEN EXIT SUB
 
-    nowValue = Timer
+    nowValue = TIMER
     delaySec = AniFrameDelaySec(aniId, 0)
-    If delaySec <= 0 Then delaySec = .1
+    IF delaySec <= 0 THEN delaySec = .1
 
     AniItems(aniId).CurrentFrame = 0
     AniItems(aniId).Playing = -1
@@ -655,12 +653,12 @@ Sub AniPlay (aniId As Long)
     AniItems(aniId).LastRawTimer = nowValue
     AniItems(aniId).LoopIteration = 0
     AniItems(aniId).NextTick = AniTimeAdd(nowValue, delaySec)
-End Sub
+END SUB
 
 ' Purpose: Stop ANI playback timing.
 ' Parameters: aniId = working value for ANI id.
-Sub AniStop (aniId As Long)
-    If AniValidId(aniId) = 0 Then Exit Sub
+SUB AniStop (aniId AS LONG)
+    IF AniValidId(aniId) = 0 THEN EXIT SUB
 
     AniItems(aniId).CurrentFrame = 0
     AniItems(aniId).Playing = 0
@@ -669,498 +667,498 @@ Sub AniStop (aniId As Long)
     AniItems(aniId).RemainingDelay = 0
     AniItems(aniId).LastRawTimer = 0
     AniItems(aniId).LoopIteration = 0
-End Sub
+END SUB
 
 ' Purpose: Pause ANI playback while keeping the current frame.
 ' Parameters: aniId = working value for ANI id.
-Sub AniPause (aniId As Long)
+SUB AniPause (aniId AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
 
-    If AniValidId(aniId) = 0 Then Exit Sub
-    If AniItems(aniId).Playing = 0 Then Exit Sub
-    If AniItems(aniId).Paused Then Exit Sub
+    IF AniValidId(aniId) = 0 THEN EXIT SUB
+    IF AniItems(aniId).Playing = 0 THEN EXIT SUB
+    IF AniItems(aniId).Paused THEN EXIT SUB
 
-    nowValue = Timer
+    nowValue = TIMER
     AniItems(aniId).RemainingDelay = AniTimeRemaining(AniItems(aniId).NextTick, nowValue)
     AniItems(aniId).Paused = -1
     AniItems(aniId).LastRawTimer = nowValue
-End Sub
+END SUB
 
 ' Purpose: Resume ANI playback after a pause.
 ' Parameters: aniId = working value for ANI id.
-Sub AniResume (aniId As Long)
+SUB AniResume (aniId AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
-    If AniValidId(aniId) = 0 Then Exit Sub
-    If AniItems(aniId).Playing = 0 Then Exit Sub
-    If AniItems(aniId).Paused = 0 Then Exit Sub
+    IF AniValidId(aniId) = 0 THEN EXIT SUB
+    IF AniItems(aniId).Playing = 0 THEN EXIT SUB
+    IF AniItems(aniId).Paused = 0 THEN EXIT SUB
 
-    nowValue = Timer
+    nowValue = TIMER
     delaySec = AniItems(aniId).RemainingDelay
-    If delaySec <= 0 Then delaySec = AniFrameDelaySec(aniId, AniItems(aniId).CurrentFrame)
-    If delaySec <= 0 Then delaySec = .1
+    IF delaySec <= 0 THEN delaySec = AniFrameDelaySec(aniId, AniItems(aniId).CurrentFrame)
+    IF delaySec <= 0 THEN delaySec = .1
 
     AniItems(aniId).Paused = 0
     AniItems(aniId).LastRawTimer = nowValue
     AniItems(aniId).NextTick = AniTimeAdd(nowValue, delaySec)
     AniItems(aniId).RemainingDelay = 0
-End Sub
+END SUB
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI set loop.
 ' Parameters: aniId = working value for ANI id; loopMode = loop policy that controls whether playback stops or repeats.
-Sub AniSetLoop (aniId As Long, loopMode As Long)
-    If AniValidId(aniId) = 0 Then Exit Sub
+SUB AniSetLoop (aniId AS LONG, loopMode AS LONG)
+    IF AniValidId(aniId) = 0 THEN EXIT SUB
     AniItems(aniId).LoopMode = loopMode
-End Sub
+END SUB
 
 ' Purpose: Advance ANI playback according to stored sequence and delay data.
 ' Parameters: aniId = working value for ANI id.
-Sub AniUpdate (aniId As Long)
+SUB AniUpdate (aniId AS LONG)
     ' Variable: currentTime stores the time-related value used by the current routine.
-    Dim currentTime As Double
+    DIM currentTime AS DOUBLE
     ' Variable: nextFrame stores the working value for next frame.
-    Dim nextFrame As Long
+    DIM nextFrame AS LONG
     ' Variable: allowLoop stores the working value for allow loop.
-    Dim allowLoop As Integer
+    DIM allowLoop AS INTEGER
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: jumpFlag stores the working value for jump flag.
-    Dim jumpFlag As Integer
+    DIM jumpFlag AS INTEGER
     ' Variable: stepCount stores the count used to size or iterate the current data set.
-    Dim stepCount As Long
+    DIM stepCount AS LONG
 
-    If AniValidId(aniId) = 0 Then Exit Sub
-    If AniItems(aniId).Playing = 0 Then Exit Sub
-    If AniItems(aniId).Paused Then Exit Sub
-    If AniItems(aniId).StepCount <= 1 Then Exit Sub
+    IF AniValidId(aniId) = 0 THEN EXIT SUB
+    IF AniItems(aniId).Playing = 0 THEN EXIT SUB
+    IF AniItems(aniId).Paused THEN EXIT SUB
+    IF AniItems(aniId).StepCount <= 1 THEN EXIT SUB
 
-    currentTime = Timer
+    currentTime = TIMER
 
     jumpFlag = 0
-    If AniItems(aniId).LastRawTimer > 0 Then
+    IF AniItems(aniId).LastRawTimer > 0 THEN
         jumpFlag = AniClockJumped(aniId, AniItems(aniId).LastRawTimer, currentTime)
-    End If
-    If jumpFlag Then
+    END IF
+    IF jumpFlag THEN
         AniResyncAfterClockJump aniId, currentTime
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
     AniItems(aniId).LastRawTimer = currentTime
-    If AniTimeReached(AniItems(aniId).NextTick, currentTime) = 0 Then Exit Sub
+    IF AniTimeReached(AniItems(aniId).NextTick, currentTime) = 0 THEN EXIT SUB
 
     stepCount = 0
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While AniTimeReached(AniItems(aniId).NextTick, currentTime)
+    DO WHILE AniTimeReached(AniItems(aniId).NextTick, currentTime)
         nextFrame = AniItems(aniId).CurrentFrame + 1
-        If nextFrame >= AniItems(aniId).StepCount Then
+        IF nextFrame >= AniItems(aniId).StepCount THEN
             allowLoop = 0
-            Select Case AniItems(aniId).LoopMode
-                Case ANI_LOOP_FOREVER, ANI_LOOP_FILE_DEFAULT
+            SELECT CASE AniItems(aniId).LoopMode
+                CASE ANI_LOOP_FOREVER, ANI_LOOP_FILE_DEFAULT
                     allowLoop = -1
-                Case Else
+                CASE ELSE
                     allowLoop = 0
-            End Select
+            END SELECT
 
-            If allowLoop = 0 Then
+            IF allowLoop = 0 THEN
                 AniItems(aniId).CurrentFrame = AniItems(aniId).StepCount - 1
                 AniItems(aniId).Playing = 0
                 AniItems(aniId).Paused = 0
                 AniItems(aniId).RemainingDelay = 0
                 AniItems(aniId).NextTick = 0
-                Exit Do
-            End If
+                EXIT DO
+            END IF
 
             nextFrame = 0
             AniItems(aniId).LoopIteration = AniItems(aniId).LoopIteration + 1
-        End If
+        END IF
 
         AniItems(aniId).CurrentFrame = nextFrame
         delaySec = AniFrameDelaySec(aniId, nextFrame)
-        If delaySec <= 0 Then delaySec = .1
+        IF delaySec <= 0 THEN delaySec = .1
         AniItems(aniId).NextTick = AniTimeAdd(AniItems(aniId).NextTick, delaySec)
 
         stepCount = stepCount + 1
-        If stepCount >= 32 Then Exit Do
-    Loop
-End Sub
+        IF stepCount >= 32 THEN EXIT DO
+    LOOP
+END SUB
 
 ' Purpose: Draw the current ANI frame to the active QB64 target.
 ' Parameters: aniId = working value for ANI id; x = horizontal pixel or coordinate index; y = vertical pixel or coordinate index.
-Sub AniDraw (aniId As Long, x As Long, y As Long)
+SUB AniDraw (aniId AS LONG, x AS LONG, y AS LONG)
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
     imageHandle = AniCurrentImageHandle(aniId)
-    If imageHandle <= -2 Then _PutImage (x, y), imageHandle, 0
-End Sub
+    IF imageHandle <= -2 THEN _PUTIMAGE (x, y), imageHandle, 0
+END SUB
 
 ' Purpose: Draw the current ANI frame to the active QB64 target.
 ' Parameters: aniId = working value for ANI id; x = horizontal pixel or coordinate index; y = vertical pixel or coordinate index; boxWidth = width value used by this routine; boxHeight = height value used by this routine.
-Sub AniDrawStretch (aniId As Long, x As Long, y As Long, boxWidth As Long, boxHeight As Long)
+SUB AniDrawStretch (aniId AS LONG, x AS LONG, y AS LONG, boxWidth AS LONG, boxHeight AS LONG)
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
-    If boxWidth < 1 Then Exit Sub
-    If boxHeight < 1 Then Exit Sub
+    IF boxWidth < 1 THEN EXIT SUB
+    IF boxHeight < 1 THEN EXIT SUB
 
     imageHandle = AniCurrentImageHandle(aniId)
-    If imageHandle <= -2 Then
-        _PutImage (x, y)-(x + boxWidth - 1, y + boxHeight - 1), imageHandle, 0
-    End If
-End Sub
+    IF imageHandle <= -2 THEN
+        _PUTIMAGE (x, y)-(x + boxWidth - 1, y + boxHeight - 1), imageHandle, 0
+    END IF
+END SUB
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI frame count.
 ' Parameters: aniId = working value for ANI id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniFrameCount& (aniId As Long)
+FUNCTION AniFrameCount& (aniId AS LONG)
     AniFrameCount = 0
-    If AniValidId(aniId) = 0 Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
     AniFrameCount = AniItems(aniId).StepCount
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI width.
 ' Parameters: aniId = working value for ANI id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniWidth& (aniId As Long)
+FUNCTION AniWidth& (aniId AS LONG)
     AniWidth = 0
-    If AniValidId(aniId) = 0 Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
     AniWidth = AniItems(aniId).WidthPx
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI height.
 ' Parameters: aniId = working value for ANI id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniHeight& (aniId As Long)
+FUNCTION AniHeight& (aniId AS LONG)
     AniHeight = 0
-    If AniValidId(aniId) = 0 Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
     AniHeight = AniItems(aniId).HeightPx
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI current frame.
 ' Parameters: aniId = working value for ANI id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniCurrentFrame& (aniId As Long)
+FUNCTION AniCurrentFrame& (aniId AS LONG)
     AniCurrentFrame = 0
-    If AniValidId(aniId) = 0 Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
     AniCurrentFrame = AniItems(aniId).CurrentFrame
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI is playing.
 ' Parameters: aniId = working value for ANI id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniIsPlaying% (aniId As Long)
+FUNCTION AniIsPlaying% (aniId AS LONG)
     AniIsPlaying = 0
-    If AniValidId(aniId) = 0 Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
     AniIsPlaying = AniItems(aniId).Playing
-End Function
+END FUNCTION
 
 ' Purpose: Seek to a specific ANI frame or time position.
 ' Parameters: aniId = working value for ANI id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniSeekFrame% (aniId As Long, frameIndex As Long)
+FUNCTION AniSeekFrame% (aniId AS LONG, frameIndex AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
     AniSeekFrame = 0
-    If AniValidId(aniId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= AniItems(aniId).StepCount Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= AniItems(aniId).StepCount THEN EXIT FUNCTION
 
     delaySec = AniFrameDelaySec(aniId, frameIndex)
-    If delaySec <= 0 Then delaySec = .1
+    IF delaySec <= 0 THEN delaySec = .1
 
-    nowValue = Timer
+    nowValue = TIMER
     AniItems(aniId).CurrentFrame = frameIndex
 
-    If AniItems(aniId).Playing Then
-        If AniItems(aniId).Paused Then
+    IF AniItems(aniId).Playing THEN
+        IF AniItems(aniId).Paused THEN
             AniItems(aniId).RemainingDelay = delaySec
             AniItems(aniId).LastRawTimer = nowValue
-        Else
+        ELSE
             AniItems(aniId).LastRawTimer = nowValue
             AniItems(aniId).NextTick = AniTimeAdd(nowValue, delaySec)
             AniItems(aniId).RemainingDelay = 0
-        End If
-    Else
+        END IF
+    ELSE
         AniItems(aniId).NextTick = 0
         AniItems(aniId).RemainingDelay = 0
         AniItems(aniId).LastRawTimer = 0
-    End If
+    END IF
 
     AniSeekFrame = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI error.
 ' Parameters: aniId = working value for ANI id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniError$ (aniId As Long)
+FUNCTION AniError$ (aniId AS LONG)
     AniError = ""
-    If aniId < 0 Then Exit Function
-    If aniId > UBound(AniErrorTexts) Then Exit Function
+    IF aniId < 0 THEN EXIT FUNCTION
+    IF aniId > UBOUND(AniErrorTexts) THEN EXIT FUNCTION
     AniError = AniErrorTexts(aniId)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI save frame.
 ' Parameters: aniId = working value for ANI id; frameIndex = index variable used to address the current item; fileName = string holding a file path or a human-readable name.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniSaveFrame% (aniId As Long, frameIndex As Long, fileName As String)
+FUNCTION AniSaveFrame% (aniId AS LONG, frameIndex AS LONG, fileName AS STRING)
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
     AniSaveFrame = 0
-    If AniValidId(aniId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= AniItems(aniId).StepCount Then Exit Function
-    If Len(fileName) = 0 Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= AniItems(aniId).StepCount THEN EXIT FUNCTION
+    IF LEN(fileName) = 0 THEN EXIT FUNCTION
 
     imageHandle = AniStepImageHandle(aniId, frameIndex)
-    If imageHandle > -2 Then Exit Function
+    IF imageHandle > -2 THEN EXIT FUNCTION
 
-    _SaveImage fileName, imageHandle
-    If _FileExists(fileName) = 0 Then Exit Function
+    _SAVEIMAGE fileName, imageHandle
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT FUNCTION
 
     AniSaveFrame = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI clone frame image.
 ' Parameters: aniId = working value for ANI id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniCloneFrameImage& (aniId As Long, frameIndex As Long)
+FUNCTION AniCloneFrameImage& (aniId AS LONG, frameIndex AS LONG)
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
     AniCloneFrameImage = -1
-    If AniValidId(aniId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= AniItems(aniId).StepCount Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= AniItems(aniId).StepCount THEN EXIT FUNCTION
 
     imageHandle = AniStepImageHandle(aniId, frameIndex)
-    If imageHandle > -2 Then Exit Function
+    IF imageHandle > -2 THEN EXIT FUNCTION
 
-    AniCloneFrameImage = _CopyImage(imageHandle, 32)
-End Function
+    AniCloneFrameImage = _COPYIMAGE(imageHandle, 32)
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI frame delay sec.
 ' Parameters: aniId = working value for ANI id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniFrameDelaySec# (aniId As Long, frameIndex As Long)
+FUNCTION AniFrameDelaySec# (aniId AS LONG, frameIndex AS LONG)
     ' Variable: stepSlot stores the slot number inside the module-wide storage arrays.
-    Dim stepSlot As Long
+    DIM stepSlot AS LONG
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
     delaySec = .1
-    If AniValidId(aniId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= AniItems(aniId).StepCount Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= AniItems(aniId).StepCount THEN EXIT FUNCTION
 
     stepSlot = AniItems(aniId).StepStart + frameIndex
-    If stepSlot < 0 Or stepSlot > UBound(AniSteps) Then Exit Function
-    If AniSteps(stepSlot).DelayJif < 1 Then Exit Function
+    IF stepSlot < 0 OR stepSlot > UBOUND(AniSteps) THEN EXIT FUNCTION
+    IF AniSteps(stepSlot).DelayJif < 1 THEN EXIT FUNCTION
 
     delaySec = AniSteps(stepSlot).DelayJif / 60#
-    If delaySec <= 0 Then delaySec = .1
+    IF delaySec <= 0 THEN delaySec = .1
 
     AniFrameDelaySec = delaySec
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI current image handle.
 ' Parameters: aniId = working value for ANI id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniCurrentImageHandle& (aniId As Long)
+FUNCTION AniCurrentImageHandle& (aniId AS LONG)
     AniCurrentImageHandle = -1
-    If AniValidId(aniId) = 0 Then Exit Function
-    If AniItems(aniId).StepCount < 1 Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
+    IF AniItems(aniId).StepCount < 1 THEN EXIT FUNCTION
 
-    If AniItems(aniId).CurrentFrame < 0 Then AniItems(aniId).CurrentFrame = 0
-    If AniItems(aniId).CurrentFrame >= AniItems(aniId).StepCount Then AniItems(aniId).CurrentFrame = AniItems(aniId).StepCount - 1
+    IF AniItems(aniId).CurrentFrame < 0 THEN AniItems(aniId).CurrentFrame = 0
+    IF AniItems(aniId).CurrentFrame >= AniItems(aniId).StepCount THEN AniItems(aniId).CurrentFrame = AniItems(aniId).StepCount - 1
 
     AniCurrentImageHandle = AniStepImageHandle(aniId, AniItems(aniId).CurrentFrame)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI step image handle.
 ' Parameters: aniId = working value for ANI id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniStepImageHandle& (aniId As Long, frameIndex As Long)
+FUNCTION AniStepImageHandle& (aniId AS LONG, frameIndex AS LONG)
     ' Variable: stepSlot stores the slot number inside the module-wide storage arrays.
-    Dim stepSlot As Long
+    DIM stepSlot AS LONG
     ' Variable: uniqueIndex stores the index variable used to address the current item.
-    Dim uniqueIndex As Long
+    DIM uniqueIndex AS LONG
     ' Variable: frameSlot stores the slot number inside the module-wide storage arrays.
-    Dim frameSlot As Long
+    DIM frameSlot AS LONG
 
     AniStepImageHandle = -1
-    If AniValidId(aniId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= AniItems(aniId).StepCount Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= AniItems(aniId).StepCount THEN EXIT FUNCTION
 
     stepSlot = AniItems(aniId).StepStart + frameIndex
-    If stepSlot < 0 Or stepSlot > UBound(AniSteps) Then Exit Function
+    IF stepSlot < 0 OR stepSlot > UBOUND(AniSteps) THEN EXIT FUNCTION
     uniqueIndex = AniSteps(stepSlot).FrameIndex
-    If uniqueIndex < 0 Then Exit Function
-    If uniqueIndex >= AniItems(aniId).UniqueFrameCount Then Exit Function
+    IF uniqueIndex < 0 THEN EXIT FUNCTION
+    IF uniqueIndex >= AniItems(aniId).UniqueFrameCount THEN EXIT FUNCTION
 
     frameSlot = AniItems(aniId).FrameStart + uniqueIndex
-    If frameSlot < 0 Or frameSlot > UBound(AniFrames) Then Exit Function
-    If AniFrames(frameSlot).Used = 0 Then Exit Function
+    IF frameSlot < 0 OR frameSlot > UBOUND(AniFrames) THEN EXIT FUNCTION
+    IF AniFrames(frameSlot).Used = 0 THEN EXIT FUNCTION
 
     AniStepImageHandle = AniFrames(frameSlot).ImageHandle
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI valid id.
 ' Parameters: aniId = working value for ANI id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniValidId% (aniId As Long)
+FUNCTION AniValidId% (aniId AS LONG)
     AniValidId = 0
-    If aniId < 0 Then Exit Function
-    If aniId > UBound(AniItems) Then Exit Function
-    If AniItems(aniId).Used = 0 Then Exit Function
+    IF aniId < 0 THEN EXIT FUNCTION
+    IF aniId > UBOUND(AniItems) THEN EXIT FUNCTION
+    IF AniItems(aniId).Used = 0 THEN EXIT FUNCTION
     AniValidId = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI alloc slot.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniAllocSlot& ()
+FUNCTION AniAllocSlot& ()
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
     ' Variable: oldTop stores the working value for old top.
-    Dim oldTop As Long
+    DIM oldTop AS LONG
     ' Variable: newTop stores the working value for new top.
-    Dim newTop As Long
+    DIM newTop AS LONG
 
     AniAllocSlot = -1
 
     ' Loop purpose: walk through every currently allocated element in AniItems.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To UBound(AniItems)
-        If AniItems(i).Used = 0 Then
+    FOR i = 0 TO UBOUND(AniItems)
+        IF AniItems(i).Used = 0 THEN
             AniAllocSlot = i
-            Exit Function
-        End If
-    Next i
+            EXIT FUNCTION
+        END IF
+    NEXT i
 
-    oldTop = UBound(AniItems)
-    If AniItemCapacity <= oldTop Then
-        If AniItemCapacity < 1 Then
+    oldTop = UBOUND(AniItems)
+    IF AniItemCapacity <= oldTop THEN
+        IF AniItemCapacity < 1 THEN
             newTop = 7
-        Else
+        ELSE
             newTop = AniItemCapacity * 2 + 1
-        End If
+        END IF
         ' dynamic array: AniItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-        ReDim _Preserve AniItems(newTop) As AniStore
+        REDIM _PRESERVE AniItems(newTop) AS AniStore
         ' dynamic array: AniErrorTexts is resized here to hold the text storage for the last human-readable error message.
-        ReDim _Preserve AniErrorTexts(newTop) As String
+        REDIM _PRESERVE AniErrorTexts(newTop) AS STRING
         AniItemCapacity = newTop
-    End If
+    END IF
 
     AniAllocSlot = oldTop + 1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI alloc frame block.
 ' Parameters: frameCount = total number of frames available for the current animation.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniAllocFrameBlock& (frameCount As Long)
+FUNCTION AniAllocFrameBlock& (frameCount AS LONG)
     ' Variable: oldTop stores the working value for old top.
-    Dim oldTop As Long
+    DIM oldTop AS LONG
     ' Variable: startIndex stores the index variable used to address the current item.
-    Dim startIndex As Long
+    DIM startIndex AS LONG
     ' Variable: neededTop stores the working value for needed top.
-    Dim neededTop As Long
+    DIM neededTop AS LONG
     ' Variable: newTop stores the working value for new top.
-    Dim newTop As Long
+    DIM newTop AS LONG
 
     AniAllocFrameBlock = -1
-    If frameCount <= 0 Then Exit Function
+    IF frameCount <= 0 THEN EXIT FUNCTION
 
-    If UBound(AniFrames) = 0 And AniFrames(0).Used = 0 Then
+    IF UBOUND(AniFrames) = 0 AND AniFrames(0).Used = 0 THEN
         startIndex = 0
         neededTop = frameCount - 1
-        If neededTop > UBound(AniFrames) Then ReDim _Preserve AniFrames(neededTop) As AniFrameStore
-        AniFrameCapacity = UBound(AniFrames)
+        IF neededTop > UBOUND(AniFrames) THEN REDIM _PRESERVE AniFrames(neededTop) AS AniFrameStore
+        AniFrameCapacity = UBOUND(AniFrames)
         AniAllocFrameBlock = startIndex
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    oldTop = UBound(AniFrames)
+    oldTop = UBOUND(AniFrames)
     startIndex = oldTop + 1
     neededTop = startIndex + frameCount - 1
-    If AniFrameCapacity < neededTop Then
+    IF AniFrameCapacity < neededTop THEN
         newTop = AniFrameCapacity
-        If newTop < 1 Then newTop = oldTop
+        IF newTop < 1 THEN newTop = oldTop
         ' Loop purpose: repeat this block until an internal exit condition decides that the current stage is complete.
-        Do
-            If newTop < 1 Then
+        DO
+            IF newTop < 1 THEN
                 newTop = 31
-            Else
+            ELSE
                 newTop = newTop * 2 + 1
-            End If
-        Loop While newTop < neededTop
+            END IF
+        LOOP WHILE newTop < neededTop
         ' dynamic array: AniFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-        ReDim _Preserve AniFrames(newTop) As AniFrameStore
+        REDIM _PRESERVE AniFrames(newTop) AS AniFrameStore
         AniFrameCapacity = newTop
-    End If
+    END IF
 
     AniAllocFrameBlock = startIndex
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI alloc step block.
 ' Parameters: stepCount = count used to size or iterate the current data set.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniAllocStepBlock& (stepCount As Long)
+FUNCTION AniAllocStepBlock& (stepCount AS LONG)
     ' Variable: oldTop stores the working value for old top.
-    Dim oldTop As Long
+    DIM oldTop AS LONG
     ' Variable: startIndex stores the index variable used to address the current item.
-    Dim startIndex As Long
+    DIM startIndex AS LONG
     ' Variable: neededTop stores the working value for needed top.
-    Dim neededTop As Long
+    DIM neededTop AS LONG
     ' Variable: newTop stores the working value for new top.
-    Dim newTop As Long
+    DIM newTop AS LONG
 
     AniAllocStepBlock = -1
-    If stepCount <= 0 Then Exit Function
+    IF stepCount <= 0 THEN EXIT FUNCTION
 
-    If UBound(AniSteps) = 0 And AniSteps(0).Used = 0 Then
+    IF UBOUND(AniSteps) = 0 AND AniSteps(0).Used = 0 THEN
         startIndex = 0
         neededTop = stepCount - 1
-        If neededTop > UBound(AniSteps) Then ReDim _Preserve AniSteps(neededTop) As AniStepStore
-        AniStepCapacity = UBound(AniSteps)
+        IF neededTop > UBOUND(AniSteps) THEN REDIM _PRESERVE AniSteps(neededTop) AS AniStepStore
+        AniStepCapacity = UBOUND(AniSteps)
         AniAllocStepBlock = startIndex
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    oldTop = UBound(AniSteps)
+    oldTop = UBOUND(AniSteps)
     startIndex = oldTop + 1
     neededTop = startIndex + stepCount - 1
-    If AniStepCapacity < neededTop Then
+    IF AniStepCapacity < neededTop THEN
         newTop = AniStepCapacity
-        If newTop < 1 Then newTop = oldTop
+        IF newTop < 1 THEN newTop = oldTop
         ' Loop purpose: repeat this block until an internal exit condition decides that the current stage is complete.
-        Do
-            If newTop < 1 Then
+        DO
+            IF newTop < 1 THEN
                 newTop = 63
-            Else
+            ELSE
                 newTop = newTop * 2 + 1
-            End If
-        Loop While newTop < neededTop
+            END IF
+        LOOP WHILE newTop < neededTop
         ' dynamic array: AniSteps is resized here to hold the working value for ANI steps.
-        ReDim _Preserve AniSteps(newTop) As AniStepStore
+        REDIM _PRESERVE AniSteps(newTop) AS AniStepStore
         AniStepCapacity = newTop
-    End If
+    END IF
 
     AniAllocStepBlock = startIndex
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI init slot.
 ' Parameters: aniId = working value for ANI id.
-Sub AniInitSlot (aniId As Long)
-    If aniId < 0 Then Exit Sub
-    If aniId > UBound(AniItems) Then Exit Sub
+SUB AniInitSlot (aniId AS LONG)
+    IF aniId < 0 THEN EXIT SUB
+    IF aniId > UBOUND(AniItems) THEN EXIT SUB
 
     AniItems(aniId).Used = 0
     AniItems(aniId).WidthPx = 0
@@ -1178,108 +1176,108 @@ Sub AniInitSlot (aniId As Long)
     AniItems(aniId).LastRawTimer = 0
     AniItems(aniId).LoopIteration = 0
     AniErrorTexts(aniId) = ""
-End Sub
+END SUB
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI set error.
 ' Parameters: aniId = working value for ANI id; textValue = working value for text value.
-Sub AniSetError (aniId As Long, textValue As String)
-    If aniId < 0 Then Exit Sub
-    If aniId > UBound(AniErrorTexts) Then Exit Sub
+SUB AniSetError (aniId AS LONG, textValue AS STRING)
+    IF aniId < 0 THEN EXIT SUB
+    IF aniId > UBOUND(AniErrorTexts) THEN EXIT SUB
     AniErrorTexts(aniId) = textValue
-End Sub
+END SUB
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI normalize frames.
 ' Parameters: frameStart = working value for frame start; frameCount = total number of frames available for the current animation; canvasWidth = width value used by this routine; canvasHeight = height value used by this routine; anchorHotX = working value for anchor hot x; anchorHotY = working value for anchor hot y.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniNormalizeFrames% (frameStart As Long, frameCount As Long, canvasWidth As Long, canvasHeight As Long, anchorHotX As Long, anchorHotY As Long)
+FUNCTION AniNormalizeFrames% (frameStart AS LONG, frameCount AS LONG, canvasWidth AS LONG, canvasHeight AS LONG, anchorHotX AS LONG, anchorHotY AS LONG)
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
     ' Variable: srcHandle stores the handle used to reference an external or QB64 resource.
-    Dim srcHandle As Long
+    DIM srcHandle AS LONG
     ' Variable: dstHandle stores the handle used to reference an external or QB64 resource.
-    Dim dstHandle As Long
+    DIM dstHandle AS LONG
     ' Variable: drawX stores the working value for draw x.
-    Dim drawX As Long
+    DIM drawX AS LONG
     ' Variable: drawY stores the working value for draw y.
-    Dim drawY As Long
+    DIM drawY AS LONG
     ' Variable: srcWidth stores the width value used by this routine.
-    Dim srcWidth As Long
+    DIM srcWidth AS LONG
     ' Variable: srcHeight stores the height value used by this routine.
-    Dim srcHeight As Long
+    DIM srcHeight AS LONG
     ' Variable: oldDest stores the working value for old dest.
-    Dim oldDest As Long
+    DIM oldDest AS LONG
     ' Variable: oldSource stores the working value for old source.
-    Dim oldSource As Long
+    DIM oldSource AS LONG
 
     AniNormalizeFrames = 0
-    If frameCount < 1 Then AniNormalizeFrames = -1: Exit Function
+    IF frameCount < 1 THEN AniNormalizeFrames = -1: EXIT FUNCTION
 
-    oldDest = _Dest
-    oldSource = _Source
+    oldDest = _DEST
+    oldSource = _SOURCE
 
     ' Loop purpose: iterate through animation frames while building, seeking, or updating playback state.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To frameCount - 1
+    FOR i = 0 TO frameCount - 1
         srcHandle = AniFrames(frameStart + i).ImageHandle
-        If srcHandle > -2 Then _Dest oldDest: _Source oldSource: Exit Function
+        IF srcHandle > -2 THEN _DEST oldDest: _SOURCE oldSource: EXIT FUNCTION
 
-        srcWidth = _Width(srcHandle)
-        srcHeight = _Height(srcHandle)
+        srcWidth = _WIDTH(srcHandle)
+        srcHeight = _HEIGHT(srcHandle)
         drawX = anchorHotX - AniFrames(frameStart + i).HotX
         drawY = anchorHotY - AniFrames(frameStart + i).HotY
 
-        If srcWidth = canvasWidth And srcHeight = canvasHeight And drawX = 0 And drawY = 0 Then
+        IF srcWidth = canvasWidth AND srcHeight = canvasHeight AND drawX = 0 AND drawY = 0 THEN
             AniFrames(frameStart + i).HotX = anchorHotX
             AniFrames(frameStart + i).HotY = anchorHotY
-        Else
-            dstHandle = _NewImage(canvasWidth, canvasHeight, 32)
-            If dstHandle > -2 Then _Dest oldDest: _Source oldSource: Exit Function
-            _Dest dstHandle
-            Cls , _RGBA32(0, 0, 0, 0)
-            _Source srcHandle
-            _PutImage (drawX, drawY), srcHandle, dstHandle
-            If srcHandle <= -2 Then _FreeImage srcHandle: srcHandle = 0
+        ELSE
+            dstHandle = _NEWIMAGE(canvasWidth, canvasHeight, 32)
+            IF dstHandle > -2 THEN _DEST oldDest: _SOURCE oldSource: EXIT FUNCTION
+            _DEST dstHandle
+            CLS , _RGBA32(0, 0, 0, 0)
+            _SOURCE srcHandle
+            _PUTIMAGE (drawX, drawY), srcHandle, dstHandle
+            IF srcHandle <= -2 THEN _FREEIMAGE srcHandle: srcHandle = 0
             AniFrames(frameStart + i).ImageHandle = dstHandle
             AniFrames(frameStart + i).HotX = anchorHotX
             AniFrames(frameStart + i).HotY = anchorHotY
-        End If
-    Next i
+        END IF
+    NEXT i
 
-    _Dest oldDest
-    _Source oldSource
+    _DEST oldDest
+    _SOURCE oldSource
     AniNormalizeFrames = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI measure icon chunk.
 ' Parameters: buf = buffer that holds raw, packed, or decoded byte data; chunkDataOfs = buffer that holds raw, packed, or decoded byte data; chunkSize = size of the current chunk payload; widthPx = decoded image width in pixels; heightPx = decoded image height in pixels; hotX = working value for hot x; additional parameters continue the same pattern.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniMeasureIconChunk% (buf() As _Unsigned _Byte, chunkDataOfs As Long, chunkSize As Long, widthPx As Long, heightPx As Long, hotX As Long, hotY As Long)
+FUNCTION AniMeasureIconChunk% (buf() AS _UNSIGNED _BYTE, chunkDataOfs AS LONG, chunkSize AS LONG, widthPx AS LONG, heightPx AS LONG, hotX AS LONG, hotY AS LONG)
     ' Variable: chunkEnd stores the working value for chunk end.
-    Dim chunkEnd As Long
+    DIM chunkEnd AS LONG
     ' Variable: idReserved stores the working value for id reserved.
-    Dim idReserved As Long
+    DIM idReserved AS LONG
     ' Variable: idType stores the working value for id type.
-    Dim idType As Long
+    DIM idType AS LONG
     ' Variable: idCount stores the count used to size or iterate the current data set.
-    Dim idCount As Long
+    DIM idCount AS LONG
     ' Variable: entryOfs stores the working value for entry ofs.
-    Dim entryOfs As Long
+    DIM entryOfs AS LONG
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
     ' Variable: oneW stores the working value for one w.
-    Dim oneW As Long
+    DIM oneW AS LONG
     ' Variable: oneH stores the working value for one h.
-    Dim oneH As Long
+    DIM oneH AS LONG
     ' Variable: oneScore stores the working value for one score.
-    Dim oneScore As Long
+    DIM oneScore AS LONG
     ' Variable: bestScore stores the working value for best score.
-    Dim bestScore As Long
+    DIM bestScore AS LONG
     ' Variable: imageBytes stores the working value for image bytes.
-    Dim imageBytes As Long
+    DIM imageBytes AS LONG
     ' Variable: imageRelOfs stores the working value for image rel ofs.
-    Dim imageRelOfs As Long
+    DIM imageRelOfs AS LONG
     ' Variable: oneBitCount stores the count used to size or iterate the current data set.
-    Dim oneBitCount As Long
+    DIM oneBitCount AS LONG
 
     AniMeasureIconChunk = 0
     widthPx = 0
@@ -1288,108 +1286,108 @@ Function AniMeasureIconChunk% (buf() As _Unsigned _Byte, chunkDataOfs As Long, c
     hotY = 0
 
     chunkEnd = chunkDataOfs + chunkSize
-    If chunkSize < 6 Then Exit Function
+    IF chunkSize < 6 THEN EXIT FUNCTION
 
     idReserved = AniReadU16&(buf(), chunkDataOfs)
     idType = AniReadU16&(buf(), chunkDataOfs + 2)
     idCount = AniReadU16&(buf(), chunkDataOfs + 4)
 
-    If idReserved <> 0 Then Exit Function
-    If idType <> 1 And idType <> 2 Then Exit Function
-    If idCount < 1 Then Exit Function
+    IF idReserved <> 0 THEN EXIT FUNCTION
+    IF idType <> 1 AND idType <> 2 THEN EXIT FUNCTION
+    IF idCount < 1 THEN EXIT FUNCTION
 
     bestScore = -1
 
     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To idCount - 1
+    FOR i = 0 TO idCount - 1
         entryOfs = chunkDataOfs + 6 + i * 16
-        If entryOfs + 15 >= chunkEnd Then Exit Function
+        IF entryOfs + 15 >= chunkEnd THEN EXIT FUNCTION
 
         oneW = buf(entryOfs)
         oneH = buf(entryOfs + 1)
-        If oneW = 0 Then oneW = 256
-        If oneH = 0 Then oneH = 256
+        IF oneW = 0 THEN oneW = 256
+        IF oneH = 0 THEN oneH = 256
 
         imageBytes = AniReadU32&(buf(), entryOfs + 8)
         imageRelOfs = AniReadU32&(buf(), entryOfs + 12)
-        If idType = 2 Then
+        IF idType = 2 THEN
             oneBitCount = 0
-        Else
+        ELSE
             oneBitCount = AniReadU16&(buf(), entryOfs + 6)
-        End If
+        END IF
 
-        If imageBytes > 0 Then
-            If imageRelOfs >= 0 Then
-                If chunkDataOfs + imageRelOfs + imageBytes <= chunkEnd Then
+        IF imageBytes > 0 THEN
+            IF imageRelOfs >= 0 THEN
+                IF chunkDataOfs + imageRelOfs + imageBytes <= chunkEnd THEN
                     oneScore = oneW * oneH * 1000 + oneBitCount
-                    If oneScore > bestScore Then
+                    IF oneScore > bestScore THEN
                         bestScore = oneScore
                         widthPx = oneW
                         heightPx = oneH
-                        If idType = 2 Then
+                        IF idType = 2 THEN
                             hotX = AniReadU16&(buf(), entryOfs + 4)
                             hotY = AniReadU16&(buf(), entryOfs + 6)
-                        Else
+                        ELSE
                             hotX = 0
                             hotY = 0
-                        End If
-                    End If
-                End If
-            End If
-        End If
-    Next i
+                        END IF
+                    END IF
+                END IF
+            END IF
+        END IF
+    NEXT i
 
-    If bestScore < 0 Then Exit Function
+    IF bestScore < 0 THEN EXIT FUNCTION
     AniMeasureIconChunk = -1
-End Function
+END FUNCTION
 
 ' Purpose: Decode or load ANI frame imagery into runtime structures.
 ' Parameters: buf = buffer that holds raw, packed, or decoded byte data; chunkDataOfs = buffer that holds raw, packed, or decoded byte data; chunkSize = size of the current chunk payload; imgHandle = QB64 image handle used to store or draw decoded pixels; hotX = working value for hot x; hotY = working value for hot y; additional parameters continue the same pattern.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniDecodeIconChunk% (buf() As _Unsigned _Byte, chunkDataOfs As Long, chunkSize As Long, imgHandle As Long, hotX As Long, hotY As Long, widthPx As Long, heightPx As Long, maxWidth As Long, maxHeight As Long, errText As String)
+FUNCTION AniDecodeIconChunk% (buf() AS _UNSIGNED _BYTE, chunkDataOfs AS LONG, chunkSize AS LONG, imgHandle AS LONG, hotX AS LONG, hotY AS LONG, widthPx AS LONG, heightPx AS LONG, maxWidth AS LONG, maxHeight AS LONG, errText AS STRING)
     ' Variable: chunkEnd stores the working value for chunk end.
-    Dim chunkEnd As Long
+    DIM chunkEnd AS LONG
     ' Variable: idReserved stores the working value for id reserved.
-    Dim idReserved As Long
+    DIM idReserved AS LONG
     ' Variable: idType stores the working value for id type.
-    Dim idType As Long
+    DIM idType AS LONG
     ' Variable: idCount stores the count used to size or iterate the current data set.
-    Dim idCount As Long
+    DIM idCount AS LONG
     ' Variable: entryOfs stores the working value for entry ofs.
-    Dim entryOfs As Long
+    DIM entryOfs AS LONG
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
     ' Variable: oneW stores the working value for one w.
-    Dim oneW As Long
+    DIM oneW AS LONG
     ' Variable: oneH stores the working value for one h.
-    Dim oneH As Long
+    DIM oneH AS LONG
     ' Variable: oneScore stores the working value for one score.
-    Dim oneScore As Long
+    DIM oneScore AS LONG
     ' Variable: bestScore stores the working value for best score.
-    Dim bestScore As Long
+    DIM bestScore AS LONG
     ' Variable: bestRelOfs stores the working value for best rel ofs.
-    Dim bestRelOfs As Long
+    DIM bestRelOfs AS LONG
     ' Variable: bestSize stores the working value for best size.
-    Dim bestSize As Long
+    DIM bestSize AS LONG
     ' Variable: bestHotX stores the working value for best hot x.
-    Dim bestHotX As Long
+    DIM bestHotX AS LONG
     ' Variable: bestHotY stores the working value for best hot y.
-    Dim bestHotY As Long
+    DIM bestHotY AS LONG
     ' Variable: bestWidth stores the width value used by this routine.
-    Dim bestWidth As Long
+    DIM bestWidth AS LONG
     ' Variable: bestHeight stores the height value used by this routine.
-    Dim bestHeight As Long
+    DIM bestHeight AS LONG
     ' Variable: bestAbsOfs stores the working value for best abs ofs.
-    Dim bestAbsOfs As Long
+    DIM bestAbsOfs AS LONG
     ' Variable: imageBytes stores the working value for image bytes.
-    Dim imageBytes As Long
+    DIM imageBytes AS LONG
     ' Variable: imageRelOfs stores the working value for image rel ofs.
-    Dim imageRelOfs As Long
+    DIM imageRelOfs AS LONG
     ' Variable: oneBitCount stores the count used to size or iterate the current data set.
-    Dim oneBitCount As Long
+    DIM oneBitCount AS LONG
     ' Variable: fitOk stores the working value for fit ok.
-    Dim fitOk As Integer
+    DIM fitOk AS INTEGER
 
     AniDecodeIconChunk = 0
     errText = ""
@@ -1400,27 +1398,27 @@ Function AniDecodeIconChunk% (buf() As _Unsigned _Byte, chunkDataOfs As Long, ch
     heightPx = 0
 
     chunkEnd = chunkDataOfs + chunkSize
-    If chunkSize < 6 Then
+    IF chunkSize < 6 THEN
         errText = "ANI icon chunk is too short"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     idReserved = AniReadU16&(buf(), chunkDataOfs)
     idType = AniReadU16&(buf(), chunkDataOfs + 2)
     idCount = AniReadU16&(buf(), chunkDataOfs + 4)
 
-    If idReserved <> 0 Then
+    IF idReserved <> 0 THEN
         errText = "ANI icon chunk has invalid ICONDIR/CURDIR"
-        Exit Function
-    End If
-    If idType <> 1 And idType <> 2 Then
+        EXIT FUNCTION
+    END IF
+    IF idType <> 1 AND idType <> 2 THEN
         errText = "ANI icon chunk is not ICO/CUR"
-        Exit Function
-    End If
-    If idCount < 1 Then
+        EXIT FUNCTION
+    END IF
+    IF idCount < 1 THEN
         errText = "ANI icon chunk has no images"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     bestScore = -1
     bestRelOfs = -1
@@ -1432,63 +1430,63 @@ Function AniDecodeIconChunk% (buf() As _Unsigned _Byte, chunkDataOfs As Long, ch
 
     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To idCount - 1
+    FOR i = 0 TO idCount - 1
         entryOfs = chunkDataOfs + 6 + i * 16
-        If entryOfs + 15 >= chunkEnd Then
+        IF entryOfs + 15 >= chunkEnd THEN
             errText = "ANI icon directory entry is broken"
-            Exit Function
-        End If
+            EXIT FUNCTION
+        END IF
 
         oneW = buf(entryOfs + 0)
         oneH = buf(entryOfs + 1)
-        If oneW = 0 Then oneW = 256
-        If oneH = 0 Then oneH = 256
+        IF oneW = 0 THEN oneW = 256
+        IF oneH = 0 THEN oneH = 256
 
         fitOk = -1
-        If maxWidth > 0 Then
-            If oneW > maxWidth Then fitOk = 0
-        End If
-        If maxHeight > 0 Then
-            If oneH > maxHeight Then fitOk = 0
-        End If
+        IF maxWidth > 0 THEN
+            IF oneW > maxWidth THEN fitOk = 0
+        END IF
+        IF maxHeight > 0 THEN
+            IF oneH > maxHeight THEN fitOk = 0
+        END IF
 
         imageBytes = AniReadU32&(buf(), entryOfs + 8)
         imageRelOfs = AniReadU32&(buf(), entryOfs + 12)
-        If idType = 2 Then
+        IF idType = 2 THEN
             oneBitCount = 0
-        Else
+        ELSE
             oneBitCount = AniReadU16&(buf(), entryOfs + 6)
-        End If
+        END IF
 
-        If fitOk Then
-            If imageBytes > 0 Then
-                If imageRelOfs >= 0 Then
-                    If chunkDataOfs + imageRelOfs + imageBytes <= chunkEnd Then
+        IF fitOk THEN
+            IF imageBytes > 0 THEN
+                IF imageRelOfs >= 0 THEN
+                    IF chunkDataOfs + imageRelOfs + imageBytes <= chunkEnd THEN
                         oneScore = oneW * oneH * 1000 + oneBitCount
-                        If oneScore > bestScore Then
+                        IF oneScore > bestScore THEN
                             bestScore = oneScore
                             bestRelOfs = imageRelOfs
                             bestSize = imageBytes
                             bestWidth = oneW
                             bestHeight = oneH
-                            If idType = 2 Then
+                            IF idType = 2 THEN
                                 bestHotX = AniReadU16&(buf(), entryOfs + 4)
                                 bestHotY = AniReadU16&(buf(), entryOfs + 6)
-                            Else
+                            ELSE
                                 bestHotX = 0
                                 bestHotY = 0
-                            End If
-                        End If
-                    End If
-                End If
-            End If
-        End If
-    Next i
+                            END IF
+                        END IF
+                    END IF
+                END IF
+            END IF
+        END IF
+    NEXT i
 
-    If bestRelOfs < 0 Then
+    IF bestRelOfs < 0 THEN
         errText = "ANI icon chunk has no entry that fits requested limits"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     bestAbsOfs = chunkDataOfs + bestRelOfs
     hotX = bestHotX
@@ -1496,107 +1494,107 @@ Function AniDecodeIconChunk% (buf() As _Unsigned _Byte, chunkDataOfs As Long, ch
     widthPx = bestWidth
     heightPx = bestHeight
 
-    If bestSize >= 8 Then
-        If buf(bestAbsOfs + 0) = &H89 And buf(bestAbsOfs + 1) = &H50 And buf(bestAbsOfs + 2) = &H4E And buf(bestAbsOfs + 3) = &H47 And buf(bestAbsOfs + 4) = &HD And buf(bestAbsOfs + 5) = &HA And buf(bestAbsOfs + 6) = &H1A And buf(bestAbsOfs + 7) = &HA Then
-            If AniLoadPngFromRange(buf(), bestAbsOfs, bestSize, imgHandle, errText) = 0 Then Exit Function
+    IF bestSize >= 8 THEN
+        IF buf(bestAbsOfs + 0) = &H89 AND buf(bestAbsOfs + 1) = &H50 AND buf(bestAbsOfs + 2) = &H4E AND buf(bestAbsOfs + 3) = &H47 AND buf(bestAbsOfs + 4) = &HD AND buf(bestAbsOfs + 5) = &HA AND buf(bestAbsOfs + 6) = &H1A AND buf(bestAbsOfs + 7) = &HA THEN
+            IF AniLoadPngFromRange(buf(), bestAbsOfs, bestSize, imgHandle, errText) = 0 THEN EXIT FUNCTION
             AniDecodeIconChunk = -1
-            Exit Function
-        End If
-    End If
+            EXIT FUNCTION
+        END IF
+    END IF
 
-    If AniDecodeDibCursor(buf(), bestAbsOfs, bestSize, imgHandle, errText) = 0 Then Exit Function
+    IF AniDecodeDibCursor(buf(), bestAbsOfs, bestSize, imgHandle, errText) = 0 THEN EXIT FUNCTION
     AniDecodeIconChunk = -1
-End Function
+END FUNCTION
 
 ' Purpose: Decode or load ANI frame imagery into runtime structures.
 ' Parameters: buf = buffer that holds raw, packed, or decoded byte data; imageOfs = working value for image ofs; imageSize = working value for image size; imgHandle = QB64 image handle used to store or draw decoded pixels; errText = working value for err text.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniDecodeDibCursor% (buf() As _Unsigned _Byte, imageOfs As Long, imageSize As Long, imgHandle As Long, errText As String)
+FUNCTION AniDecodeDibCursor% (buf() AS _UNSIGNED _BYTE, imageOfs AS LONG, imageSize AS LONG, imgHandle AS LONG, errText AS STRING)
     ' Variable: imageEnd stores the working value for image end.
-    Dim imageEnd As Long
+    DIM imageEnd AS LONG
     ' Variable: biSize stores the working value for bi size.
-    Dim biSize As Long
+    DIM biSize AS LONG
     ' Variable: widthPx stores the decoded image width in pixels.
-    Dim widthPx As Long
+    DIM widthPx AS LONG
     ' Variable: heightRaw stores the working value for height raw.
-    Dim heightRaw As Long
+    DIM heightRaw AS LONG
     ' Variable: heightPx stores the decoded image height in pixels.
-    Dim heightPx As Long
+    DIM heightPx AS LONG
     ' Variable: planes stores the working value for planes.
-    Dim planes As Long
+    DIM planes AS LONG
     ' Variable: bpp stores the working value for bpp.
-    Dim bpp As Long
+    DIM bpp AS LONG
     ' Variable: compression stores the working value for compression.
-    Dim compression As Long
+    DIM compression AS LONG
     ' Variable: colorsUsed stores the flag telling whether the current slot or record is in use.
-    Dim colorsUsed As Long
+    DIM colorsUsed AS LONG
     ' Variable: paletteCount stores the palette storage or palette index used during indexed-color decoding.
-    Dim paletteCount As Long
+    DIM paletteCount AS LONG
     ' Variable: palOfs stores the working value for pal ofs.
-    Dim palOfs As Long
+    DIM palOfs AS LONG
     ' Variable: pixelOfs stores the working value for pixel ofs.
-    Dim pixelOfs As Long
+    DIM pixelOfs AS LONG
     ' Variable: xorStride stores the working value for xor stride.
-    Dim xorStride As Long
+    DIM xorStride AS LONG
     ' Variable: andStride stores the working value for and stride.
-    Dim andStride As Long
+    DIM andStride AS LONG
     ' Variable: andOfs stores the working value for and ofs.
-    Dim andOfs As Long
+    DIM andOfs AS LONG
     ' Variable: x stores the horizontal pixel or coordinate index.
-    Dim x As Long
+    DIM x AS LONG
     ' Variable: y stores the vertical pixel or coordinate index.
-    Dim y As Long
+    DIM y AS LONG
     ' Variable: srcY stores the working value for src y.
-    Dim srcY As Long
+    DIM srcY AS LONG
     ' Variable: rowOfs stores the row pointer, row buffer, or row index used for image processing.
-    Dim rowOfs As Long
+    DIM rowOfs AS LONG
     ' Variable: maskRowOfs stores the row pointer, row buffer, or row index used for image processing.
-    Dim maskRowOfs As Long
+    DIM maskRowOfs AS LONG
     ' Variable: byteValue stores the working value for byte value.
-    Dim byteValue As Long
+    DIM byteValue AS LONG
     ' Variable: colorIndex stores the index variable used to address the current item.
-    Dim colorIndex As Long
+    DIM colorIndex AS LONG
     ' Variable: redValue stores the working value for red value.
-    Dim redValue As Long
+    DIM redValue AS LONG
     ' Variable: greenValue stores the working value for green value.
-    Dim greenValue As Long
+    DIM greenValue AS LONG
     ' Variable: blueValue stores the working value for blue value.
-    Dim blueValue As Long
+    DIM blueValue AS LONG
     ' Variable: alphaValue stores the working value for alpha value.
-    Dim alphaValue As Long
+    DIM alphaValue AS LONG
     ' Variable: alphaOut stores the working value for alpha out.
-    Dim alphaOut As Long
+    DIM alphaOut AS LONG
     ' Variable: bottomUp stores the working value for bottom up.
-    Dim bottomUp As Integer
+    DIM bottomUp AS INTEGER
     ' Variable: maskAvailable stores the working value for mask available.
-    Dim maskAvailable As Integer
+    DIM maskAvailable AS INTEGER
     ' Variable: hasAlpha stores the Boolean-like flag used by the current routine.
-    Dim hasAlpha As Integer
+    DIM hasAlpha AS INTEGER
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
     ' Variable: dstPixelOfs stores the working value for dst pixel ofs.
-    Dim dstPixelOfs As _Integer64
+    DIM dstPixelOfs AS _INTEGER64
     ' Variable: pixelValue stores the working value for pixel value.
-    Dim pixelValue As _Unsigned Long
+    DIM pixelValue AS _UNSIGNED LONG
     ' Variable: imgMem stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imgMem As _MEM
+    DIM imgMem AS _MEM
 
     ' dynamic array: palR is resized here to hold the working value for pal r.
-    ReDim palR(0) As Long
+    REDIM palR(0) AS LONG
     ' dynamic array: palG is resized here to hold the working value for pal g.
-    ReDim palG(0) As Long
+    REDIM palG(0) AS LONG
     ' dynamic array: palB is resized here to hold the working value for pal b.
-    ReDim palB(0) As Long
+    REDIM palB(0) AS LONG
 
     AniDecodeDibCursor = 0
     errText = ""
     imgHandle = 0
 
     imageEnd = imageOfs + imageSize
-    If imageOfs + 40 > imageEnd Then
+    IF imageOfs + 40 > imageEnd THEN
         errText = "ANI DIB frame is too short"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     biSize = AniReadU32&(buf(), imageOfs + 0)
     widthPx = AniReadU32&(buf(), imageOfs + 4)
@@ -1606,368 +1604,369 @@ Function AniDecodeDibCursor% (buf() As _Unsigned _Byte, imageOfs As Long, imageS
     compression = AniReadU32&(buf(), imageOfs + 16)
     colorsUsed = AniReadU32&(buf(), imageOfs + 32)
 
-    If biSize < 40 Then
+    IF biSize < 40 THEN
         errText = "ANI DIB header is not supported"
-        Exit Function
-    End If
-    If imageOfs + biSize > imageEnd Then
+        EXIT FUNCTION
+    END IF
+    IF imageOfs + biSize > imageEnd THEN
         errText = "ANI DIB header is broken"
-        Exit Function
-    End If
-    If widthPx < 1 Then
+        EXIT FUNCTION
+    END IF
+    IF widthPx < 1 THEN
         errText = "ANI DIB width is invalid"
-        Exit Function
-    End If
-    If heightRaw = 0 Then
+        EXIT FUNCTION
+    END IF
+    IF heightRaw = 0 THEN
         errText = "ANI DIB height is invalid"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     bottomUp = (heightRaw > 0)
-    heightPx = Abs(heightRaw) \ 2
-    If heightPx < 1 Then
+    heightPx = ABS(heightRaw) \ 2
+    IF heightPx < 1 THEN
         errText = "ANI cursor height is invalid"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    If planes <> 1 Then
+    IF planes <> 1 THEN
         errText = "ANI DIB planes must be 1"
-        Exit Function
-    End If
-    If compression <> 0 Then
+        EXIT FUNCTION
+    END IF
+    IF compression <> 0 THEN
         errText = "ANI only supports uncompressed DIB frames"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    Select Case bpp
-        Case 1, 4, 8, 24, 32
-        Case Else
+    SELECT CASE bpp
+        CASE 1, 4, 8, 24, 32
+        CASE ELSE
             errText = "ANI DIB bit depth is not supported"
-            Exit Function
-    End Select
+            EXIT FUNCTION
+    END SELECT
 
     paletteCount = 0
-    If bpp <= 8 Then
-        If colorsUsed > 0 Then
+    IF bpp <= 8 THEN
+        IF colorsUsed > 0 THEN
             paletteCount = colorsUsed
-        Else
+        ELSE
             paletteCount = 2 ^ bpp
-        End If
-    End If
+        END IF
+    END IF
 
     palOfs = imageOfs + biSize
-    If paletteCount > 0 Then
-        If palOfs + paletteCount * 4 > imageEnd Then
+    IF paletteCount > 0 THEN
+        IF palOfs + paletteCount * 4 > imageEnd THEN
             errText = "ANI DIB palette is broken"
-            Exit Function
-        End If
+            EXIT FUNCTION
+        END IF
 
         ' dynamic array: palR is resized here to hold the working value for pal r.
-        ReDim palR(paletteCount - 1) As Long
+        REDIM palR(paletteCount - 1) AS LONG
         ' dynamic array: palG is resized here to hold the working value for pal g.
-        ReDim palG(paletteCount - 1) As Long
+        REDIM palG(paletteCount - 1) AS LONG
         ' dynamic array: palB is resized here to hold the working value for pal b.
-        ReDim palB(paletteCount - 1) As Long
+        REDIM palB(paletteCount - 1) AS LONG
 
         ' Loop purpose: step through palette entries so indexed colors can be read or rebuilt.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For i = 0 To paletteCount - 1
+        FOR i = 0 TO paletteCount - 1
             palB(i) = buf(palOfs + i * 4 + 0)
             palG(i) = buf(palOfs + i * 4 + 1)
             palR(i) = buf(palOfs + i * 4 + 2)
-        Next i
-    End If
+        NEXT i
+    END IF
 
     pixelOfs = imageOfs + biSize + paletteCount * 4
     xorStride = ((widthPx * bpp + 31) \ 32) * 4
     andStride = ((widthPx + 31) \ 32) * 4
     andOfs = pixelOfs + xorStride * heightPx
 
-    If pixelOfs + xorStride * heightPx > imageEnd Then
+    IF pixelOfs + xorStride * heightPx > imageEnd THEN
         errText = "ANI DIB pixels are broken"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    If andOfs + andStride * heightPx <= imageEnd Then
+    IF andOfs + andStride * heightPx <= imageEnd THEN
         maskAvailable = -1
-    Else
+    ELSE
         maskAvailable = 0
-    End If
+    END IF
 
     hasAlpha = 0
-    If bpp = 32 Then
+    IF bpp = 32 THEN
         ' Loop purpose: iterate through image rows or vertical positions.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For y = 0 To heightPx - 1
+        FOR y = 0 TO heightPx - 1
             rowOfs = pixelOfs + y * xorStride
             ' Loop purpose: iterate through image columns, pixels, or horizontal positions.
             ' The loop order matters because later statements expect the data to be visited sequentially.
-            For x = 0 To widthPx - 1
-                If buf(rowOfs + x * 4 + 3) <> 0 Then
+            FOR x = 0 TO widthPx - 1
+                IF buf(rowOfs + x * 4 + 3) <> 0 THEN
                     hasAlpha = -1
-                    Exit For
-                End If
-            Next x
-            If hasAlpha Then Exit For
-        Next y
-    End If
+                    EXIT FOR
+                END IF
+            NEXT x
+            IF hasAlpha THEN EXIT FOR
+        NEXT y
+    END IF
 
-    imgHandle = _NewImage(widthPx, heightPx, 32)
-    If imgHandle > -2 Then
+    imgHandle = _NEWIMAGE(widthPx, heightPx, 32)
+    IF imgHandle > -2 THEN
         errText = "ANI failed to create image"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    imgMem = _MemImage(imgHandle)
-    If _MemExists(imgMem) = 0 Then
+    imgMem = _MEMIMAGE(imgHandle)
+    IF _MEMEXISTS(imgMem) = 0 THEN
         errText = "ANI failed to get image memory"
-        If imgHandle <= -2 Then _FreeImage imgHandle: imgHandle = 0
-        Exit Function
-    End If
+        IF imgHandle <= -2 THEN _FREEIMAGE imgHandle: imgHandle = 0
+        EXIT FUNCTION
+    END IF
 
     ' Loop purpose: iterate through image rows or vertical positions.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For y = 0 To heightPx - 1
-        If bottomUp Then
+    FOR y = 0 TO heightPx - 1
+        IF bottomUp THEN
             srcY = heightPx - 1 - y
-        Else
+        ELSE
             srcY = y
-        End If
+        END IF
 
         rowOfs = pixelOfs + srcY * xorStride
         maskRowOfs = andOfs + srcY * andStride
 
         ' Loop purpose: iterate through image columns, pixels, or horizontal positions.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For x = 0 To widthPx - 1
+        FOR x = 0 TO widthPx - 1
             redValue = 0
             greenValue = 0
             blueValue = 0
             alphaValue = 0
             alphaOut = 255
 
-            Select Case bpp
-                Case 32
+            SELECT CASE bpp
+                CASE 32
                     blueValue = buf(rowOfs + x * 4 + 0)
                     greenValue = buf(rowOfs + x * 4 + 1)
                     redValue = buf(rowOfs + x * 4 + 2)
                     alphaValue = buf(rowOfs + x * 4 + 3)
 
-                Case 24
+                CASE 24
                     blueValue = buf(rowOfs + x * 3 + 0)
                     greenValue = buf(rowOfs + x * 3 + 1)
                     redValue = buf(rowOfs + x * 3 + 2)
 
-                Case 8
+                CASE 8
                     colorIndex = buf(rowOfs + x)
-                    If colorIndex < 0 Or colorIndex >= paletteCount Then colorIndex = 0
+                    IF colorIndex < 0 OR colorIndex >= paletteCount THEN colorIndex = 0
                     redValue = palR(colorIndex)
                     greenValue = palG(colorIndex)
                     blueValue = palB(colorIndex)
 
-                Case 4
+                CASE 4
                     byteValue = buf(rowOfs + (x \ 2))
-                    If (x And 1) = 0 Then
+                    IF (x AND 1) = 0 THEN
                         colorIndex = byteValue \ 16
-                    Else
-                        colorIndex = byteValue And 15
-                    End If
-                    If colorIndex < 0 Or colorIndex >= paletteCount Then colorIndex = 0
+                    ELSE
+                        colorIndex = byteValue AND 15
+                    END IF
+                    IF colorIndex < 0 OR colorIndex >= paletteCount THEN colorIndex = 0
                     redValue = palR(colorIndex)
                     greenValue = palG(colorIndex)
                     blueValue = palB(colorIndex)
 
-                Case 1
+                CASE 1
                     byteValue = buf(rowOfs + (x \ 8))
-                    If (byteValue And (2 ^ (7 - (x And 7)))) <> 0 Then
+                    IF (byteValue AND (2 ^ (7 - (x AND 7)))) <> 0 THEN
                         colorIndex = 1
-                    Else
+                    ELSE
                         colorIndex = 0
-                    End If
-                    If colorIndex < 0 Or colorIndex >= paletteCount Then colorIndex = 0
+                    END IF
+                    IF colorIndex < 0 OR colorIndex >= paletteCount THEN colorIndex = 0
                     redValue = palR(colorIndex)
                     greenValue = palG(colorIndex)
                     blueValue = palB(colorIndex)
-            End Select
+            END SELECT
 
-            If maskAvailable Then
+            IF maskAvailable THEN
                 byteValue = buf(maskRowOfs + (x \ 8))
-                If (byteValue And (2 ^ (7 - (x And 7)))) <> 0 Then
+                IF (byteValue AND (2 ^ (7 - (x AND 7)))) <> 0 THEN
                     alphaOut = 0
-                Else
+                ELSE
                     alphaOut = 255
-                End If
-            Else
+                END IF
+            ELSE
                 alphaOut = 255
-            End If
+            END IF
 
-            If bpp = 32 And hasAlpha Then alphaOut = alphaValue
+            IF bpp = 32 AND hasAlpha THEN alphaOut = alphaValue
 
             pixelValue = _RGBA32(redValue, greenValue, blueValue, alphaOut)
             dstPixelOfs = imgMem.OFFSET + ((y * widthPx + x) * 4)
-            _MemPut imgMem, dstPixelOfs, pixelValue
-        Next x
-    Next y
+            _MEMPUT imgMem, dstPixelOfs, pixelValue
+        NEXT x
+    NEXT y
 
-    If _MemExists(imgMem) Then _MemFree imgMem
+    IF _MEMEXISTS(imgMem) THEN _MEMFREE imgMem
     AniDecodeDibCursor = -1
-End Function
+END FUNCTION
 
 ' Purpose: Decode or load ANI frame imagery into runtime structures.
 ' Parameters: buf = buffer that holds raw, packed, or decoded byte data; dataOfs = buffer that holds raw, packed, or decoded byte data; dataSize = buffer that holds raw, packed, or decoded byte data; imgHandle = QB64 image handle used to store or draw decoded pixels; errText = working value for err text.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniLoadPngFromRange% (buf() As _Unsigned _Byte, dataOfs As Long, dataSize As Long, imgHandle As Long, errText As String)
+FUNCTION AniLoadPngFromRange% (buf() AS _UNSIGNED _BYTE, dataOfs AS LONG, dataSize AS LONG, imgHandle AS LONG, errText AS STRING)
     ' Variable: pngData stores the buffer that holds raw, packed, or decoded byte data.
-    Dim pngData As String
+    DIM pngData AS STRING
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
 
     AniLoadPngFromRange = 0
     errText = ""
     imgHandle = 0
 
-    If dataSize <= 0 Then
+    IF dataSize <= 0 THEN
         errText = "ANI PNG frame has zero size"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    pngData = String$(dataSize, Chr$(0))
+    pngData = STRING$(dataSize, CHR$(0))
     ' Loop purpose: walk through a byte-oriented range while parsing or transforming packed data.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 1 To dataSize
-        Mid$(pngData, i, 1) = Chr$(buf(dataOfs + i - 1))
-    Next i
+    FOR i = 1 TO dataSize
+        MID$(pngData, i, 1) = CHR$(buf(dataOfs + i - 1))
+    NEXT i
 
-    imgHandle = _LoadImage(pngData, 32, "memory")
-    If imgHandle > -2 Then
+    imgHandle = _LOADIMAGE(pngData, 32, "memory")
+    IF imgHandle > -2 THEN
         errText = "ANI failed to load PNG frame from memory"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     AniLoadPngFromRange = -1
-End Function
+END FUNCTION
 
 ' Purpose: Read RIFF/ANI chunk structures from the byte stream.
 ' Parameters: buf = buffer that holds raw, packed, or decoded byte data; ofs = current offset into packed or unpacked data.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniReadU16& (buf() As _Unsigned _Byte, ofs As Long)
+FUNCTION AniReadU16& (buf() AS _UNSIGNED _BYTE, ofs AS LONG)
     ' Variable: value stores the working value for value.
-    Dim value As Long
+    DIM value AS LONG
 
     value = buf(ofs + 0)
     value = value + buf(ofs + 1) * 256
     AniReadU16 = value
-End Function
+END FUNCTION
 
 ' Purpose: Read RIFF/ANI chunk structures from the byte stream.
 ' Parameters: buf = buffer that holds raw, packed, or decoded byte data; ofs = current offset into packed or unpacked data.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniReadU32& (buf() As _Unsigned _Byte, ofs As Long)
+FUNCTION AniReadU32& (buf() AS _UNSIGNED _BYTE, ofs AS LONG)
     ' Variable: value stores the working value for value.
-    Dim value As _Integer64
+    DIM value AS _INTEGER64
 
     value = 0
     value = value + buf(ofs + 0)
-    value = value + CLng(buf(ofs + 1)) * 256
-    value = value + CLng(buf(ofs + 2)) * 65536
-    value = value + CLng(buf(ofs + 3)) * 16777216
+    value = value + CLNG(buf(ofs + 1)) * 256
+    value = value + CLNG(buf(ofs + 2)) * 65536
+    value = value + CLNG(buf(ofs + 3)) * 16777216
 
-    If value > 2147483647 Then
+    IF value > 2147483647 THEN
         AniReadU32 = value - 4294967296#
-    Else
+    ELSE
         AniReadU32 = value
-    End If
-End Function
+    END IF
+END FUNCTION
 
 ' Purpose: Read RIFF/ANI chunk structures from the byte stream.
 ' Parameters: buf = buffer that holds raw, packed, or decoded byte data; ofs = current offset into packed or unpacked data.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniReadFourCC$ (buf() As _Unsigned _Byte, ofs As Long)
-    AniReadFourCC = Chr$(buf(ofs + 0)) + Chr$(buf(ofs + 1)) + Chr$(buf(ofs + 2)) + Chr$(buf(ofs + 3))
-End Function
+FUNCTION AniReadFourCC$ (buf() AS _UNSIGNED _BYTE, ofs AS LONG)
+    AniReadFourCC = CHR$(buf(ofs + 0)) + CHR$(buf(ofs + 1)) + CHR$(buf(ofs + 2)) + CHR$(buf(ofs + 3))
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI time add.
 ' Parameters: baseTime = time-related value used by the current routine; deltaSec = working value for delta sec.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniTimeAdd# (baseTime As Double, deltaSec As Double)
+FUNCTION AniTimeAdd# (baseTime AS DOUBLE, deltaSec AS DOUBLE)
     ' Variable: resultTime stores the time-related value used by the current routine.
-    Dim resultTime As Double
+    DIM resultTime AS DOUBLE
 
     resultTime = baseTime + deltaSec
-    If resultTime >= 86400# Then resultTime = resultTime - 86400#
+    IF resultTime >= 86400# THEN resultTime = resultTime - 86400#
     AniTimeAdd = resultTime
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI time reached.
 ' Parameters: targetTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniTimeReached% (targetTime As Double, currentTime As Double)
+FUNCTION AniTimeReached% (targetTime AS DOUBLE, currentTime AS DOUBLE)
     AniTimeReached = 0
-    If Abs(currentTime - targetTime) < 43200# Then
-        If currentTime >= targetTime Then AniTimeReached = -1
-    Else
-        If currentTime < targetTime Then AniTimeReached = -1
-    End If
-End Function
+    IF ABS(currentTime - targetTime) < 43200# THEN
+        IF currentTime >= targetTime THEN AniTimeReached = -1
+    ELSE
+        IF currentTime < targetTime THEN AniTimeReached = -1
+    END IF
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI time remaining.
 ' Parameters: targetTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniTimeRemaining# (targetTime As Double, currentTime As Double)
+FUNCTION AniTimeRemaining# (targetTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: resultTime stores the time-related value used by the current routine.
-    Dim resultTime As Double
+    DIM resultTime AS DOUBLE
 
     resultTime = 0
-    If AniTimeReached(targetTime, currentTime) Then
+    IF AniTimeReached(targetTime, currentTime) THEN
         AniTimeRemaining = resultTime
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     resultTime = targetTime - currentTime
-    If resultTime < 0 Then resultTime = resultTime + 86400#
+    IF resultTime < 0 THEN resultTime = resultTime + 86400#
     AniTimeRemaining = resultTime
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI elapsed since.
 ' Parameters: previousTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniElapsedSince# (previousTime As Double, currentTime As Double)
+FUNCTION AniElapsedSince# (previousTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: elapsedSec stores the working value for elapsed sec.
-    Dim elapsedSec As Double
+    DIM elapsedSec AS DOUBLE
 
     elapsedSec = currentTime - previousTime
-    If elapsedSec < 0 Then elapsedSec = elapsedSec + 86400#
+    IF elapsedSec < 0 THEN elapsedSec = elapsedSec + 86400#
     AniElapsedSince = elapsedSec
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI clock jumped.
 ' Parameters: aniId = working value for ANI id; previousTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AniClockJumped% (aniId As Long, previousTime As Double, currentTime As Double)
+FUNCTION AniClockJumped% (aniId AS LONG, previousTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: elapsedSec stores the working value for elapsed sec.
-    Dim elapsedSec As Double
+    DIM elapsedSec AS DOUBLE
 
     AniClockJumped = 0
-    If AniValidId(aniId) = 0 Then Exit Function
-    If previousTime <= 0 Then Exit Function
+    IF AniValidId(aniId) = 0 THEN EXIT FUNCTION
+    IF previousTime <= 0 THEN EXIT FUNCTION
 
     elapsedSec = AniElapsedSince(previousTime, currentTime)
-    If elapsedSec > 600# Then AniClockJumped = -1
-End Function
+    IF elapsedSec > 600# THEN AniClockJumped = -1
+END FUNCTION
 
 ' Purpose: Routine for the Windows ANI backend: handle ANI resync after clock jump.
 ' Parameters: aniId = working value for ANI id; currentTime = time-related value used by the current routine.
-Sub AniResyncAfterClockJump (aniId As Long, currentTime As Double)
+SUB AniResyncAfterClockJump (aniId AS LONG, currentTime AS DOUBLE)
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
-    If AniValidId(aniId) = 0 Then Exit Sub
-    If AniItems(aniId).StepCount < 1 Then Exit Sub
+    IF AniValidId(aniId) = 0 THEN EXIT SUB
+    IF AniItems(aniId).StepCount < 1 THEN EXIT SUB
 
     delaySec = AniFrameDelaySec(aniId, AniItems(aniId).CurrentFrame)
-    If delaySec <= 0 Then delaySec = .1
+    IF delaySec <= 0 THEN delaySec = .1
 
     AniItems(aniId).LastRawTimer = currentTime
     AniItems(aniId).NextTick = AniTimeAdd(currentTime, delaySec)
     AniItems(aniId).RemainingDelay = 0
-End Sub
+END SUB
+

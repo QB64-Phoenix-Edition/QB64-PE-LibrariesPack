@@ -1,9 +1,3 @@
-$INCLUDEONCE
-
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 ' =========================================================
 ' Commented source copy for the GIF89A backend.
 ' Explanatory comments were added in English without altering executable code.
@@ -11,158 +5,163 @@ $END IF
 ' GIF89a backend prepared for unified Anim... dispatcher
 ' Demo code removed. Public names use Gif89a... prefix.
 
+$INCLUDEONCE
+
+$IF VERSION < 4.3.0 THEN
+    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
+$END IF
+
 ' Constant: GIF89A_FMT_GIF87A is a GIF-specific constant used while parsing or decoding GIF89A data.
-Const GIF89A_FMT_GIF87A = 1
+CONST GIF89A_FMT_GIF87A = 1
 ' Constant: GIF89A_FMT_GIF89A is a GIF-specific constant used while parsing or decoding GIF89A data.
-Const GIF89A_FMT_GIF89A = 2
+CONST GIF89A_FMT_GIF89A = 2
 
 ' Constant: GIF89A_LOOP_FILE_DEFAULT is a GIF-specific constant used while parsing or decoding GIF89A data.
-Const GIF89A_LOOP_FILE_DEFAULT = -2
+CONST GIF89A_LOOP_FILE_DEFAULT = -2
 ' Constant: GIF89A_LOOP_FOREVER is a GIF-specific constant used while parsing or decoding GIF89A data.
-Const GIF89A_LOOP_FOREVER = -1
+CONST GIF89A_LOOP_FOREVER = -1
 ' Constant: GIF89A_LOOP_ONCE is a GIF-specific constant used while parsing or decoding GIF89A data.
-Const GIF89A_LOOP_ONCE = 0
+CONST GIF89A_LOOP_ONCE = 0
 ' Constant: GIF89A_SNAPSHOT_INTERVAL is a GIF-specific constant used while parsing or decoding GIF89A data.
-Const GIF89A_SNAPSHOT_INTERVAL& = 8
+CONST GIF89A_SNAPSHOT_INTERVAL& = 8
 
 ' Record layout: Gif89aFrameStore groups related fields used by the GIF89A backend.
 ' Keeping the data in one TYPE lets the module store one structured record per active object.
-Type Gif89aFrameStore
+TYPE Gif89aFrameStore
     ' Field: Used stores the flag telling whether the current slot or record is in use.
-    Used As Integer
+    Used AS INTEGER
     ' Field: LeftPx stores the working value for left px.
-    LeftPx As Long
+    LeftPx AS LONG
     ' Field: TopPx stores the working value for top px.
-    TopPx As Long
+    TopPx AS LONG
     ' Field: WidthPx stores the decoded image width in pixels.
-    WidthPx As Long
+    WidthPx AS LONG
     ' Field: HeightPx stores the decoded image height in pixels.
-    HeightPx As Long
+    HeightPx AS LONG
     ' Field: DelayCs stores the frame delay or timing value.
-    DelayCs As Integer
+    DelayCs AS INTEGER
     ' Field: Disposal stores the working value for disposal.
-    Disposal As Integer
+    Disposal AS INTEGER
     ' Field: TransparentFlag stores the working value for transparent flag.
-    TransparentFlag As Integer
+    TransparentFlag AS INTEGER
     ' Field: TransparentIndex stores the index variable used to address the current item.
-    TransparentIndex As Integer
+    TransparentIndex AS INTEGER
     ' Field: Interlaced stores the working value for interlaced.
-    Interlaced As Integer
+    Interlaced AS INTEGER
     ' Field: LocalTableFlag stores the working value for local table flag.
-    LocalTableFlag As Integer
+    LocalTableFlag AS INTEGER
     ' Field: LocalTableCount stores the count used to size or iterate the current data set.
-    LocalTableCount As Long
+    LocalTableCount AS LONG
     ' Field: LocalTableOfs stores the working value for local table ofs.
-    LocalTableOfs As Long
+    LocalTableOfs AS LONG
     ' Field: LzwMinCodeSize stores the working value for LZW min code size.
-    LzwMinCodeSize As Integer
+    LzwMinCodeSize AS INTEGER
     ' Field: ImageDataOfs stores the buffer that holds raw, packed, or decoded byte data.
-    ImageDataOfs As Long
-End Type
+    ImageDataOfs AS LONG
+END TYPE
 
 ' Record layout: Gif89aStore groups related fields used by the GIF89A backend.
 ' Keeping the data in one TYPE lets the module store one structured record per active object.
-Type Gif89aStore
+TYPE Gif89aStore
     ' Field: Used stores the flag telling whether the current slot or record is in use.
-    Used As Integer
+    Used AS INTEGER
     ' Field: Is89a stores the Boolean-like flag used by the current routine.
-    Is89a As Integer
+    Is89a AS INTEGER
     ' Field: WidthPx stores the decoded image width in pixels.
-    WidthPx As Long
+    WidthPx AS LONG
     ' Field: HeightPx stores the decoded image height in pixels.
-    HeightPx As Long
+    HeightPx AS LONG
     ' Field: BackgroundIndex stores the index variable used to address the current item.
-    BackgroundIndex As Integer
+    BackgroundIndex AS INTEGER
     ' Field: GlobalTableFlag stores the working value for global table flag.
-    GlobalTableFlag As Integer
+    GlobalTableFlag AS INTEGER
     ' Field: GlobalTableCount stores the count used to size or iterate the current data set.
-    GlobalTableCount As Long
+    GlobalTableCount AS LONG
     ' Field: GlobalTableOfs stores the working value for global table ofs.
-    GlobalTableOfs As Long
+    GlobalTableOfs AS LONG
     ' Field: BgColor stores the column index or color-related value.
-    BgColor As _Unsigned Long
+    BgColor AS _UNSIGNED LONG
     ' Field: FrameStart stores the working value for frame start.
-    FrameStart As Long
+    FrameStart AS LONG
     ' Field: FrameCount stores the total number of frames available for the current animation.
-    FrameCount As Long
+    FrameCount AS LONG
     ' Field: CurrentFrame stores the zero-based frame index currently selected for display or playback.
-    CurrentFrame As Long
+    CurrentFrame AS LONG
     ' Field: Playing stores the flag telling whether playback is currently running.
-    Playing As Integer
+    Playing AS INTEGER
     ' Field: Paused stores the flag telling whether playback is temporarily paused.
-    Paused As Integer
+    Paused AS INTEGER
     ' Field: LoopMode stores the loop policy that controls whether playback stops or repeats.
-    LoopMode As Long
+    LoopMode AS LONG
     ' Field: FileLoopCount stores the count used to size or iterate the current data set.
-    FileLoopCount As Long
+    FileLoopCount AS LONG
     ' Field: LoopIteration stores the counter of completed playback loops.
-    LoopIteration As Long
+    LoopIteration AS LONG
     ' Field: NextTick stores the absolute timer target for the next frame advance.
-    NextTick As Double
+    NextTick AS DOUBLE
     ' Field: RemainingDelay stores the time still left before the next frame should be shown.
-    RemainingDelay As Double
+    RemainingDelay AS DOUBLE
     ' Field: LastRawTimer stores the raw timer snapshot used to measure elapsed playback time.
-    LastRawTimer As Double
+    LastRawTimer AS DOUBLE
     ' Field: CanvasHandle stores the handle used to reference an external or QB64 resource.
-    CanvasHandle As Long
+    CanvasHandle AS LONG
     ' Field: RestoreHandle stores the handle used to reference an external or QB64 resource.
-    RestoreHandle As Long
+    RestoreHandle AS LONG
     ' Field: RenderedFrame stores the working value for rendered frame.
-    RenderedFrame As Long
+    RenderedFrame AS LONG
     ' Field: SnapshotMetaStart stores the working value for snapshot meta start.
-    SnapshotMetaStart As Long
+    SnapshotMetaStart AS LONG
     ' Field: SnapshotCount stores the count used to size or iterate the current data set.
-    SnapshotCount As Long
+    SnapshotCount AS LONG
     ' Field: SnapshotInterval stores the working value for snapshot interval.
-    SnapshotInterval As Long
-End Type
+    SnapshotInterval AS LONG
+END TYPE
 
 ' Record layout: Gif89aSnapshotStore groups related fields used by the GIF89A backend.
 ' Keeping the data in one TYPE lets the module store one structured record per active object.
-Type Gif89aSnapshotStore
+TYPE Gif89aSnapshotStore
     ' Field: Used stores the flag telling whether the current slot or record is in use.
-    Used As Integer
+    Used AS INTEGER
     ' Field: FrameIndex stores the index variable used to address the current item.
-    FrameIndex As Long
+    FrameIndex AS LONG
     ' Field: CanvasHandle stores the handle used to reference an external or QB64 resource.
-    CanvasHandle As Long
+    CanvasHandle AS LONG
     ' Field: RestoreHandle stores the handle used to reference an external or QB64 resource.
-    RestoreHandle As Long
-End Type
+    RestoreHandle AS LONG
+END TYPE
 
 ' Shared dynamic array: Gif89aFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-ReDim Shared Gif89aFrames(0) As Gif89aFrameStore
+REDIM SHARED Gif89aFrames(0) AS Gif89aFrameStore
 ' Shared dynamic array: Gif89aItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-ReDim Shared Gif89aItems(0) As Gif89aStore
+REDIM SHARED Gif89aItems(0) AS Gif89aStore
 ' Shared dynamic array: Gif89aRawData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-ReDim Shared Gif89aRawData(0) As String
+REDIM SHARED Gif89aRawData(0) AS STRING
 ' Shared dynamic array: Gif89aErrorTexts is resized here to hold the text storage for the last human-readable error message.
-ReDim Shared Gif89aErrorTexts(0) As String
+REDIM SHARED Gif89aErrorTexts(0) AS STRING
 ' Shared dynamic array: Gif89aDecodePrefix is resized here to hold the working value for GIF89A decode prefix.
-ReDim Shared Gif89aDecodePrefix(0) As Long
+REDIM SHARED Gif89aDecodePrefix(0) AS LONG
 ' Shared dynamic array: Gif89aDecodeSuffix is resized here to hold the working value for GIF89A decode suffix.
-ReDim Shared Gif89aDecodeSuffix(0) As Integer
+REDIM SHARED Gif89aDecodeSuffix(0) AS INTEGER
 ' Shared dynamic array: Gif89aDecodeStack is resized here to hold the working value for GIF89A decode stack.
-ReDim Shared Gif89aDecodeStack(0) As Integer
+REDIM SHARED Gif89aDecodeStack(0) AS INTEGER
 ' Shared dynamic array: Gif89aFrameIndexScratch is resized here to hold the working value for GIF89A frame index scratch.
-ReDim Shared Gif89aFrameIndexScratch(0) As Integer
+REDIM SHARED Gif89aFrameIndexScratch(0) AS INTEGER
 ' Shared dynamic array: Gif89aDrawIndexScratch is resized here to hold the working value for GIF89A draw index scratch.
-ReDim Shared Gif89aDrawIndexScratch(0) As Integer
+REDIM SHARED Gif89aDrawIndexScratch(0) AS INTEGER
 ' Shared dynamic array: Gif89aPaletteRgbaScratch is resized here to hold the palette storage or palette index used during indexed-color decoding.
-ReDim Shared Gif89aPaletteRgbaScratch(0) As _Unsigned Long
+REDIM SHARED Gif89aPaletteRgbaScratch(0) AS _UNSIGNED LONG
 ' Shared dynamic array: Gif89aSnapshotMeta is resized here to hold the working value for GIF89A snapshot meta.
-ReDim Shared Gif89aSnapshotMeta(0) As Gif89aSnapshotStore
+REDIM SHARED Gif89aSnapshotMeta(0) AS Gif89aSnapshotStore
 ' Shared variable: Gif89aFrameTail stores the working value for GIF89A frame tail.
-Dim Shared Gif89aFrameTail As Long
+DIM SHARED Gif89aFrameTail AS LONG
 ' Shared variable: Gif89aSnapshotMetaNext stores the working value for GIF89A snapshot meta next.
-Dim Shared Gif89aSnapshotMetaNext As Long
+DIM SHARED Gif89aSnapshotMetaNext AS LONG
 ' Shared variable: Gif89aSnapshotMetaCapacity stores the working value for GIF89A snapshot meta capacity.
-Dim Shared Gif89aSnapshotMetaCapacity As Long
-
-
+DIM SHARED Gif89aSnapshotMetaCapacity AS LONG
 
 ' Purpose: Seek to a specific GIF89A frame or time position.
 ' Parameters: gifId = working value for GIF id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
 ' Declaration only: the executable body is implemented later in the matching .bm module.
 DECLARE FUNCTION Gif89aSeekFrame% (gifId As Long, frameIndex As Long)
+

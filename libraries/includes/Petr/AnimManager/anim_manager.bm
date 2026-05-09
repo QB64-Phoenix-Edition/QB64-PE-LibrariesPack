@@ -2,34 +2,37 @@
 ' Commented source copy for the unified animation manager.
 ' Explanatory comments were added in English without altering executable code.
 ' =========================================================
+' Unified animation dispatcher for QB64PE
+' Final project manager module using $INCLUDE backends.
+' Public API prefix: Anim...
 
-
+$INCLUDEONCE
 
 ' Purpose: Open an animation through the manager, detect the file format, and create a live manager slot.
 ' Parameters: fileName = string holding a file path or a human-readable name.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimOpen& (fileName As String)
+FUNCTION AnimOpen& (fileName AS STRING)
     AnimOpen = AnimOpenLimit(fileName, 0, 0, 0)
-End Function
+END FUNCTION
 
 ' Purpose: Open an animation through the manager, detect the file format, and create a live manager slot.
 ' Parameters: fileName = string holding a file path or a human-readable name; maxWidth = maximum allowed width; maxHeight = maximum allowed height; maxFrames = maximum allowed frames.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long, maxFrames As Long)
+FUNCTION AnimOpenLimit& (fileName AS STRING, maxWidth AS LONG, maxHeight AS LONG, maxFrames AS LONG)
     ' Variable: slotIndex stores the slot number inside the module-wide storage arrays.
-    Dim slotIndex As Long
+    DIM slotIndex AS LONG
     ' Variable: formatId stores the numeric identifier of the detected animation file format.
-    Dim formatId As Long
+    DIM formatId AS LONG
     ' Variable: backendId stores the backend-specific handle or index used to reach the real decoder state.
-    Dim backendId As Long
+    DIM backendId AS LONG
 
     AnimOpenLimit = -1
     backendId = -1
 
-    If _FileExists(fileName) = 0 Then Exit Function
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT FUNCTION
 
     formatId = AnimDetectFormatFromFile(fileName)
-    If formatId = ANIM_FMT_NONE Then Exit Function
+    IF formatId = ANIM_FMT_NONE THEN EXIT FUNCTION
 
     AnimInitCacheDefaults
 
@@ -57,29 +60,29 @@ Function AnimOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long
     AnimFileNames(slotIndex) = fileName
     AnimErrorTexts(slotIndex) = ""
 
-    Select Case formatId
-        Case ANIM_FMT_APNG
+    SELECT CASE formatId
+        CASE ANIM_FMT_APNG
             backendId = ApngOpenLimit(fileName, maxWidth, maxHeight, maxFrames)
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             backendId = Gif89aOpenLimit(fileName, maxWidth, maxHeight, maxFrames)
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             backendId = FlicOpenLimit(fileName, maxWidth, maxHeight, maxFrames)
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             backendId = AmgAnimOpenLimit(fileName, maxWidth, maxHeight, maxFrames)
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             backendId = AniOpenLimit(fileName, maxWidth, maxHeight, maxFrames)
 
-    End Select
+    END SELECT
 
-    If backendId < 0 Then
+    IF backendId < 0 THEN
         AnimSetError slotIndex, "AnimOpenLimit: backend open failed"
         AnimReleaseSlot slotIndex
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     AnimItems(slotIndex).BackendId = backendId
     AnimSyncStaticMeta slotIndex
@@ -87,15 +90,15 @@ Function AnimOpenLimit& (fileName As String, maxWidth As Long, maxHeight As Long
     AnimItems(slotIndex).CacheEstimatedBytes = AnimEstimateFrameBytes(slotIndex)
     AnimTryActivateCache slotIndex
     AnimOpenLimit = slotIndex
-End Function
+END FUNCTION
 
 ' Purpose: Inspect a file and report lightweight metadata without keeping it open.
 ' Parameters: fileName = string holding a file path or a human-readable name; ok = success flag returned by the current routine; formatId = numeric identifier of the detected animation file format; widthPx = decoded image width in pixels; heightPx = decoded image height in pixels; frameCount = total number of frames available for the current animation.
-Sub AnimProbe (fileName As String, ok As Integer, formatId As Long, widthPx As Long, heightPx As Long, frameCount As Long)
+SUB AnimProbe (fileName AS STRING, ok AS INTEGER, formatId AS LONG, widthPx AS LONG, heightPx AS LONG, frameCount AS LONG)
     ' Variable: detectedFormat stores the working value for detected format.
-    Dim detectedFormat As Long
+    DIM detectedFormat AS LONG
     ' Variable: tempFlag stores the temporary flag used while probing or decoding.
-    Dim tempFlag As Integer
+    DIM tempFlag AS INTEGER
 
     ok = 0
     formatId = ANIM_FMT_NONE
@@ -104,674 +107,674 @@ Sub AnimProbe (fileName As String, ok As Integer, formatId As Long, widthPx As L
     frameCount = 0
     tempFlag = 0
 
-    If _FileExists(fileName) = 0 Then Exit Sub
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT SUB
 
     detectedFormat = AnimDetectFormatFromFile(fileName)
-    If detectedFormat = ANIM_FMT_NONE Then Exit Sub
+    IF detectedFormat = ANIM_FMT_NONE THEN EXIT SUB
 
     formatId = detectedFormat
 
-    Select Case detectedFormat
-        Case ANIM_FMT_APNG
+    SELECT CASE detectedFormat
+        CASE ANIM_FMT_APNG
             ApngProbe fileName, ok, tempFlag, widthPx, heightPx, frameCount
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aProbe fileName, ok, tempFlag, widthPx, heightPx, frameCount
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicProbe fileName, ok, formatId, widthPx, heightPx, frameCount
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimProbe fileName, ok, tempFlag, widthPx, heightPx, frameCount
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniProbe fileName, ok, tempFlag, widthPx, heightPx, frameCount
 
-    End Select
-End Sub
+    END SELECT
+END SUB
 
 ' Purpose: Release one animation, its backend state, and any cache memory owned by it.
 ' Parameters: animId = working value for animation id.
-Sub AnimFree (animId As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
+SUB AnimFree (animId AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
     AnimFreeCacheBlock animId
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ApngClose AnimItems(animId).BackendId
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aClose AnimItems(animId).BackendId
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicClose AnimItems(animId).BackendId
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimClose AnimItems(animId).BackendId
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniClose AnimItems(animId).BackendId
 
-    End Select
+    END SELECT
 
     AnimReleaseSlot animId
-End Sub
+END SUB
 
 ' Purpose: Release every active animation currently owned by the manager.
-Sub AnimFreeAll ()
+SUB AnimFreeAll ()
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
 
     ' Loop purpose: walk through every currently allocated element in AnimItems.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To UBound(AnimItems)
-        If AnimItems(i).Used Then AnimFree i
-    Next i
-End Sub
+    FOR i = 0 TO UBOUND(AnimItems)
+        IF AnimItems(i).Used THEN AnimFree i
+    NEXT i
+END SUB
 
 ' Purpose: Start playback for the selected animation.
 ' Parameters: animId = working value for animation id.
-Sub AnimStart (animId As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
+SUB AnimStart (animId AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
     AnimTryActivateCache animId
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimUsingCachedPlayback(animId) THEN
         AnimCachedStart animId
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ApngPlay AnimItems(animId).BackendId
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aPlay AnimItems(animId).BackendId
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicStart AnimItems(animId).BackendId
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimPlay AnimItems(animId).BackendId
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniPlay AnimItems(animId).BackendId
 
-    End Select
+    END SELECT
 
     AnimSyncRuntimeMeta animId
-End Sub
+END SUB
 
 ' Purpose: Stop playback and keep the current animation under manager control.
 ' Parameters: animId = working value for animation id.
-Sub AnimStop (animId As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
+SUB AnimStop (animId AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimUsingCachedPlayback(animId) THEN
         AnimCachedStop animId
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ApngStop AnimItems(animId).BackendId
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aStop AnimItems(animId).BackendId
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicStop AnimItems(animId).BackendId
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimStop AnimItems(animId).BackendId
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniStop AnimItems(animId).BackendId
 
-    End Select
+    END SELECT
 
     AnimSyncRuntimeMeta animId
-End Sub
+END SUB
 
 ' Purpose: Pause playback while preserving the current frame and timing state.
 ' Parameters: animId = working value for animation id.
-Sub AnimPause (animId As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
+SUB AnimPause (animId AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimUsingCachedPlayback(animId) THEN
         AnimCachedPause animId
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ApngPause AnimItems(animId).BackendId
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aPause AnimItems(animId).BackendId
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicPause AnimItems(animId).BackendId
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimPause AnimItems(animId).BackendId
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniPause AnimItems(animId).BackendId
 
-    End Select
+    END SELECT
 
     AnimSyncRuntimeMeta animId
-End Sub
+END SUB
 
 ' Purpose: Resume playback from the paused timing state.
 ' Parameters: animId = working value for animation id.
-Sub AnimResume (animId As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
+SUB AnimResume (animId AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimUsingCachedPlayback(animId) THEN
         AnimCachedResume animId
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ApngResume AnimItems(animId).BackendId
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aResume AnimItems(animId).BackendId
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicResume AnimItems(animId).BackendId
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimResume AnimItems(animId).BackendId
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniResume AnimItems(animId).BackendId
 
-    End Select
+    END SELECT
 
     AnimSyncRuntimeMeta animId
-End Sub
+END SUB
 
 ' Purpose: Routine for the unified animation manager: handle animation set loop.
 ' Parameters: animId = working value for animation id; loopMode = loop policy that controls whether playback stops or repeats.
-Sub AnimSetLoop (animId As Long, loopMode As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
+SUB AnimSetLoop (animId AS LONG, loopMode AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
     AnimItems(animId).LoopMode = loopMode
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ApngSetLoop AnimItems(animId).BackendId, loopMode
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aSetLoop AnimItems(animId).BackendId, loopMode
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicSetLoop AnimItems(animId).BackendId, loopMode
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimSetLoop AnimItems(animId).BackendId, loopMode
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniSetLoop AnimItems(animId).BackendId, loopMode
 
-    End Select
-End Sub
+    END SELECT
+END SUB
 
 ' Purpose: Advance timing for one animation and update its runtime state.
 ' Parameters: animId = working value for animation id.
-Sub AnimUpdate (animId As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
+SUB AnimUpdate (animId AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimUsingCachedPlayback(animId) THEN
         AnimCachedUpdate animId
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ApngUpdate AnimItems(animId).BackendId
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aUpdate AnimItems(animId).BackendId
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicUpdate AnimItems(animId).BackendId
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimUpdate AnimItems(animId).BackendId
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniUpdate AnimItems(animId).BackendId
 
-    End Select
+    END SELECT
 
     AnimSyncRuntimeMeta animId
-End Sub
+END SUB
 
 ' Purpose: Advance timing for every active animation owned by the manager.
-Sub AnimUpdateAll ()
+SUB AnimUpdateAll ()
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
 
     ' Loop purpose: walk through every currently allocated element in AnimItems.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To UBound(AnimItems)
-        If AnimItems(i).Used Then AnimUpdate i
-    Next i
-End Sub
+    FOR i = 0 TO UBOUND(AnimItems)
+        IF AnimItems(i).Used THEN AnimUpdate i
+    NEXT i
+END SUB
 
 ' Purpose: Draw the current frame at its native size.
 ' Parameters: x = horizontal pixel or coordinate index; y = vertical pixel or coordinate index; animId = working value for animation id.
-Sub AnimDraw (x As Long, y As Long, animId As Long)
+SUB AnimDraw (x AS LONG, y AS LONG, animId AS LONG)
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
-    If AnimValid(animId) = 0 Then Exit Sub
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimUsingCachedPlayback(animId) THEN
         imageHandle = AnimCachedFrameHandle(animId, AnimItems(animId).CurrentFrame)
-        If imageHandle <= -2 Then _PutImage (x, y), imageHandle, 0
-        Exit Sub
-    End If
+        IF imageHandle <= -2 THEN _PUTIMAGE (x, y), imageHandle, 0
+        EXIT SUB
+    END IF
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ApngDraw AnimItems(animId).BackendId, x, y
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aDraw AnimItems(animId).BackendId, x, y
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicDraw AnimItems(animId).BackendId, x, y
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimDraw AnimItems(animId).BackendId, x, y
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniDraw AnimItems(animId).BackendId, x, y
 
-    End Select
-End Sub
+    END SELECT
+END SUB
 
 ' Purpose: Draw the current frame stretched into the requested target rectangle.
 ' Parameters: x1 = working value for x 1; y1 = working value for y 1; x2 = working value for x 2; y2 = working value for y 2; animId = working value for animation id.
-Sub AnimDrawWindow (x1 As Long, y1 As Long, x2 As Long, y2 As Long, animId As Long)
+SUB AnimDrawWindow (x1 AS LONG, y1 AS LONG, x2 AS LONG, y2 AS LONG, animId AS LONG)
     ' Variable: boxWidth stores the width value used by this routine.
-    Dim boxWidth As Long
+    DIM boxWidth AS LONG
     ' Variable: boxHeight stores the height value used by this routine.
-    Dim boxHeight As Long
+    DIM boxHeight AS LONG
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
-    If AnimValid(animId) = 0 Then Exit Sub
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
     boxWidth = AnimBoxWidth(x1, x2)
     boxHeight = AnimBoxHeight(y1, y2)
-    If boxWidth <= 0 Or boxHeight <= 0 Then Exit Sub
+    IF boxWidth <= 0 OR boxHeight <= 0 THEN EXIT SUB
 
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimUsingCachedPlayback(animId) THEN
         imageHandle = AnimCachedFrameHandle(animId, AnimItems(animId).CurrentFrame)
-        If imageHandle <= -2 Then _PutImage (x1, y1)-(x1 + boxWidth - 1, y1 + boxHeight - 1), imageHandle, 0
-        Exit Sub
-    End If
+        IF imageHandle <= -2 THEN _PUTIMAGE (x1, y1)-(x1 + boxWidth - 1, y1 + boxHeight - 1), imageHandle, 0
+        EXIT SUB
+    END IF
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ApngDrawStretch AnimItems(animId).BackendId, x1, y1, boxWidth, boxHeight
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             Gif89aDrawStretch AnimItems(animId).BackendId, x1, y1, boxWidth, boxHeight
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             FlicDrawStretch AnimItems(animId).BackendId, x1, y1, boxWidth, boxHeight
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AmgAnimDrawStretch AnimItems(animId).BackendId, x1, y1, boxWidth, boxHeight
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AniDrawStretch AnimItems(animId).BackendId, x1, y1, boxWidth, boxHeight
 
-    End Select
-End Sub
+    END SELECT
+END SUB
 
 ' Purpose: Routine for the unified animation manager: handle animation len.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimLen& (animId As Long)
+FUNCTION AnimLen& (animId AS LONG)
     AnimLen = 0
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
     AnimLen = AnimItems(animId).FrameCount
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation width.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimWidth& (animId As Long)
+FUNCTION AnimWidth& (animId AS LONG)
     AnimWidth = 0
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
     AnimWidth = AnimItems(animId).WidthPx
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation height.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimHeight& (animId As Long)
+FUNCTION AnimHeight& (animId AS LONG)
     AnimHeight = 0
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
     AnimHeight = AnimItems(animId).HeightPx
-End Function
+END FUNCTION
 
 ' Purpose: Return metadata or state from the selected manager record.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimGetPos& (animId As Long)
+FUNCTION AnimGetPos& (animId AS LONG)
     AnimGetPos = -1
-    If AnimValid(animId) = 0 Then Exit Function
-    If AnimUsingCachedPlayback(animId) = 0 Then AnimSyncRuntimeMeta animId
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
+    IF AnimUsingCachedPlayback(animId) = 0 THEN AnimSyncRuntimeMeta animId
     AnimGetPos = AnimItems(animId).CurrentFrame
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation is playing.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimIsPlaying% (animId As Long)
+FUNCTION AnimIsPlaying% (animId AS LONG)
     AnimIsPlaying = 0
-    If AnimValid(animId) = 0 Then Exit Function
-    If AnimUsingCachedPlayback(animId) = 0 Then AnimSyncRuntimeMeta animId
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
+    IF AnimUsingCachedPlayback(animId) = 0 THEN AnimSyncRuntimeMeta animId
     AnimIsPlaying = AnimItems(animId).Playing
-End Function
+END FUNCTION
 
 ' Purpose: Move directly to a specific frame index.
 ' Parameters: animId = working value for animation id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimSeek% (animId As Long, frameIndex As Long)
+FUNCTION AnimSeek% (animId AS LONG, frameIndex AS LONG)
     ' Variable: ok stores the success flag returned by the current routine.
-    Dim ok As Integer
+    DIM ok AS INTEGER
 
     AnimSeek = 0
-    If AnimValid(animId) = 0 Then Exit Function
-    If AnimItems(animId).FrameCount < 1 Then Exit Function
-    If frameIndex < 0 Then frameIndex = 0
-    If frameIndex >= AnimItems(animId).FrameCount Then frameIndex = AnimItems(animId).FrameCount - 1
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
+    IF AnimItems(animId).FrameCount < 1 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN frameIndex = 0
+    IF frameIndex >= AnimItems(animId).FrameCount THEN frameIndex = AnimItems(animId).FrameCount - 1
 
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimUsingCachedPlayback(animId) THEN
         AnimSeek = AnimCachedSeekFrame(animId, frameIndex)
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     ok = 0
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             ok = ApngSeekFrame(AnimItems(animId).BackendId, frameIndex)
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             ok = Gif89aSeekFrame(AnimItems(animId).BackendId, frameIndex)
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             ok = FlicSeekFrame(AnimItems(animId).BackendId, frameIndex)
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             ok = AmgAnimSeekFrame(AnimItems(animId).BackendId, frameIndex)
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             ok = AniSeekFrame(AnimItems(animId).BackendId, frameIndex)
-        Case Else
+        CASE ELSE
             AnimSetError animId, "AnimSeek: stream seek not yet supported for this backend"
-            Exit Function
-    End Select
+            EXIT FUNCTION
+    END SELECT
 
-    If ok = 0 Then
+    IF ok = 0 THEN
         AnimSetError animId, "AnimSeek: backend seek failed"
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     AnimSetError animId, ""
     AnimSyncRuntimeMeta animId
     AnimSeek = -1
-End Function
+END FUNCTION
 
 ' Purpose: Move playback to the frame that matches the requested time position.
 ' Parameters: animId = working value for animation id; timeMs = time value measured in milliseconds.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimSeekTime% (animId As Long, timeMs As Double)
+FUNCTION AnimSeekTime% (animId AS LONG, timeMs AS DOUBLE)
     ' Variable: frameIndex stores the index variable used to address the current item.
-    Dim frameIndex As Long
+    DIM frameIndex AS LONG
     ' Variable: frameCount stores the total number of frames available for the current animation.
-    Dim frameCount As Long
+    DIM frameCount AS LONG
     ' Variable: totalMs stores the time value measured in milliseconds.
-    Dim totalMs As Double
+    DIM totalMs AS DOUBLE
     ' Variable: delayMs stores the frame delay or timing value.
-    Dim delayMs As Double
+    DIM delayMs AS DOUBLE
 
     AnimSeekTime = 0
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
 
     frameCount = AnimItems(animId).FrameCount
-    If frameCount < 1 Then Exit Function
-    If timeMs < 0 Then timeMs = 0
+    IF frameCount < 1 THEN EXIT FUNCTION
+    IF timeMs < 0 THEN timeMs = 0
 
     frameIndex = 0
     totalMs = 0
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While frameIndex < frameCount - 1
+    DO WHILE frameIndex < frameCount - 1
         delayMs = AnimBackendFrameDelay(animId, frameIndex) * 1000#
-        If delayMs <= 0 Then delayMs = 30
-        If totalMs + delayMs > timeMs Then Exit Do
+        IF delayMs <= 0 THEN delayMs = 30
+        IF totalMs + delayMs > timeMs THEN EXIT DO
         totalMs = totalMs + delayMs
         frameIndex = frameIndex + 1
-    Loop
+    LOOP
 
     AnimSeekTime = AnimSeek%(animId, frameIndex)
-End Function
+END FUNCTION
 
 ' Purpose: Move one frame forward without relying on normal playback timing.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimStepForward% (animId As Long)
+FUNCTION AnimStepForward% (animId AS LONG)
     ' Variable: frameIndex stores the index variable used to address the current item.
-    Dim frameIndex As Long
+    DIM frameIndex AS LONG
 
     AnimStepForward = 0
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
     frameIndex = AnimGetPos(animId)
-    If frameIndex < 0 Then frameIndex = 0
-    If frameIndex < AnimItems(animId).FrameCount - 1 Then frameIndex = frameIndex + 1
+    IF frameIndex < 0 THEN frameIndex = 0
+    IF frameIndex < AnimItems(animId).FrameCount - 1 THEN frameIndex = frameIndex + 1
     AnimStepForward = AnimSeek%(animId, frameIndex)
-End Function
+END FUNCTION
 
 ' Purpose: Move one frame backward without relying on normal playback timing.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimStepBackward% (animId As Long)
+FUNCTION AnimStepBackward% (animId AS LONG)
     ' Variable: frameIndex stores the index variable used to address the current item.
-    Dim frameIndex As Long
+    DIM frameIndex AS LONG
 
     AnimStepBackward = 0
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
     frameIndex = AnimGetPos(animId)
-    If frameIndex < 0 Then frameIndex = 0
-    If frameIndex > 0 Then frameIndex = frameIndex - 1
+    IF frameIndex < 0 THEN frameIndex = 0
+    IF frameIndex > 0 THEN frameIndex = frameIndex - 1
     AnimStepBackward = AnimSeek%(animId, frameIndex)
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation format.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimFormat& (animId As Long)
+FUNCTION AnimFormat& (animId AS LONG)
     AnimFormat = ANIM_FMT_NONE
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
     AnimFormat = AnimItems(animId).FormatId
-End Function
+END FUNCTION
 
 ' Purpose: Validate that the supplied manager id points to a live animation slot.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimValid% (animId As Long)
+FUNCTION AnimValid% (animId AS LONG)
     AnimValid = 0
-    If animId < 0 Then Exit Function
-    If animId > UBound(AnimItems) Then Exit Function
-    If AnimItems(animId).Used = 0 Then Exit Function
-    If AnimItems(animId).BackendId < 0 Then Exit Function
+    IF animId < 0 THEN EXIT FUNCTION
+    IF animId > UBOUND(AnimItems) THEN EXIT FUNCTION
+    IF AnimItems(animId).Used = 0 THEN EXIT FUNCTION
+    IF AnimItems(animId).BackendId < 0 THEN EXIT FUNCTION
     AnimValid = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation error.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimError$ (animId As Long)
+FUNCTION AnimError$ (animId AS LONG)
     AnimError = ""
-    If animId < 0 Or animId > UBound(AnimErrorTexts) Then Exit Function
+    IF animId < 0 OR animId > UBOUND(AnimErrorTexts) THEN EXIT FUNCTION
     AnimError = AnimErrorTexts(animId)
-End Function
+END FUNCTION
 
 ' Purpose: Export a selected frame to disk through the manager API.
 ' Parameters: animId = working value for animation id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimSaveFrame% (animId As Long, frameIndex As Long)
+FUNCTION AnimSaveFrame% (animId AS LONG, frameIndex AS LONG)
     ' Variable: fileName stores the string holding a file path or a human-readable name.
-    Dim fileName As String
+    DIM fileName AS STRING
 
     AnimSaveFrame = 0
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
 
     fileName = AnimMakeDefaultFrameFileName(animId, frameIndex)
-    If Len(fileName) = 0 Then Exit Function
+    IF LEN(fileName) = 0 THEN EXIT FUNCTION
 
     AnimSaveFrame = AnimSaveFrameTo(animId, frameIndex, fileName)
-End Function
+END FUNCTION
 
 ' Purpose: Export a selected frame to disk through the manager API.
 ' Parameters: animId = working value for animation id; frameIndex = index variable used to address the current item; fileName = string holding a file path or a human-readable name.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimSaveFrameTo% (animId As Long, frameIndex As Long, fileName As String)
+FUNCTION AnimSaveFrameTo% (animId AS LONG, frameIndex AS LONG, fileName AS STRING)
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
 
     AnimSaveFrameTo = 0
-    If AnimValid(animId) = 0 Then Exit Function
-    If frameIndex < 0 Or frameIndex >= AnimItems(animId).FrameCount Then Exit Function
-    If Len(fileName) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 OR frameIndex >= AnimItems(animId).FrameCount THEN EXIT FUNCTION
+    IF LEN(fileName) = 0 THEN EXIT FUNCTION
 
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimUsingCachedPlayback(animId) THEN
         imageHandle = AnimCachedFrameHandle(animId, frameIndex)
-        If imageHandle <= -2 Then
-            _SaveImage fileName, imageHandle
+        IF imageHandle <= -2 THEN
+            _SAVEIMAGE fileName, imageHandle
             AnimSaveFrameTo = -1
-        End If
-        Exit Function
-    End If
+        END IF
+        EXIT FUNCTION
+    END IF
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             AnimSaveFrameTo = ApngSaveFrame(AnimItems(animId).BackendId, frameIndex, fileName)
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             AnimSaveFrameTo = Gif89aSaveFrame(AnimItems(animId).BackendId, frameIndex, fileName)
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             AnimSaveFrameTo = FlicSaveFrame(AnimItems(animId).BackendId, frameIndex, fileName)
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AnimSaveFrameTo = AmgAnimSaveFrame(AnimItems(animId).BackendId, frameIndex, fileName)
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AnimSaveFrameTo = AniSaveFrame(AnimItems(animId).BackendId, frameIndex, fileName)
 
-    End Select
-End Function
+    END SELECT
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation set cache mode.
 ' Parameters: animId = working value for animation id; cacheMode = working value for cache mode.
-Sub AnimSetCacheMode (animId As Long, cacheMode As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
+SUB AnimSetCacheMode (animId AS LONG, cacheMode AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
-    Select Case cacheMode
-        Case ANIM_CACHE_STREAM, ANIM_CACHE_PRELOAD_ALL, ANIM_CACHE_WINDOW, ANIM_CACHE_AUTO
+    SELECT CASE cacheMode
+        CASE ANIM_CACHE_STREAM, ANIM_CACHE_PRELOAD_ALL, ANIM_CACHE_WINDOW, ANIM_CACHE_AUTO
             AnimItems(animId).CacheModeWanted = cacheMode
-        Case Else
+        CASE ELSE
             AnimItems(animId).CacheModeWanted = ANIM_CACHE_AUTO
-    End Select
+    END SELECT
 
     AnimCachedStop animId
     AnimFreeCacheBlock animId
     AnimTryActivateCache animId
-End Sub
+END SUB
 
 ' Purpose: Return metadata or state from the selected manager record.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimGetCacheMode& (animId As Long)
+FUNCTION AnimGetCacheMode& (animId AS LONG)
     AnimGetCacheMode = ANIM_CACHE_STREAM
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
     AnimGetCacheMode = AnimItems(animId).CacheModeActive
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation set cache budget mb.
 ' Parameters: mb = working value for mb.
-Sub AnimSetCacheBudgetMB (mb As Long)
+SUB AnimSetCacheBudgetMB (mb AS LONG)
     AnimInitCacheDefaults
-    If mb < 1 Then mb = 1
+    IF mb < 1 THEN mb = 1
     AnimCacheBytesBudget = mb
     AnimCacheBytesBudget = AnimCacheBytesBudget * 1024
     AnimCacheBytesBudget = AnimCacheBytesBudget * 1024
-End Sub
+END SUB
 
 ' Purpose: Return metadata or state from the selected manager record.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimGetCacheBudgetMB& ()
+FUNCTION AnimGetCacheBudgetMB& ()
     AnimInitCacheDefaults
     AnimGetCacheBudgetMB = AnimCacheBytesBudget \ 1024 \ 1024
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation is cached.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimIsCached% (animId As Long)
+FUNCTION AnimIsCached% (animId AS LONG)
     AnimIsCached = 0
-    If AnimValid(animId) = 0 Then Exit Function
-    If AnimUsingCachedPlayback(animId) Then AnimIsCached = -1
-End Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
+    IF AnimUsingCachedPlayback(animId) THEN AnimIsCached = -1
+END FUNCTION
 
 ' =========================================================
 ' Internal helpers
 ' =========================================================
 
 ' Purpose: Initialize cache defaults or cache bookkeeping for manager-controlled playback.
-Sub AnimInitCacheDefaults ()
-    If AnimCacheBytesBudget = 0 Then
+SUB AnimInitCacheDefaults ()
+    IF AnimCacheBytesBudget = 0 THEN
         AnimCacheBytesBudget = ANIM_CACHE_DEFAULT_BUDGET_MB
         AnimCacheBytesBudget = AnimCacheBytesBudget * 1024
         AnimCacheBytesBudget = AnimCacheBytesBudget * 1024
-    End If
-End Sub
+    END IF
+END SUB
 
 ' Purpose: Routine for the unified animation manager: handle animation using cached playback.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimUsingCachedPlayback% (animId As Long)
+FUNCTION AnimUsingCachedPlayback% (animId AS LONG)
     AnimUsingCachedPlayback = 0
-    If animId < 0 Then Exit Function
-    If animId > UBound(AnimItems) Then Exit Function
-    If AnimItems(animId).Used = 0 Then Exit Function
-    If AnimItems(animId).CacheModeActive <> ANIM_CACHE_PRELOAD_ALL Then Exit Function
-    If AnimItems(animId).CacheReady = 0 Then Exit Function
-    If AnimItems(animId).CacheFrameCount <> AnimItems(animId).FrameCount Then Exit Function
+    IF animId < 0 THEN EXIT FUNCTION
+    IF animId > UBOUND(AnimItems) THEN EXIT FUNCTION
+    IF AnimItems(animId).Used = 0 THEN EXIT FUNCTION
+    IF AnimItems(animId).CacheModeActive <> ANIM_CACHE_PRELOAD_ALL THEN EXIT FUNCTION
+    IF AnimItems(animId).CacheReady = 0 THEN EXIT FUNCTION
+    IF AnimItems(animId).CacheFrameCount <> AnimItems(animId).FrameCount THEN EXIT FUNCTION
     AnimUsingCachedPlayback = -1
-End Function
+END FUNCTION
 
 ' Purpose: Estimate memory requirements so the manager can make cache decisions.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimEstimateFrameBytes&& (animId As Long)
+FUNCTION AnimEstimateFrameBytes&& (animId AS LONG)
     ' Variable: totalBytes stores the working value for total bytes.
-    Dim totalBytes As _Unsigned _Integer64
+    DIM totalBytes AS _UNSIGNED _INTEGER64
 
     totalBytes = 0
-    If animId < 0 Then Exit Function
-    If animId > UBound(AnimItems) Then Exit Function
-    If AnimItems(animId).WidthPx <= 0 Then Exit Function
-    If AnimItems(animId).HeightPx <= 0 Then Exit Function
-    If AnimItems(animId).FrameCount <= 0 Then Exit Function
+    IF animId < 0 THEN EXIT FUNCTION
+    IF animId > UBOUND(AnimItems) THEN EXIT FUNCTION
+    IF AnimItems(animId).WidthPx <= 0 THEN EXIT FUNCTION
+    IF AnimItems(animId).HeightPx <= 0 THEN EXIT FUNCTION
+    IF AnimItems(animId).FrameCount <= 0 THEN EXIT FUNCTION
 
     totalBytes = AnimItems(animId).WidthPx
     totalBytes = totalBytes * AnimItems(animId).HeightPx
@@ -779,453 +782,450 @@ Function AnimEstimateFrameBytes&& (animId As Long)
     totalBytes = totalBytes * AnimItems(animId).FrameCount
 
     AnimEstimateFrameBytes = totalBytes
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation single frame bytes.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimSingleFrameBytes&& (animId As Long)
+FUNCTION AnimSingleFrameBytes&& (animId AS LONG)
     ' Variable: totalBytes stores the working value for total bytes.
-    Dim totalBytes As _Unsigned _Integer64
+    DIM totalBytes AS _UNSIGNED _INTEGER64
 
     totalBytes = 0
-    If animId < 0 Then Exit Function
-    If animId > UBound(AnimItems) Then Exit Function
-    If AnimItems(animId).WidthPx <= 0 Then Exit Function
-    If AnimItems(animId).HeightPx <= 0 Then Exit Function
+    IF animId < 0 THEN EXIT FUNCTION
+    IF animId > UBOUND(AnimItems) THEN EXIT FUNCTION
+    IF AnimItems(animId).WidthPx <= 0 THEN EXIT FUNCTION
+    IF AnimItems(animId).HeightPx <= 0 THEN EXIT FUNCTION
 
     totalBytes = AnimItems(animId).WidthPx
     totalBytes = totalBytes * AnimItems(animId).HeightPx
     totalBytes = totalBytes * 4
 
     AnimSingleFrameBytes = totalBytes
-End Function
+END FUNCTION
 
 ' Purpose: Find or create a free slot inside the manager storage arrays.
 ' Parameters: frameCount = total number of frames available for the current animation.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimAllocCacheBlock& (frameCount As Long)
+FUNCTION AnimAllocCacheBlock& (frameCount AS LONG)
     ' Variable: startIndex stores the index variable used to address the current item.
-    Dim startIndex As Long
+    DIM startIndex AS LONG
     ' Variable: neededTop stores the working value for needed top.
-    Dim neededTop As Long
+    DIM neededTop AS LONG
 
     AnimAllocCacheBlock = -1
-    If frameCount <= 0 Then Exit Function
+    IF frameCount <= 0 THEN EXIT FUNCTION
 
-    If UBound(AnimCacheFrames) = 0 And AnimCacheFrames(0).Used = 0 Then
+    IF UBOUND(AnimCacheFrames) = 0 AND AnimCacheFrames(0).Used = 0 THEN
         startIndex = 0
         neededTop = frameCount - 1
-        If neededTop > UBound(AnimCacheFrames) Then
+        IF neededTop > UBOUND(AnimCacheFrames) THEN
             ' dynamic array: AnimCacheFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-            ReDim _Preserve AnimCacheFrames(neededTop) As AnimCacheFrameStore
-        End If
+            REDIM _PRESERVE AnimCacheFrames(neededTop) AS AnimCacheFrameStore
+        END IF
         AnimAllocCacheBlock = startIndex
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
-    startIndex = UBound(AnimCacheFrames) + 1
+    startIndex = UBOUND(AnimCacheFrames) + 1
     neededTop = startIndex + frameCount - 1
     ' dynamic array: AnimCacheFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-    ReDim _Preserve AnimCacheFrames(neededTop) As AnimCacheFrameStore
+    REDIM _PRESERVE AnimCacheFrames(neededTop) AS AnimCacheFrameStore
     AnimAllocCacheBlock = startIndex
-End Function
+END FUNCTION
 
 ' Purpose: Release one animation, its backend state, and any cache memory owned by it.
 ' Parameters: animId = working value for animation id.
-Sub AnimFreeCacheBlock (animId As Long)
+SUB AnimFreeCacheBlock (animId AS LONG)
     ' Variable: frameIndex stores the index variable used to address the current item.
-    Dim frameIndex As Long
+    DIM frameIndex AS LONG
     ' Variable: slotIndex stores the slot number inside the module-wide storage arrays.
-    Dim slotIndex As Long
+    DIM slotIndex AS LONG
 
-    If animId < 0 Then Exit Sub
-    If animId > UBound(AnimItems) Then Exit Sub
+    IF animId < 0 THEN EXIT SUB
+    IF animId > UBOUND(AnimItems) THEN EXIT SUB
 
-    If AnimItems(animId).CacheFrameCount > 0 Then
+    IF AnimItems(animId).CacheFrameCount > 0 THEN
         ' Loop purpose: iterate through animation frames while building, seeking, or updating playback state.
         ' The loop order matters because later statements expect the data to be visited sequentially.
-        For frameIndex = 0 To AnimItems(animId).CacheFrameCount - 1
+        FOR frameIndex = 0 TO AnimItems(animId).CacheFrameCount - 1
             slotIndex = AnimItems(animId).CacheFrameStart + frameIndex
-            If slotIndex >= 0 And slotIndex <= UBound(AnimCacheFrames) Then
-                If AnimCacheFrames(slotIndex).ImageHandle <= -2 Then _FreeImage AnimCacheFrames(slotIndex).ImageHandle: AnimCacheFrames(slotIndex).ImageHandle = 0
-                If AnimCacheBytesUsed >= AnimCacheFrames(slotIndex).ByteCost Then
+            IF slotIndex >= 0 AND slotIndex <= UBOUND(AnimCacheFrames) THEN
+                IF AnimCacheFrames(slotIndex).ImageHandle <= -2 THEN _FREEIMAGE AnimCacheFrames(slotIndex).ImageHandle: AnimCacheFrames(slotIndex).ImageHandle = 0
+                IF AnimCacheBytesUsed >= AnimCacheFrames(slotIndex).ByteCost THEN
                     AnimCacheBytesUsed = AnimCacheBytesUsed - AnimCacheFrames(slotIndex).ByteCost
-                Else
+                ELSE
                     AnimCacheBytesUsed = 0
-                End If
+                END IF
                 AnimCacheFrames(slotIndex).Used = 0
                 AnimCacheFrames(slotIndex).ByteCost = 0
-            End If
-        Next frameIndex
-    End If
+            END IF
+        NEXT frameIndex
+    END IF
 
     AnimItems(animId).CacheFrameStart = 0
     AnimItems(animId).CacheFrameCount = 0
     AnimItems(animId).CacheReady = 0
     AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-End Sub
+END SUB
 
 ' Purpose: Routine for the unified animation manager: handle animation can preload all.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimCanPreloadAll% (animId As Long)
+FUNCTION AnimCanPreloadAll% (animId AS LONG)
     ' Variable: estimatedBytes stores the working value for estimated bytes.
-    Dim estimatedBytes As _Unsigned _Integer64
+    DIM estimatedBytes AS _UNSIGNED _INTEGER64
 
     AnimCanPreloadAll = 0
     AnimInitCacheDefaults
 
     estimatedBytes = AnimEstimateFrameBytes(animId)
-    If estimatedBytes = 0 Then Exit Function
-    If estimatedBytes > AnimCacheBytesBudget Then Exit Function
-    If AnimCacheBytesUsed + estimatedBytes > AnimCacheBytesBudget Then Exit Function
+    IF estimatedBytes = 0 THEN EXIT FUNCTION
+    IF estimatedBytes > AnimCacheBytesBudget THEN EXIT FUNCTION
+    IF AnimCacheBytesUsed + estimatedBytes > AnimCacheBytesBudget THEN EXIT FUNCTION
 
     AnimCanPreloadAll = -1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation backend clone frame.
 ' Parameters: animId = working value for animation id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimBackendCloneFrame& (animId As Long, frameIndex As Long)
+FUNCTION AnimBackendCloneFrame& (animId AS LONG, frameIndex AS LONG)
     AnimBackendCloneFrame = -1
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             AnimBackendCloneFrame = ApngCloneFrameImage(AnimItems(animId).BackendId, frameIndex)
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             AnimBackendCloneFrame = Gif89aCloneFrameImage(AnimItems(animId).BackendId, frameIndex)
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             AnimBackendCloneFrame = FlicCloneFrameImage(AnimItems(animId).BackendId, frameIndex)
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AnimBackendCloneFrame = AmgAnimCloneFrameImage(AnimItems(animId).BackendId, frameIndex)
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AnimBackendCloneFrame = AniCloneFrameImage(AnimItems(animId).BackendId, frameIndex)
 
-    End Select
-End Function
+    END SELECT
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation backend frame delay.
 ' Parameters: animId = working value for animation id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimBackendFrameDelay# (animId As Long, frameIndex As Long)
+FUNCTION AnimBackendFrameDelay# (animId AS LONG, frameIndex AS LONG)
     ' Variable: a stores the color component or packed color helper used during image conversion.
-    dim a#
+    DIM a#
     a# = .03
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             a# = ApngFrameDelay(AnimItems(animId).BackendId, frameIndex)
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             a# = Gif89aFrameDelaySec(AnimItems(animId).BackendId, frameIndex)
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             a# = FlicFrameDelaySec(AnimItems(animId).BackendId, frameIndex)
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             a# = AmgAnimFrameDelaySec(AnimItems(animId).BackendId, frameIndex)
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             a# = AniFrameDelaySec(AnimItems(animId).BackendId, frameIndex)
 
-    End Select
+    END SELECT
 
-    If a# <= 0 Then a# = .03
+    IF a# <= 0 THEN a# = .03
 
     AnimBackendFrameDelay = a#
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation default loop allows wrap.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimDefaultLoopAllowsWrap% (animId As Long)
+FUNCTION AnimDefaultLoopAllowsWrap% (animId AS LONG)
     ' Variable: playCount stores the count used to size or iterate the current data set.
-    Dim playCount As Long
+    DIM playCount AS LONG
     ' Variable: loopCount stores the count used to size or iterate the current data set.
-    Dim loopCount As Long
+    DIM loopCount AS LONG
 
     AnimDefaultLoopAllowsWrap = 0
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             playCount = ApngCachePlayCount(AnimItems(animId).BackendId)
-            If playCount = 0 Then
+            IF playCount = 0 THEN
                 AnimDefaultLoopAllowsWrap = -1
-            ElseIf (AnimItems(animId).LoopIteration + 1) < playCount Then
+            ELSEIF (AnimItems(animId).LoopIteration + 1) < playCount THEN
                 AnimDefaultLoopAllowsWrap = -1
-            End If
+            END IF
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             loopCount = Gif89aCacheFileLoopCount(AnimItems(animId).BackendId)
-            If loopCount = 0 Then
+            IF loopCount = 0 THEN
                 AnimDefaultLoopAllowsWrap = -1
-            ElseIf AnimItems(animId).LoopIteration < loopCount Then
+            ELSEIF AnimItems(animId).LoopIteration < loopCount THEN
                 AnimDefaultLoopAllowsWrap = -1
-            End If
+            END IF
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             AnimDefaultLoopAllowsWrap = -1
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AnimDefaultLoopAllowsWrap = 0
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AnimDefaultLoopAllowsWrap = -1
 
-    End Select
-End Function
+    END SELECT
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation preload all.
 ' Parameters: animId = working value for animation id.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimPreloadAll% (animId As Long)
+FUNCTION AnimPreloadAll% (animId AS LONG)
     ' Variable: frameStart stores the working value for frame start.
-    Dim frameStart As Long
+    DIM frameStart AS LONG
     ' Variable: frameIndex stores the index variable used to address the current item.
-    Dim frameIndex As Long
+    DIM frameIndex AS LONG
     ' Variable: slotIndex stores the slot number inside the module-wide storage arrays.
-    Dim slotIndex As Long
+    DIM slotIndex AS LONG
     ' Variable: imageHandle stores the QB64 image handle used to store or draw decoded pixels.
-    Dim imageHandle As Long
+    DIM imageHandle AS LONG
     ' Variable: frameBytes stores the working value for frame bytes.
-    Dim frameBytes As _Unsigned _Integer64
+    DIM frameBytes AS _UNSIGNED _INTEGER64
 
     AnimPreloadAll = 0
-    If AnimValid(animId) = 0 Then Exit Function
-    If AnimItems(animId).FrameCount <= 0 Then Exit Function
-    If AnimUsingCachedPlayback(animId) Then
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
+    IF AnimItems(animId).FrameCount <= 0 THEN EXIT FUNCTION
+    IF AnimUsingCachedPlayback(animId) THEN
         AnimPreloadAll = -1
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     frameStart = AnimAllocCacheBlock(AnimItems(animId).FrameCount)
-    If frameStart < 0 Then Exit Function
+    IF frameStart < 0 THEN EXIT FUNCTION
 
     frameBytes = AnimSingleFrameBytes(animId)
 
     ' Loop purpose: iterate through animation frames while building, seeking, or updating playback state.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For frameIndex = 0 To AnimItems(animId).FrameCount - 1
+    FOR frameIndex = 0 TO AnimItems(animId).FrameCount - 1
         imageHandle = AnimBackendCloneFrame(animId, frameIndex)
-        If imageHandle > -2 Then
+        IF imageHandle > -2 THEN
             AnimItems(animId).CacheFrameStart = frameStart
             AnimItems(animId).CacheFrameCount = frameIndex
             AnimFreeCacheBlock animId
-            Exit Function
-        End If
+            EXIT FUNCTION
+        END IF
 
         slotIndex = frameStart + frameIndex
         AnimCacheFrames(slotIndex).Used = -1
         AnimCacheFrames(slotIndex).ImageHandle = imageHandle
         AnimCacheFrames(slotIndex).ByteCost = frameBytes
         AnimCacheBytesUsed = AnimCacheBytesUsed + frameBytes
-    Next frameIndex
+    NEXT frameIndex
 
     AnimItems(animId).CacheFrameStart = frameStart
     AnimItems(animId).CacheFrameCount = AnimItems(animId).FrameCount
     AnimItems(animId).CacheReady = -1
     AnimItems(animId).CacheModeActive = ANIM_CACHE_PRELOAD_ALL
     AnimPreloadAll = -1
-End Function
+END FUNCTION
 
 ' Purpose: Decide whether frame caching is possible and activate it when it fits current policy.
 ' Parameters: animId = working value for animation id.
-' Purpose: Decide whether frame caching is possible and activate it when it fits current policy.
-' Parameters: animId = working value for animation id.
-Sub AnimTryActivateCache (animId As Long)
+SUB AnimTryActivateCache (animId AS LONG)
     ' Variable: preloadOk stores the working value for preload ok.
-    Dim preloadOk As Integer
+    DIM preloadOk AS INTEGER
 
-    If AnimValid(animId) = 0 Then Exit Sub
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
     preloadOk = 0
     AnimItems(animId).CacheEstimatedBytes = AnimEstimateFrameBytes(animId)
 
-    Select Case AnimItems(animId).CacheModeWanted
-        Case ANIM_CACHE_STREAM
+    SELECT CASE AnimItems(animId).CacheModeWanted
+        CASE ANIM_CACHE_STREAM
             AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
 
-        Case ANIM_CACHE_WINDOW
+        CASE ANIM_CACHE_WINDOW
             AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
 
-        Case ANIM_CACHE_PRELOAD_ALL
-            If AnimItems(animId).CacheReady = 0 Then preloadOk = AnimPreloadAll(animId)
-            If AnimItems(animId).CacheReady Then
+        CASE ANIM_CACHE_PRELOAD_ALL
+            IF AnimItems(animId).CacheReady = 0 THEN preloadOk = AnimPreloadAll(animId)
+            IF AnimItems(animId).CacheReady THEN
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_PRELOAD_ALL
-            Else
+            ELSE
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-            End If
+            END IF
 
-        Case Else
-            If AnimItems(animId).FormatId = ANIM_FMT_ANI Then
+        CASE ELSE
+            IF AnimItems(animId).FormatId = ANIM_FMT_ANI THEN
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-                Exit Sub
-            End If
+                EXIT SUB
+            END IF
 
-            If AnimItems(animId).FormatId = ANIM_FMT_FLI Or AnimItems(animId).FormatId = ANIM_FMT_FLC Then
-                If AnimItems(animId).FrameCount > 16 Or AnimItems(animId).CacheEstimatedBytes > 16777216 Then
+            IF AnimItems(animId).FormatId = ANIM_FMT_FLI OR AnimItems(animId).FormatId = ANIM_FMT_FLC THEN
+                IF AnimItems(animId).FrameCount > 16 OR AnimItems(animId).CacheEstimatedBytes > 16777216 THEN
                     AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-                    Exit Sub
-                End If
-            End If
+                    EXIT SUB
+                END IF
+            END IF
 
-            If AnimItems(animId).FormatId = ANIM_FMT_GIF89A Then
-                If AnimItems(animId).FrameCount > 32 Or AnimItems(animId).CacheEstimatedBytes > 33554432 Then
+            IF AnimItems(animId).FormatId = ANIM_FMT_GIF89A THEN
+                IF AnimItems(animId).FrameCount > 32 OR AnimItems(animId).CacheEstimatedBytes > 33554432 THEN
                     AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-                    Exit Sub
-                End If
-            End If
+                    EXIT SUB
+                END IF
+            END IF
 
-            If AnimItems(animId).CacheReady = 0 Then
-                If AnimCanPreloadAll(animId) Then preloadOk = AnimPreloadAll(animId)
-            End If
-            If AnimItems(animId).CacheReady Then
+            IF AnimItems(animId).CacheReady = 0 THEN
+                IF AnimCanPreloadAll(animId) THEN preloadOk = AnimPreloadAll(animId)
+            END IF
+            IF AnimItems(animId).CacheReady THEN
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_PRELOAD_ALL
-            Else
+            ELSE
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-            End If
-    End Select
-End Sub
+            END IF
+    END SELECT
+END SUB
 
-
-
-
-Sub AnimTryActivateCache_old(animId As Long)
+' Purpose: Decide whether frame caching is possible and activate it when it fits current policy.
+' Parameters: animId = working value for animation id.
+SUB AnimTryActivateCache_old (animId AS LONG)
     ' Variable: preloadOk stores the working value for preload ok.
-    Dim preloadOk As Integer
+    DIM preloadOk AS INTEGER
 
-    If AnimValid(animId) = 0 Then Exit Sub
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
     preloadOk = 0
     AnimItems(animId).CacheEstimatedBytes = AnimEstimateFrameBytes(animId)
 
-    If AnimItems(animId).Formatid = ANIM_FMT_AMIGA_ANIM Then
+    IF AnimItems(animId).FormatId = ANIM_FMT_AMIGA_ANIM THEN
         AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
-    Select Case AnimItems(animId).CacheModeWanted
-        Case ANIM_CACHE_STREAM
+    SELECT CASE AnimItems(animId).CacheModeWanted
+        CASE ANIM_CACHE_STREAM
             AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
 
-        Case ANIM_CACHE_WINDOW
+        CASE ANIM_CACHE_WINDOW
             AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
 
-        Case ANIM_CACHE_PRELOAD_ALL
-            If AnimItems(animId).CacheReady = 0 Then preloadOk = AnimPreloadAll(animId)
-            If AnimItems(animId).CacheReady Then
+        CASE ANIM_CACHE_PRELOAD_ALL
+            IF AnimItems(animId).CacheReady = 0 THEN preloadOk = AnimPreloadAll(animId)
+            IF AnimItems(animId).CacheReady THEN
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_PRELOAD_ALL
-            Else
+            ELSE
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-            End If
+            END IF
 
-        Case Else
-            If AnimItems(animId).FormatId = ANIM_FMT_ANI Then
+        CASE ELSE
+            IF AnimItems(animId).FormatId = ANIM_FMT_ANI THEN
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-                Exit Sub
-            End If
+                EXIT SUB
+            END IF
 
-            If AnimItems(animId).FormatId = ANIM_FMT_FLI Or AnimItems(animId).FormatId = ANIM_FMT_FLC Then
-                If AnimItems(animId).FrameCount > 16 Or AnimItems(animId).CacheEstimatedBytes > 16777216 Then
+            IF AnimItems(animId).FormatId = ANIM_FMT_FLI OR AnimItems(animId).FormatId = ANIM_FMT_FLC THEN
+                IF AnimItems(animId).FrameCount > 16 OR AnimItems(animId).CacheEstimatedBytes > 16777216 THEN
                     AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-                    Exit Sub
-                End If
-            End If
+                    EXIT SUB
+                END IF
+            END IF
 
-            If AnimItems(animId).FormatId = ANIM_FMT_GIF89A Then
-                If AnimItems(animId).FrameCount > 32 Or AnimItems(animId).CacheEstimatedBytes > 33554432 Then
+            IF AnimItems(animId).FormatId = ANIM_FMT_GIF89A THEN
+                IF AnimItems(animId).FrameCount > 32 OR AnimItems(animId).CacheEstimatedBytes > 33554432 THEN
                     AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-                    Exit Sub
-                End If
-            End If
+                    EXIT SUB
+                END IF
+            END IF
 
-            If AnimItems(animId).CacheReady = 0 Then
-                If AnimCanPreloadAll(animId) Then preloadOk = AnimPreloadAll(animId)
-            End If
-            If AnimItems(animId).CacheReady Then
+            IF AnimItems(animId).CacheReady = 0 THEN
+                IF AnimCanPreloadAll(animId) THEN preloadOk = AnimPreloadAll(animId)
+            END IF
+            IF AnimItems(animId).CacheReady THEN
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_PRELOAD_ALL
-            Else
+            ELSE
                 AnimItems(animId).CacheModeActive = ANIM_CACHE_STREAM
-            End If
-    End Select
-End Sub
+            END IF
+    END SELECT
+END SUB
 
 ' Purpose: Handle playback operations through the manager-side cached-frame path.
 ' Parameters: animId = working value for animation id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimCachedFrameHandle& (animId As Long, frameIndex As Long)
+FUNCTION AnimCachedFrameHandle& (animId AS LONG, frameIndex AS LONG)
     ' Variable: slotIndex stores the slot number inside the module-wide storage arrays.
-    Dim slotIndex As Long
+    DIM slotIndex AS LONG
 
     AnimCachedFrameHandle = -1
-    If AnimUsingCachedPlayback(animId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= AnimItems(animId).CacheFrameCount Then Exit Function
+    IF AnimUsingCachedPlayback(animId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= AnimItems(animId).CacheFrameCount THEN EXIT FUNCTION
 
     slotIndex = AnimItems(animId).CacheFrameStart + frameIndex
-    If slotIndex < 0 Or slotIndex > UBound(AnimCacheFrames) Then Exit Function
-    If AnimCacheFrames(slotIndex).Used = 0 Then Exit Function
+    IF slotIndex < 0 OR slotIndex > UBOUND(AnimCacheFrames) THEN EXIT FUNCTION
+    IF AnimCacheFrames(slotIndex).Used = 0 THEN EXIT FUNCTION
 
     AnimCachedFrameHandle = AnimCacheFrames(slotIndex).ImageHandle
-End Function
+END FUNCTION
 
 ' Purpose: Handle playback operations through the manager-side cached-frame path.
 ' Parameters: animId = working value for animation id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimCachedSeekFrame% (animId As Long, frameIndex As Long)
+FUNCTION AnimCachedSeekFrame% (animId AS LONG, frameIndex AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
     AnimCachedSeekFrame = 0
-    If AnimUsingCachedPlayback(animId) = 0 Then Exit Function
-    If frameIndex < 0 Then Exit Function
-    If frameIndex >= AnimItems(animId).FrameCount Then Exit Function
+    IF AnimUsingCachedPlayback(animId) = 0 THEN EXIT FUNCTION
+    IF frameIndex < 0 THEN EXIT FUNCTION
+    IF frameIndex >= AnimItems(animId).FrameCount THEN EXIT FUNCTION
 
     AnimItems(animId).CurrentFrame = frameIndex
     delaySec = AnimBackendFrameDelay(animId, frameIndex)
-    If delaySec <= 0 Then delaySec = .03
+    IF delaySec <= 0 THEN delaySec = .03
 
-    If AnimItems(animId).Playing Then
-        nowValue = Timer
-        If AnimItems(animId).Paused Then
+    IF AnimItems(animId).Playing THEN
+        nowValue = TIMER
+        IF AnimItems(animId).Paused THEN
             AnimItems(animId).RemainingDelay = delaySec
             AnimItems(animId).LastRawTimer = nowValue
-        Else
+        ELSE
             AnimItems(animId).LastRawTimer = nowValue
             AnimItems(animId).NextTick = AnimTimeAdd(nowValue, delaySec)
             AnimItems(animId).RemainingDelay = 0
-        End If
-    Else
+        END IF
+    ELSE
         AnimItems(animId).NextTick = 0
         AnimItems(animId).RemainingDelay = 0
         AnimItems(animId).LastRawTimer = 0
-    End If
+    END IF
 
     AnimCachedSeekFrame = -1
-End Function
+END FUNCTION
 
 ' Purpose: Handle playback operations through the manager-side cached-frame path.
 ' Parameters: animId = working value for animation id.
-Sub AnimCachedStart (animId As Long)
+SUB AnimCachedStart (animId AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
-    If AnimUsingCachedPlayback(animId) = 0 Then Exit Sub
-    If AnimItems(animId).FrameCount <= 0 Then Exit Sub
+    IF AnimUsingCachedPlayback(animId) = 0 THEN EXIT SUB
+    IF AnimItems(animId).FrameCount <= 0 THEN EXIT SUB
 
-    nowValue = Timer
+    nowValue = TIMER
     delaySec = AnimBackendFrameDelay(animId, 0)
 
     AnimItems(animId).CurrentFrame = 0
@@ -1235,14 +1235,14 @@ Sub AnimCachedStart (animId As Long)
     AnimItems(animId).LastRawTimer = nowValue
     AnimItems(animId).LoopIteration = 0
     AnimItems(animId).NextTick = AnimTimeAdd(nowValue, delaySec)
-End Sub
+END SUB
 
 ' Purpose: Handle playback operations through the manager-side cached-frame path.
 ' Parameters: animId = working value for animation id.
-Sub AnimCachedStop (animId As Long)
-    If animId < 0 Then Exit Sub
-    If animId > UBound(AnimItems) Then Exit Sub
-    If AnimItems(animId).Used = 0 Then Exit Sub
+SUB AnimCachedStop (animId AS LONG)
+    IF animId < 0 THEN EXIT SUB
+    IF animId > UBOUND(AnimItems) THEN EXIT SUB
+    IF AnimItems(animId).Used = 0 THEN EXIT SUB
 
     AnimItems(animId).CurrentFrame = 0
     AnimItems(animId).Playing = 0
@@ -1251,255 +1251,255 @@ Sub AnimCachedStop (animId As Long)
     AnimItems(animId).RemainingDelay = 0
     AnimItems(animId).LastRawTimer = 0
     AnimItems(animId).LoopIteration = 0
-End Sub
+END SUB
 
 ' Purpose: Handle playback operations through the manager-side cached-frame path.
 ' Parameters: animId = working value for animation id.
-Sub AnimCachedPause (animId As Long)
+SUB AnimCachedPause (animId AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
 
-    If AnimUsingCachedPlayback(animId) = 0 Then Exit Sub
-    If AnimItems(animId).Playing = 0 Then Exit Sub
-    If AnimItems(animId).Paused Then Exit Sub
+    IF AnimUsingCachedPlayback(animId) = 0 THEN EXIT SUB
+    IF AnimItems(animId).Playing = 0 THEN EXIT SUB
+    IF AnimItems(animId).Paused THEN EXIT SUB
 
-    nowValue = Timer
+    nowValue = TIMER
     AnimItems(animId).RemainingDelay = AnimTimeRemaining(AnimItems(animId).NextTick, nowValue)
     AnimItems(animId).Paused = -1
     AnimItems(animId).LastRawTimer = nowValue
-End Sub
+END SUB
 
 ' Purpose: Handle playback operations through the manager-side cached-frame path.
 ' Parameters: animId = working value for animation id.
-Sub AnimCachedResume (animId As Long)
+SUB AnimCachedResume (animId AS LONG)
     ' Variable: nowValue stores the working value for now value.
-    Dim nowValue As Double
+    DIM nowValue AS DOUBLE
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
 
-    If AnimUsingCachedPlayback(animId) = 0 Then Exit Sub
-    If AnimItems(animId).Playing = 0 Then Exit Sub
-    If AnimItems(animId).Paused = 0 Then Exit Sub
+    IF AnimUsingCachedPlayback(animId) = 0 THEN EXIT SUB
+    IF AnimItems(animId).Playing = 0 THEN EXIT SUB
+    IF AnimItems(animId).Paused = 0 THEN EXIT SUB
 
-    nowValue = Timer
+    nowValue = TIMER
     delaySec = AnimItems(animId).RemainingDelay
-    If delaySec <= 0 Then delaySec = AnimBackendFrameDelay(animId, AnimItems(animId).CurrentFrame)
+    IF delaySec <= 0 THEN delaySec = AnimBackendFrameDelay(animId, AnimItems(animId).CurrentFrame)
 
     AnimItems(animId).Paused = 0
     AnimItems(animId).LastRawTimer = nowValue
     AnimItems(animId).NextTick = AnimTimeAdd(nowValue, delaySec)
     AnimItems(animId).RemainingDelay = 0
-End Sub
+END SUB
 
 ' Purpose: Handle playback operations through the manager-side cached-frame path.
 ' Parameters: animId = working value for animation id.
-Sub AnimCachedUpdate (animId As Long)
+SUB AnimCachedUpdate (animId AS LONG)
     ' Variable: currentTime stores the time-related value used by the current routine.
-    Dim currentTime As Double
+    DIM currentTime AS DOUBLE
     ' Variable: jumpFlag stores the working value for jump flag.
-    Dim jumpFlag As Integer
+    DIM jumpFlag AS INTEGER
     ' Variable: nextFrame stores the working value for next frame.
-    Dim nextFrame As Long
+    DIM nextFrame AS LONG
     ' Variable: allowLoop stores the working value for allow loop.
-    Dim allowLoop As Integer
+    DIM allowLoop AS INTEGER
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: stepCount stores the count used to size or iterate the current data set.
-    Dim stepCount As Long
+    DIM stepCount AS LONG
 
-    If AnimUsingCachedPlayback(animId) = 0 Then Exit Sub
-    If AnimItems(animId).Playing = 0 Then Exit Sub
-    If AnimItems(animId).Paused Then Exit Sub
-    If AnimItems(animId).FrameCount <= 1 Then Exit Sub
+    IF AnimUsingCachedPlayback(animId) = 0 THEN EXIT SUB
+    IF AnimItems(animId).Playing = 0 THEN EXIT SUB
+    IF AnimItems(animId).Paused THEN EXIT SUB
+    IF AnimItems(animId).FrameCount <= 1 THEN EXIT SUB
 
-    currentTime = Timer
+    currentTime = TIMER
 
     jumpFlag = 0
-    If AnimItems(animId).LastRawTimer > 0 Then
+    IF AnimItems(animId).LastRawTimer > 0 THEN
         jumpFlag = AnimClockJumped(animId, AnimItems(animId).LastRawTimer, currentTime)
-    End If
-    If jumpFlag Then
+    END IF
+    IF jumpFlag THEN
         AnimResyncAfterClockJump animId, currentTime
-        Exit Sub
-    End If
+        EXIT SUB
+    END IF
 
     AnimItems(animId).LastRawTimer = currentTime
-    If AnimTimeReached(AnimItems(animId).NextTick, currentTime) = 0 Then Exit Sub
+    IF AnimTimeReached(AnimItems(animId).NextTick, currentTime) = 0 THEN EXIT SUB
 
     stepCount = 0
     ' Loop purpose: keep processing until the controlling condition becomes false, usually while input or timing remains active.
-    Do While AnimTimeReached(AnimItems(animId).NextTick, currentTime)
+    DO WHILE AnimTimeReached(AnimItems(animId).NextTick, currentTime)
         nextFrame = AnimItems(animId).CurrentFrame + 1
-        If nextFrame >= AnimItems(animId).FrameCount Then
+        IF nextFrame >= AnimItems(animId).FrameCount THEN
             allowLoop = 0
 
-            Select Case AnimItems(animId).LoopMode
-                Case ANIM_LOOP_FOREVER
+            SELECT CASE AnimItems(animId).LoopMode
+                CASE ANIM_LOOP_FOREVER
                     allowLoop = -1
-                Case ANIM_LOOP_ONCE
+                CASE ANIM_LOOP_ONCE
                     allowLoop = 0
-                Case Else
+                CASE ELSE
                     allowLoop = AnimDefaultLoopAllowsWrap(animId)
-            End Select
+            END SELECT
 
-            If allowLoop = 0 Then
+            IF allowLoop = 0 THEN
                 AnimItems(animId).CurrentFrame = AnimItems(animId).FrameCount - 1
                 AnimItems(animId).Playing = 0
                 AnimItems(animId).Paused = 0
                 AnimItems(animId).RemainingDelay = 0
                 AnimItems(animId).NextTick = 0
-                Exit Do
-            End If
+                EXIT DO
+            END IF
 
             nextFrame = 0
             AnimItems(animId).LoopIteration = AnimItems(animId).LoopIteration + 1
-        End If
+        END IF
 
         AnimItems(animId).CurrentFrame = nextFrame
         delaySec = AnimBackendFrameDelay(animId, nextFrame)
         AnimItems(animId).NextTick = AnimTimeAdd(AnimItems(animId).NextTick, delaySec)
 
         stepCount = stepCount + 1
-        If stepCount >= 32 Then Exit Do
-    Loop
-End Sub
+        IF stepCount >= 32 THEN EXIT DO
+    LOOP
+END SUB
 
 ' Purpose: Routine for the unified animation manager: handle animation time add.
 ' Parameters: baseTime = time-related value used by the current routine; deltaSec = working value for delta sec.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimTimeAdd# (baseTime As Double, deltaSec As Double)
+FUNCTION AnimTimeAdd# (baseTime AS DOUBLE, deltaSec AS DOUBLE)
     ' Variable: resultTime stores the time-related value used by the current routine.
-    Dim resultTime As Double
+    DIM resultTime AS DOUBLE
 
     resultTime = baseTime + deltaSec
-    If resultTime >= 86400# Then resultTime = resultTime - 86400#
+    IF resultTime >= 86400# THEN resultTime = resultTime - 86400#
 
     AnimTimeAdd = resultTime
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation time reached.
 ' Parameters: targetTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimTimeReached% (targetTime As Double, currentTime As Double)
+FUNCTION AnimTimeReached% (targetTime AS DOUBLE, currentTime AS DOUBLE)
     AnimTimeReached = 0
 
-    If Abs(currentTime - targetTime) < 43200# Then
-        If currentTime >= targetTime Then AnimTimeReached = -1
-    Else
-        If currentTime < targetTime Then AnimTimeReached = -1
-    End If
-End Function
+    IF ABS(currentTime - targetTime) < 43200# THEN
+        IF currentTime >= targetTime THEN AnimTimeReached = -1
+    ELSE
+        IF currentTime < targetTime THEN AnimTimeReached = -1
+    END IF
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation time remaining.
 ' Parameters: targetTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimTimeRemaining# (targetTime As Double, currentTime As Double)
+FUNCTION AnimTimeRemaining# (targetTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: resultTime stores the time-related value used by the current routine.
-    Dim resultTime As Double
+    DIM resultTime AS DOUBLE
 
     resultTime = 0
-    If AnimTimeReached(targetTime, currentTime) Then
+    IF AnimTimeReached(targetTime, currentTime) THEN
         AnimTimeRemaining = resultTime
-        Exit Function
-    End If
+        EXIT FUNCTION
+    END IF
 
     resultTime = targetTime - currentTime
-    If resultTime < 0 Then resultTime = resultTime + 86400#
+    IF resultTime < 0 THEN resultTime = resultTime + 86400#
 
     AnimTimeRemaining = resultTime
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation elapsed since.
 ' Parameters: previousTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimElapsedSince# (previousTime As Double, currentTime As Double)
+FUNCTION AnimElapsedSince# (previousTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: elapsedSec stores the working value for elapsed sec.
-    Dim elapsedSec As Double
+    DIM elapsedSec AS DOUBLE
 
     elapsedSec = currentTime - previousTime
-    If elapsedSec < 0 Then elapsedSec = elapsedSec + 86400#
+    IF elapsedSec < 0 THEN elapsedSec = elapsedSec + 86400#
 
     AnimElapsedSince = elapsedSec
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation clock jump limit.
 ' Parameters: animId = working value for animation id; previousTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimClockJumpLimit# (animId As Long, previousTime As Double)
+FUNCTION AnimClockJumpLimit# (animId AS LONG, previousTime AS DOUBLE)
     ' Variable: limitSec stores the working value for limit sec.
-    Dim limitSec As Double
+    DIM limitSec AS DOUBLE
 
     limitSec = AnimTimeRemaining(AnimItems(animId).NextTick, previousTime)
-    If limitSec <= 0 Then limitSec = AnimBackendFrameDelay(animId, AnimItems(animId).CurrentFrame)
+    IF limitSec <= 0 THEN limitSec = AnimBackendFrameDelay(animId, AnimItems(animId).CurrentFrame)
 
     limitSec = limitSec + 1#
-    If limitSec < 2# Then limitSec = 2#
-    If limitSec > 10# Then limitSec = 10#
+    IF limitSec < 2# THEN limitSec = 2#
+    IF limitSec > 10# THEN limitSec = 10#
 
     AnimClockJumpLimit = limitSec
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation clock jumped.
 ' Parameters: animId = working value for animation id; previousTime = time-related value used by the current routine; currentTime = time-related value used by the current routine.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimClockJumped% (animId As Long, previousTime As Double, currentTime As Double)
+FUNCTION AnimClockJumped% (animId AS LONG, previousTime AS DOUBLE, currentTime AS DOUBLE)
     ' Variable: elapsedSec stores the working value for elapsed sec.
-    Dim elapsedSec As Double
+    DIM elapsedSec AS DOUBLE
     ' Variable: limitSec stores the working value for limit sec.
-    Dim limitSec As Double
+    DIM limitSec AS DOUBLE
 
     AnimClockJumped = 0
     elapsedSec = AnimElapsedSince(previousTime, currentTime)
     limitSec = AnimClockJumpLimit(animId, previousTime)
-    If elapsedSec > limitSec Then AnimClockJumped = -1
-End Function
+    IF elapsedSec > limitSec THEN AnimClockJumped = -1
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation resync after clock jump.
 ' Parameters: animId = working value for animation id; currentTime = time-related value used by the current routine.
-Sub AnimResyncAfterClockJump (animId As Long, currentTime As Double)
+SUB AnimResyncAfterClockJump (animId AS LONG, currentTime AS DOUBLE)
     ' Variable: delaySec stores the frame delay or timing value.
-    Dim delaySec As Double
+    DIM delaySec AS DOUBLE
     ' Variable: previousTime stores the time-related value used by the current routine.
-    Dim previousTime As Double
+    DIM previousTime AS DOUBLE
 
-    If AnimUsingCachedPlayback(animId) = 0 Then Exit Sub
+    IF AnimUsingCachedPlayback(animId) = 0 THEN EXIT SUB
 
     previousTime = AnimItems(animId).LastRawTimer
     delaySec = AnimTimeRemaining(AnimItems(animId).NextTick, previousTime)
-    If delaySec <= 0 Then delaySec = AnimBackendFrameDelay(animId, AnimItems(animId).CurrentFrame)
+    IF delaySec <= 0 THEN delaySec = AnimBackendFrameDelay(animId, AnimItems(animId).CurrentFrame)
 
     AnimItems(animId).NextTick = AnimTimeAdd(currentTime, delaySec)
     AnimItems(animId).LastRawTimer = currentTime
-End Sub
+END SUB
 
 ' Purpose: Find or create a free slot inside the manager storage arrays.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimAllocSlot& ()
+FUNCTION AnimAllocSlot& ()
     ' Variable: i stores the general-purpose loop index.
-    Dim i As Long
+    DIM i AS LONG
 
     ' Loop purpose: walk through every currently allocated element in AnimItems.
     ' The loop order matters because later statements expect the data to be visited sequentially.
-    For i = 0 To UBound(AnimItems)
-        If AnimItems(i).Used = 0 Then
+    FOR i = 0 TO UBOUND(AnimItems)
+        IF AnimItems(i).Used = 0 THEN
             AnimAllocSlot = i
-            Exit Function
-        End If
-    Next i
+            EXIT FUNCTION
+        END IF
+    NEXT i
 
     ' dynamic array: AnimItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-    ReDim _Preserve AnimItems(UBound(AnimItems) + 1) As AnimStore
+    REDIM _PRESERVE AnimItems(UBOUND(AnimItems) + 1) AS AnimStore
     ' dynamic array: AnimFileNames is resized here to hold the parallel array that remembers the source filename for each active entry.
-    ReDim _Preserve AnimFileNames(UBound(AnimFileNames) + 1) As String
+    REDIM _PRESERVE AnimFileNames(UBOUND(AnimFileNames) + 1) AS STRING
     ' dynamic array: AnimErrorTexts is resized here to hold the text storage for the last human-readable error message.
-    ReDim _Preserve AnimErrorTexts(UBound(AnimErrorTexts) + 1) As String
-    AnimAllocSlot = UBound(AnimItems)
-End Function
+    REDIM _PRESERVE AnimErrorTexts(UBOUND(AnimErrorTexts) + 1) AS STRING
+    AnimAllocSlot = UBOUND(AnimItems)
+END FUNCTION
 
 ' Purpose: Reset a slot and mark it free for later reuse.
 ' Parameters: animId = working value for animation id.
-Sub AnimReleaseSlot (animId As Long)
-    If animId < 0 Or animId > UBound(AnimItems) Then Exit Sub
+SUB AnimReleaseSlot (animId AS LONG)
+    IF animId < 0 OR animId > UBOUND(AnimItems) THEN EXIT SUB
 
     AnimFreeCacheBlock animId
 
@@ -1525,129 +1525,129 @@ Sub AnimReleaseSlot (animId As Long)
     AnimItems(animId).LoopIteration = 0
     AnimFileNames(animId) = ""
     AnimErrorTexts(animId) = ""
-End Sub
+END SUB
 
 ' Purpose: Routine for the unified animation manager: handle animation clear error.
 ' Parameters: animId = working value for animation id.
-Sub AnimClearError (animId As Long)
-    If animId < 0 Or animId > UBound(AnimErrorTexts) Then Exit Sub
+SUB AnimClearError (animId AS LONG)
+    IF animId < 0 OR animId > UBOUND(AnimErrorTexts) THEN EXIT SUB
     AnimErrorTexts(animId) = ""
-End Sub
+END SUB
 
 ' Purpose: Store a human-readable error message for the selected object.
 ' Parameters: animId = working value for animation id; errText = working value for err text.
-Sub AnimSetError (animId As Long, errText As String)
-    If animId < 0 Or animId > UBound(AnimErrorTexts) Then Exit Sub
+SUB AnimSetError (animId AS LONG, errText AS STRING)
+    IF animId < 0 OR animId > UBOUND(AnimErrorTexts) THEN EXIT SUB
     AnimErrorTexts(animId) = errText
-End Sub
+END SUB
 
 ' Purpose: Routine for the unified animation manager: handle animation make default frame file name.
 ' Parameters: animId = working value for animation id; frameIndex = index variable used to address the current item.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimMakeDefaultFrameFileName$ (animId As Long, frameIndex As Long)
+FUNCTION AnimMakeDefaultFrameFileName$ (animId AS LONG, frameIndex AS LONG)
     ' Variable: srcName stores the string holding a file path or a human-readable name.
-    Dim srcName As String
+    DIM srcName AS STRING
     ' Variable: dotAt stores the working value for dot at.
-    Dim dotAt As Long
+    DIM dotAt AS LONG
     ' Variable: baseName stores the string holding a file path or a human-readable name.
-    Dim baseName As String
+    DIM baseName AS STRING
     ' Variable: frameText stores the working value for frame text.
-    Dim frameText As String
+    DIM frameText AS STRING
 
     AnimMakeDefaultFrameFileName = ""
-    If AnimValid(animId) = 0 Then Exit Function
+    IF AnimValid(animId) = 0 THEN EXIT FUNCTION
 
     srcName = AnimFileNames(animId)
-    If Len(srcName) = 0 Then Exit Function
+    IF LEN(srcName) = 0 THEN EXIT FUNCTION
 
-    dotAt = _InStrRev(srcName, ".")
-    If dotAt > 0 Then
-        baseName = Left$(srcName, dotAt - 1)
-    Else
+    dotAt = _INSTRREV(srcName, ".")
+    IF dotAt > 0 THEN
+        baseName = LEFT$(srcName, dotAt - 1)
+    ELSE
         baseName = srcName
-    End If
+    END IF
 
-    frameText = LTrim$(Str$(frameIndex))
-    frameText = Right$("000000" + frameText, 6)
+    frameText = LTRIM$(STR$(frameIndex))
+    frameText = RIGHT$("000000" + frameText, 6)
     AnimMakeDefaultFrameFileName = baseName + "_frame_" + frameText + ".png"
-End Function
+END FUNCTION
 
 ' Purpose: Detect the file format by checking file signatures and lightweight structural markers.
 ' Parameters: fileName = string holding a file path or a human-readable name.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimDetectFormatFromFile& (fileName As String)
+FUNCTION AnimDetectFormatFromFile& (fileName AS STRING)
     ' Variable: rawHead stores the working value for raw head.
-    Dim rawHead As String
+    DIM rawHead AS STRING
     ' Variable: ff stores the working value for ff.
-    Dim ff As Integer
+    DIM ff AS INTEGER
     ' Variable: fileLen stores the working value for file len.
-    Dim fileLen As Long
+    DIM fileLen AS LONG
     ' Variable: sign8 stores the working value for sign 8.
-    Dim sign8 As String
+    DIM sign8 AS STRING
     ' Variable: sign6 stores the working value for sign 6.
-    Dim sign6 As String
+    DIM sign6 AS STRING
     ' Variable: fileExt stores the working value for file ext.
-    Dim fileExt As String
+    DIM fileExt AS STRING
     ' Variable: ok stores the success flag returned by the current routine.
-    Dim ok As Integer
+    DIM ok AS INTEGER
     ' Variable: flicFmt stores the working value for FLIC fmt.
-    Dim flicFmt As Long
+    DIM flicFmt AS LONG
     ' Variable: widthPx stores the decoded image width in pixels.
-    Dim widthPx As Long
+    DIM widthPx AS LONG
     ' Variable: heightPx stores the decoded image height in pixels.
-    Dim heightPx As Long
+    DIM heightPx AS LONG
     ' Variable: frameCount stores the total number of frames available for the current animation.
-    Dim frameCount As Long
+    DIM frameCount AS LONG
 
     AnimDetectFormatFromFile& = ANIM_FMT_NONE
 
-    If _FileExists(fileName) = 0 Then Exit Function
+    IF _FILEEXISTS(fileName) = 0 THEN EXIT FUNCTION
 
-    fileExt = LCase$(Right$(fileName, 4))
+    fileExt = LCASE$(RIGHT$(fileName, 4))
 
-    ff = FreeFile
-    Open fileName For Binary As #ff
+    ff = FREEFILE
+    OPEN fileName FOR BINARY AS #ff
     fileLen = LOF(ff)
 
-    If fileLen <= 0 Then
-        Close #ff
-        Exit Function
-    End If
+    IF fileLen <= 0 THEN
+        CLOSE #ff
+        EXIT FUNCTION
+    END IF
 
-    If fileLen >= 16 Then
-        rawHead = Space$(16)
-        Get #ff, 1, rawHead
-    Else
-        rawHead = Space$(fileLen)
-        Get #ff, 1, rawHead
-    End If
+    IF fileLen >= 16 THEN
+        rawHead = SPACE$(16)
+        GET #ff, 1, rawHead
+    ELSE
+        rawHead = SPACE$(fileLen)
+        GET #ff, 1, rawHead
+    END IF
 
-    Close #ff
+    CLOSE #ff
 
-    If Len(rawHead) >= 8 Then
-        sign8 = Left$(rawHead, 8)
-        If sign8 = Chr$(137) + "PNG" + Chr$(13) + Chr$(10) + Chr$(26) + Chr$(10) Then
+    IF LEN(rawHead) >= 8 THEN
+        sign8 = LEFT$(rawHead, 8)
+        IF sign8 = CHR$(137) + "PNG" + CHR$(13) + CHR$(10) + CHR$(26) + CHR$(10) THEN
             AnimDetectFormatFromFile& = ANIM_FMT_APNG
-            Exit Function
-        End If
-    End If
+            EXIT FUNCTION
+        END IF
+    END IF
 
-    If Len(rawHead) >= 6 Then
-        sign6 = Left$(rawHead, 6)
-        If sign6 = "GIF87a" Or sign6 = "GIF89a" Then
+    IF LEN(rawHead) >= 6 THEN
+        sign6 = LEFT$(rawHead, 6)
+        IF sign6 = "GIF87a" OR sign6 = "GIF89a" THEN
             AnimDetectFormatFromFile& = ANIM_FMT_GIF89A
-            Exit Function
-        End If
-    End If
+            EXIT FUNCTION
+        END IF
+    END IF
 
-    If Len(rawHead) >= 12 Then
-        If Left$(rawHead, 4) = "RIFF" Then
-            If Mid$(rawHead, 9, 4) = "ACON" Then
+    IF LEN(rawHead) >= 12 THEN
+        IF LEFT$(rawHead, 4) = "RIFF" THEN
+            IF MID$(rawHead, 9, 4) = "ACON" THEN
                 AnimDetectFormatFromFile& = ANIM_FMT_ANI
-                Exit Function
-            End If
-        End If
-    End If
+                EXIT FUNCTION
+            END IF
+        END IF
+    END IF
 
     ok = 0
     flicFmt = ANIM_FORMAT_NONE
@@ -1657,109 +1657,110 @@ Function AnimDetectFormatFromFile& (fileName As String)
 
     FlicProbe fileName, ok, flicFmt, widthPx, heightPx, frameCount
 
-    If ok Then
-        If flicFmt = ANIM_FORMAT_FLI Then
+    IF ok THEN
+        IF flicFmt = ANIM_FORMAT_FLI THEN
             AnimDetectFormatFromFile& = ANIM_FMT_FLI
-            Exit Function
-        End If
+            EXIT FUNCTION
+        END IF
 
-        If flicFmt = ANIM_FORMAT_FLC Then
+        IF flicFmt = ANIM_FORMAT_FLC THEN
             AnimDetectFormatFromFile& = ANIM_FMT_FLC
-            Exit Function
-        End If
-    End If
+            EXIT FUNCTION
+        END IF
+    END IF
 
-    If Len(rawHead) >= 12 Then
-        If Left$(rawHead, 4) = "FORM" Then
-            If Mid$(rawHead, 9, 4) = "ANIM" Then
+    IF LEN(rawHead) >= 12 THEN
+        IF LEFT$(rawHead, 4) = "FORM" THEN
+            IF MID$(rawHead, 9, 4) = "ANIM" THEN
                 AnimDetectFormatFromFile& = ANIM_FMT_AMIGA_ANIM
-                Exit Function
-            End If
-        End If
+                EXIT FUNCTION
+            END IF
+        END IF
 
-    End If
-End Function
+    END IF
+END FUNCTION
 
 ' Purpose: Synchronize manager metadata with the state stored inside the selected backend.
 ' Parameters: animId = working value for animation id.
-Sub AnimSyncStaticMeta (animId As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
+SUB AnimSyncStaticMeta (animId AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             AnimItems(animId).WidthPx = ApngWidth(AnimItems(animId).BackendId)
             AnimItems(animId).HeightPx = ApngHeight(AnimItems(animId).BackendId)
             AnimItems(animId).FrameCount = ApngFrameCount(AnimItems(animId).BackendId)
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             AnimItems(animId).WidthPx = Gif89aWidth(AnimItems(animId).BackendId)
             AnimItems(animId).HeightPx = Gif89aHeight(AnimItems(animId).BackendId)
             AnimItems(animId).FrameCount = Gif89aFrameCount(AnimItems(animId).BackendId)
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
-           AnimItems(animId).WidthPx = FlicWidth(AnimItems(animId).BackendId)
-           AnimItems(animId).HeightPx = FlicHeight(AnimItems(animId).BackendId)
-           AnimItems(animId).FrameCount = FlicFrameCount(AnimItems(animId).BackendId)
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
+            AnimItems(animId).WidthPx = FlicWidth(AnimItems(animId).BackendId)
+            AnimItems(animId).HeightPx = FlicHeight(AnimItems(animId).BackendId)
+            AnimItems(animId).FrameCount = FlicFrameCount(AnimItems(animId).BackendId)
 
-        Case ANIM_FMT_AMIGA_ANIM
-           AnimItems(animId).WidthPx = AmgAnimWidth(AnimItems(animId).BackendId)
-           AnimItems(animId).HeightPx = AmgAnimHeight(AnimItems(animId).BackendId)
-           AnimItems(animId).FrameCount = AmgAnimFrameCount(AnimItems(animId).BackendId)
+        CASE ANIM_FMT_AMIGA_ANIM
+            AnimItems(animId).WidthPx = AmgAnimWidth(AnimItems(animId).BackendId)
+            AnimItems(animId).HeightPx = AmgAnimHeight(AnimItems(animId).BackendId)
+            AnimItems(animId).FrameCount = AmgAnimFrameCount(AnimItems(animId).BackendId)
 
-        Case ANIM_FMT_ANI
-           AnimItems(animId).WidthPx = AniWidth(AnimItems(animId).BackendId)
-           AnimItems(animId).HeightPx = AniHeight(AnimItems(animId).BackendId)
-           AnimItems(animId).FrameCount = AniFrameCount(AnimItems(animId).BackendId)
+        CASE ANIM_FMT_ANI
+            AnimItems(animId).WidthPx = AniWidth(AnimItems(animId).BackendId)
+            AnimItems(animId).HeightPx = AniHeight(AnimItems(animId).BackendId)
+            AnimItems(animId).FrameCount = AniFrameCount(AnimItems(animId).BackendId)
 
-    End Select
-End Sub
+    END SELECT
+END SUB
 
 ' Purpose: Synchronize manager metadata with the state stored inside the selected backend.
 ' Parameters: animId = working value for animation id.
-Sub AnimSyncRuntimeMeta (animId As Long)
-    If AnimValid(animId) = 0 Then Exit Sub
-    If AnimUsingCachedPlayback(animId) Then Exit Sub
+SUB AnimSyncRuntimeMeta (animId AS LONG)
+    IF AnimValid(animId) = 0 THEN EXIT SUB
+    IF AnimUsingCachedPlayback(animId) THEN EXIT SUB
 
-    Select Case AnimItems(animId).FormatId
-        Case ANIM_FMT_APNG
+    SELECT CASE AnimItems(animId).FormatId
+        CASE ANIM_FMT_APNG
             AnimItems(animId).CurrentFrame = ApngCurrentFrame(AnimItems(animId).BackendId)
             AnimItems(animId).Playing = ApngIsPlaying(AnimItems(animId).BackendId)
 
-        Case ANIM_FMT_GIF89A
+        CASE ANIM_FMT_GIF89A
             AnimItems(animId).CurrentFrame = Gif89aCurrentFrame(AnimItems(animId).BackendId)
             AnimItems(animId).Playing = Gif89aIsPlaying(AnimItems(animId).BackendId)
 
-        Case ANIM_FMT_FLI, ANIM_FMT_FLC
+        CASE ANIM_FMT_FLI, ANIM_FMT_FLC
             AnimItems(animId).CurrentFrame = FlicCurrentFrame(AnimItems(animId).BackendId)
             AnimItems(animId).Playing = FlicIsPlaying(AnimItems(animId).BackendId)
 
-        Case ANIM_FMT_AMIGA_ANIM
+        CASE ANIM_FMT_AMIGA_ANIM
             AnimItems(animId).CurrentFrame = AmgAnimCurrentFrame(AnimItems(animId).BackendId)
             AnimItems(animId).Playing = AmgAnimIsPlaying(AnimItems(animId).BackendId)
 
-        Case ANIM_FMT_ANI
+        CASE ANIM_FMT_ANI
             AnimItems(animId).CurrentFrame = AniCurrentFrame(AnimItems(animId).BackendId)
             AnimItems(animId).Playing = AniIsPlaying(AnimItems(animId).BackendId)
 
-    End Select
-End Sub
+    END SELECT
+END SUB
 
 ' Purpose: Routine for the unified animation manager: handle animation box width.
 ' Parameters: x1 = working value for x 1; x2 = working value for x 2.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimBoxWidth& (x1 As Long, x2 As Long)
+FUNCTION AnimBoxWidth& (x1 AS LONG, x2 AS LONG)
     AnimBoxWidth = x2 - x1 + 1
-End Function
+END FUNCTION
 
 ' Purpose: Routine for the unified animation manager: handle animation box height.
 ' Parameters: y1 = working value for y 1; y2 = working value for y 2.
 ' Return value: the function result follows the success/failure or data-return convention used by this module.
-Function AnimBoxHeight& (y1 As Long, y2 As Long)
+FUNCTION AnimBoxHeight& (y1 AS LONG, y2 AS LONG)
     AnimBoxHeight = y2 - y1 + 1
-End Function
+END FUNCTION
 
-'$include: 'anim_amiga_anim_backend2b.bm'
-'$include: 'anim_ani_backend.bm'
-'$include: 'anim_apng_backend.bm'
-'$include: 'anim_flic_backend_buffered_faster.bm'
-'$include: 'anim_gif89a_backend.bm'
+'$INCLUDE: 'anim_amiga_anim_backend2b.bm'
+'$INCLUDE: 'anim_ani_backend.bm'
+'$INCLUDE: 'anim_apng_backend.bm'
+'$INCLUDE: 'anim_flic_backend_buffered_faster.bm'
+'$INCLUDE: 'anim_gif89a_backend.bm'
+
