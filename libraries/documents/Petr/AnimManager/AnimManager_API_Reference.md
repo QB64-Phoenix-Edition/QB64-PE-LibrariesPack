@@ -125,6 +125,7 @@ Lightweight probe without keeping the file open long-term. Useful for menus, bro
 ```vb
 SUB AnimProbe (fileName AS STRING, ok AS INTEGER, formatId AS LONG, widthPx AS LONG, heightPx AS LONG, frameCount AS LONG)
 ```
+**Note:** This routine passes the results back through its parameters, make sure the variables you provide are of type LONG to avoid errors caused by implicit type conversions.
 ```vb
 Dim ok As Integer
 Dim fmt As Long, w As Long, h As Long, cnt As Long

@@ -1,11 +1,11 @@
 NOTES
 
-This license applies only to the "LibraryExplorer" application and to the
+This license applies only to the "Library Explorer" application and to the
 accompanying description files for the Libraries Pack.
 
 The libraries themselves (incl. examples and documentation) remain under
 their respective individual licenses and the Copyright remains at their
-respective authors.
+respective authors. (See INI files in the libraries/descriptors folder.)
 
 ---------------------------------------------------------------------------
 
