@@ -1,5 +1,6 @@
-'Use library example,
-'this shows how easy a library from our new QB64-PE library package can
+'Use library example.
+'
+'This shows how easy a library from our new QB64-PE library package can
 'be included since QB64-PE v4.3.0, just a single line and be done.
 '=====================================================
 

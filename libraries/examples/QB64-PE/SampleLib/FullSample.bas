@@ -1,7 +1,9 @@
-'Full example,
-'this is how the "UseLibrary.bas" sample program would look internally
+'Full example.
+'
+'This is how the "UseLibrary.bas" sample program would look internally
 'after the include logic has put all the library parts together along
 'with your main program.
+'
 'For better overview, to see what's your program and what's included
 'library stuff, I've put the library parts in $FORMAT:OFF blocks and
 'indented them by two TABs.
