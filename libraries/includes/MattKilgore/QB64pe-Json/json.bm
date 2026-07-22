@@ -1,0 +1,1437 @@
+
+' Internal types
+
+$INCLUDEONCE
+
+TYPE jsontok
+    typ AS _BYTE
+    primType AS _BYTE
+
+    ' For keys, this is the name of the key. For strings, this is the value of the string.
+    ' This value is UTF-8
+    value AS _MEM
+
+    ' These three parts represent a JSON number
+    ' intPart also holds true/false value for bools
+    intPart AS _INTEGER64
+    fracPart AS DOUBLE
+    expPart AS _INTEGER64
+
+    ' Index of parent token.
+    ' If token is FREE, then this is the index of the next free token
+    '
+    ' Note: ParentIdx is not filled-in for manually created tokens, so it
+    ' should not be relied upon.
+    ParentIdx AS LONG
+
+    ' Array of Long's indicating indxes of child tokens
+    ChildrenIdxs AS _MEM
+END TYPE
+
+TYPE JsonTokenBlock
+    m AS _MEM
+END TYPE
+
+SUB ___JsonResetError ()
+    JsonHadError = JSON_ERR_Success
+    JsonError = ""
+END SUB
+
+FUNCTION ___JsonIsInitialized& (j AS Json)
+    IF j.IsInitialized THEN ___JsonIsInitialized& = -1: EXIT FUNCTION
+    JsonHadError = JSON_ERR_NotInitialized
+    JsonError = "Json object was not initialized. Make sure to call JsonInit before using a Json object"
+    ___JsonIsInitialized& = 0
+END FUNCTION
+
+FUNCTION ___JsonIsRightType& (j AS Json, idx AS LONG, typ AS LONG)
+    IF JsonTokenGetType&(j, idx) = typ THEN ___JsonIsRightType& = -1: EXIT FUNCTION
+    JsonError = "Json Token was passed to function requiring type '" + ___JsonTokenTypeString$(typ) + "' but is actually type: '" + ___JsonTokenTypeString$(JsonTokenGetType&(j, idx))
+    JsonHadError = JSON_ERR_TokenWrongType
+    ___JsonIsRightType& = 0
+END FUNCTION
+
+FUNCTION ___JsonIsRightPrimType& (j AS Json, idx AS LONG, primType AS LONG)
+    IF JsonTokenGetType&(j, idx) = JSONTOK_TYPE_VALUE AND JsonTokenGetPrimType&(j, idx) = primType THEN ___JsonIsRightPrimType& = -1: EXIT FUNCTION
+    JsonError = "Json Token was passed to function requiring type '" + ___JsonTokenPrimTypeString$(primType) + "' but is actually type: '" + ___JsonTokenPrimTypeString$(JsonTokenGetPrimType&(j, idx))
+    JsonHadError = JSON_ERR_TokenWrongType
+    ___JsonIsRightPrimType& = 0
+END FUNCTION
+
+FUNCTION ___JsonIsValidToken& (j AS Json, idx AS LONG)
+    DIM t AS jsontok
+
+    IF idx <= 0 THEN GOTO retErr
+    IF idx >= (_SHL(1, JSON_BLOCK_SHIFT) * j.TotalBlocks) THEN GOTO retErr
+
+    ___JsonGetToken j, idx, t
+    IF t.typ = JSONTOK_TYPE_FREE THEN GOTO retErr
+
+    ___JsonIsValidToken& = -1
+    EXIT FUNCTION
+
+    retErr:
+    JsonHadError = JSON_ERR_TokenInvalid
+    JsonError = "Json Token index" + STR$(idx) + " is not a valid token"
+    ___JsonIsValidToken& = 0
+END FUNCTION
+
+SUB JsonInit (json AS Json)
+    ___JsonResetError
+
+    json.RootToken = -1
+    json.TotalBlocks = 0
+    json.NextFree = -1
+
+    ' Dummy _Mem, makes things a bit easier since there is no NULL
+    json.TokenBlocks = _MEMNEW(1)
+
+    json.IsInitialized = -1
+END SUB
+
+SUB JsonClear (j AS Json)
+    DIM b AS JsonTokenBlock, i AS LONG
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT SUB
+
+    FOR i = 0 TO j.TotalBlocks - 1
+        _MEMGET j.TokenBlocks, j.TokenBlocks.OFFSET + i * LEN(b), b
+
+        ___JsonTokenBlockClear b
+    NEXT
+
+    _MEMFREE j.TokenBlocks
+    j.IsInitialized = 0
+END SUB
+
+' Initializes a new JsonTokenBlock, including the space for tokens and free list
+'
+' blockIdx is this block's index in the block list
+SUB ___JsonTokenBlockInit (b AS JsonTokenBlock, blockIdxCpy AS LONG, nextFree AS LONG)
+    DIM i AS LONG, tokCount AS LONG, t AS jsontok, blockIdx AS LONG
+
+    tokCount = _SHL(1, JSON_BLOCK_SHIFT)
+    blockIdx = _SHL(blockIdxCpy, JSON_BLOCK_SHIFT)
+
+    ' Don't need to zero it, as we're going to _MemPut the zero'd jsontok into
+    ' it anyway
+    b.m = _MEMNEW(tokCount * LEN(t))
+
+    FOR i = tokCount - 1 TO 0 STEP -1
+        ' Special case, the "zero token" is not used to prevent common errors
+        ' (variables default to zero, so Ex. misnamed variables results in
+        ' using token zero by mistake)
+        IF blockIdx = 0 AND i = 0 THEN t.ParentIdx = 0: _MEMPUT b.m, b.m.OFFSET + i * LEN(t), t: _CONTINUE
+
+        t.ParentIdx = nextFree
+
+        _MEMPUT b.m, b.m.OFFSET + i * LEN(t), t
+
+        nextFree = blockIdx OR i
+    NEXT
+END SUB
+
+SUB ___JsonTokenBlockClear (b AS JsonTokenBlock)
+    DIM i AS LONG, t AS jsontok, count AS LONG
+
+    count = _SHL(1, JSON_BLOCK_SHIFT)
+
+    FOR i = 0 TO count - 1
+        _MEMGET b.m, b.m.OFFSET + i * LEN(t), t
+        ___JsonTokenClear t
+    NEXT
+
+    _MEMFREE b.m
+END SUB
+
+SUB ___JsonTokenClear (t AS jsontok)
+    IF t.value.OFFSET <> 0 THEN _MEMFREE t.value
+    IF t.ChildrenIdxs.OFFSET <> 0 THEN _MEMFREE t.ChildrenIdxs
+END SUB
+
+SUB ___JsonTokenAddChild (t AS jsontok, child AS LONG)
+    DIM m AS _MEM, childCount AS _OFFSET
+
+    IF t.ChildrenIdxs.OFFSET <> 0 THEN
+        childCount = t.ChildrenIdxs.SIZE / 4 + 1
+
+        m = _MEMNEW(childCount * LEN(child))
+        _MEMCOPY t.ChildrenIdxs, t.ChildrenIdxs.OFFSET, t.ChildrenIdxs.SIZE TO m, m.OFFSET
+        _MEMFREE t.ChildrenIdxs
+
+        _MEMPUT m, m.OFFSET + (childCount - 1) * LEN(child), child
+        t.ChildrenIdxs = m
+    ELSE
+        t.ChildrenIdxs = _MEMNEW(LEN(child))
+
+        _MEMPUT t.ChildrenIdxs, t.ChildrenIdxs.OFFSET, child
+    END IF
+END SUB
+
+FUNCTION ___JsonTokenGetChild& (t AS jsontok, idx AS _OFFSET)
+    DIM l AS LONG
+    ___JsonTokenGetChild& = _MEMGET(t.ChildrenIdxs, t.ChildrenIdxs.OFFSET + idx * LEN(l), LONG)
+END FUNCTION
+
+FUNCTION ___JsonTokenGetChildCount%& (t AS jsontok)
+    ___JsonTokenGetChildCount%& = t.ChildrenIdxs.SIZE / 4
+END FUNCTION
+
+FUNCTION JsonTokenTotalChildren& (j AS Json, idx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenTotalChildren& = JsonHadError: EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, idx) THEN JsonTokenTotalChildren& = JsonHadError: EXIT FUNCTION
+
+    ___JsonGetToken j, idx, t
+
+    $IF 32BIT THEN
+        JsonTokenTotalChildren& = _CV(LONG, _MK$(_OFFSET, t.ChildrenIdxs.SIZE / 4))
+    $ELSE
+        JsonTokenTotalChildren& = _CV(_INTEGER64, _MK$(_OFFSET, t.ChildrenIdxs.SIZE / 4))
+    $END IF
+END FUNCTION
+
+FUNCTION JsonTokenGetChild& (j AS Json, idx AS LONG, childIdx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenGetChild& = JsonHadError: EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, idx) THEN JsonTokenGetChild& = JsonHadError: EXIT FUNCTION
+
+    IF childIdx < 0 OR childIdx >= JsonTokenTotalChildren&(j, idx) THEN
+        ___JsonSetError JSON_ERR_OutOfRange, "Child index was out-of-bound of the array"
+        JsonTokenGetChild& = JSON_ERR_OutOfRange
+        EXIT FUNCTION
+    END IF
+
+    ___JsonGetToken j, idx, t
+
+    JsonTokenGetChild& = ___JsonTokenGetChild&(t, childIdx)
+END FUNCTION
+
+FUNCTION JsonTokenGetType& (j AS Json, idx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenGetType& = JsonHadError: EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, idx) THEN JsonTokenGetType& = JsonHadError: EXIT FUNCTION
+
+    ___JsonGetToken j, idx, t
+
+    JsonTokenGetType& = t.typ
+END FUNCTION
+
+FUNCTION JsonTokenGetPrimType& (j AS Json, idx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenGetPrimType& = JsonHadError: EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, idx) THEN JsonTokenGetPrimType& = JsonHadError: EXIT FUNCTION
+
+    ___JsonGetToken j, idx, t
+
+    JsonTokenGetPrimType& = t.primType
+END FUNCTION
+
+FUNCTION ___JsonGetEmptyToken& (j AS Json)
+    DIM b AS JsonTokenBlock, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN ___JsonGetEmptyToken& = JsonHadError: EXIT FUNCTION
+
+    IF j.NextFree = -1 THEN
+        DIM m AS _MEM
+        j.TotalBlocks = j.TotalBlocks + 1
+
+        m = _MEMNEW(j.TotalBlocks * LEN(b))
+        _MEMCOPY j.TokenBlocks, j.TokenBlocks.OFFSET, j.TokenBlocks.SIZE TO m, m.OFFSET
+
+        _MEMFREE j.TokenBlocks
+        j.TokenBlocks = m
+
+        ___JsonTokenBlockInit b, j.TotalBlocks - 1, j.NextFree
+        _MEMPUT j.TokenBlocks, j.TokenBlocks.OFFSET + (j.TotalBlocks - 1) * LEN(b), b
+    END IF
+
+    DIM res AS LONG
+    res = j.NextFree
+
+    ___JsonGetToken j, j.NextFree, t
+
+    j.NextFree = t.ParentIdx
+    t.ParentIdx = 0
+
+    ___JsonPutToken j, res, t
+
+    ___JsonGetEmptyToken& = res
+END FUNCTION
+
+SUB JsonTokenFree (j AS Json, idx AS LONG)
+    DIM child AS LONG
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT SUB
+    IF NOT ___JsonIsValidToken&(j, idx) THEN EXIT SUB
+
+    FOR child = 0 TO JsonTokenTotalChildren&(j, idx) - 1
+        JsonTokenFree j, JsonTokenGetChild&(j, idx, child)
+    NEXT
+
+    JsonTokenFreeShallow j, idx
+END SUB
+
+SUB JsonTokenFreeShallow (j AS Json, idx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT SUB
+    IF NOT ___JsonIsValidToken&(j, idx) THEN EXIT SUB
+
+    ___JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_FREE
+    t.ParentIdx = j.NextFree
+
+    ___JsonTokenClear t
+    ___JsonPutToken j, idx, t
+
+    j.NextFree = idx
+END SUB
+
+SUB ___JsonGetToken (j AS Json, idx AS LONG, t AS jsontok)
+    DIM b AS JsonTokenBlock
+    _MEMGET j.TokenBlocks, j.TokenBlocks.OFFSET + _SHR(idx, JSON_BLOCK_SHIFT) * LEN(b), b
+    _MEMGET b.m, b.m.OFFSET + (idx AND (_SHL(1, JSON_BLOCK_SHIFT) - 1)) * LEN(t), t
+END SUB
+
+SUB ___JsonPutToken (j AS Json, idx AS LONG, t AS jsontok)
+    DIM b AS JsonTokenBlock
+    _MEMGET j.TokenBlocks, j.TokenBlocks.OFFSET + _SHR(idx, JSON_BLOCK_SHIFT) * LEN(b), b
+    _MEMPUT b.m, b.m.OFFSET + (idx AND (_SHL(1, JSON_BLOCK_SHIFT) - 1)) * LEN(t), t
+END SUB
+
+FUNCTION ___JsonEscapeString$ (s AS STRING)
+    DIM res AS STRING, i AS LONG
+
+    FOR i = 1 TO LEN(s)
+        SELECT CASE ASC(s, i)
+            CASE 13: ' new line
+                res = res + "\n"
+
+            CASE 10: ' Carriage Return
+                res = res + "\r"
+
+            CASE 34: ' Double quote character
+                res = res + "\" + CHR$(34)
+
+            CASE ASC("\"):
+                res = res + "\\"
+
+            CASE 9: ' Tab
+                res = res + "\t"
+
+            CASE 12: ' formfeed
+                res = res + "\f"
+
+            CASE 8: ' Backspace
+                res = res + "\b"
+
+            CASE ELSE:
+                res = res + CHR$(ASC(s, i))
+        END SELECT
+    NEXT
+
+    ___JsonEscapeString$ = res
+END FUNCTION
+
+FUNCTION ___JsonUnescapeString$ (s AS STRING)
+    DIM res AS STRING, i AS LONG, curIdx AS LONG
+    curIdx = 1
+
+    ' FIXME: Handle badly formatted strings
+    DO
+        i = INSTR(curIdx, s, "\")
+        IF i = 0 THEN
+            res = res + MID$(s, curIdx)
+            EXIT DO
+        END IF
+
+        res = res + MID$(s, curIdx, i - curIdx)
+
+        SELECT CASE ASC(s, i + 1)
+            CASE ASC("n"):
+                res = res + CHR$(13)
+
+            CASE ASC("r"):
+                res = res + CHR$(10)
+
+            CASE 34: ' Double quote
+                res = res + CHR$(34)
+
+            CASE ASC("\"):
+                res = res + "\"
+
+            CASE ASC("t"):
+                res = res + CHR$(9)
+
+            CASE ASC("f"):
+                res = res + CHR$(12)
+
+            CASE ASC("b"):
+                res = res + CHR$(8)
+
+            CASE ASC("/"):
+                res = res + "/"
+
+            CASE ASC("u"):
+                ' FIXME: Decode hex into UTF-8 sequence
+        END SELECT
+
+        curIdx = i + 2
+    LOOP
+
+    ___JsonUnescapeString$ = res
+END FUNCTION
+
+SUB ___JsonStringToMem (s AS STRING, m AS _MEM)
+    m = _MEMNEW(LEN(s))
+    _MEMPUT m, m.OFFSET, s
+END SUB
+
+FUNCTION ___JsonTokenCreatePrim& (j AS Json, s AS STRING, primTyp AS _BYTE)
+    DIM idx AS LONG, t AS jsontok
+    idx = ___JsonGetEmptyToken&(j)
+
+    ___JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_VALUE
+    t.primType = primTyp
+
+    ___JsonStringToMem s, t.value
+
+    ___JsonPutToken j, idx, t
+
+    ___JsonTokenCreatePrim& = idx
+END FUNCTION
+
+FUNCTION JsonTokenCreateString& (j AS Json, s AS STRING)
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenCreateString& = JsonHadError: EXIT FUNCTION
+
+    JsonTokenCreateString& = ___JsonTokenCreatePrim&(j, s, JSONTOK_PRIM_STRING)
+END FUNCTION
+
+FUNCTION JsonTokenCreateBool& (j AS Json, b AS _BYTE)
+    DIM idx AS LONG, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenCreateBool& = JsonHadError: EXIT FUNCTION
+    idx = ___JsonGetEmptyToken&(j)
+
+    ___JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_VALUE
+    t.primType = JSONTOK_PRIM_BOOL
+    t.intPart = b
+
+    ___JsonPutToken j, idx, t
+    JsonTokenCreateBool& = idx
+END FUNCTION
+
+FUNCTION JsonTokenCreateInteger& (j AS Json, i AS _INTEGER64)
+    DIM idx AS LONG, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenCreateInteger& = JsonHadError: EXIT FUNCTION
+    idx = ___JsonGetEmptyToken&(j)
+
+    ___JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_VALUE
+    t.primType = JSONTOK_PRIM_NUMBER
+    t.intPart = i
+
+    ___JsonPutToken j, idx, t
+    JsonTokenCreateInteger& = idx
+END FUNCTION
+
+FUNCTION JsonTokenCreateNumber& (j AS Json, intPart AS _INTEGER64, fracPart AS DOUBLE, expPart AS _INTEGER64)
+    DIM idx AS LONG, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenCreateNumber& = JsonHadError: EXIT FUNCTION
+    idx = ___JsonGetEmptyToken&(j)
+
+    ___JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_VALUE
+    t.primType = JSONTOK_PRIM_NUMBER
+    t.intPart = intPart
+    t.fracPart = fracPart
+    t.expPart = expPart
+
+    ___JsonPutToken j, idx, t
+    JsonTokenCreateNumber& = idx
+END FUNCTION
+
+FUNCTION JsonTokenCreateDouble& (j AS Json, s AS DOUBLE)
+    DIM idx AS LONG, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenCreateDouble& = JsonHadError: EXIT FUNCTION
+    idx = ___JsonGetEmptyToken&(j)
+
+    ___JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_VALUE
+    t.primType = JSONTOK_PRIM_NUMBER
+    t.intPart = FIX(s)
+    t.fracPart = ABS(s) - ABS(t.intPart)
+
+    ___JsonPutToken j, idx, t
+    JsonTokenCreateDouble& = idx
+END FUNCTION
+
+FUNCTION JsonTokenCreateNull& (j AS Json)
+    DIM idx AS LONG, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenCreateNull& = JsonHadError: EXIT FUNCTION
+
+    idx = ___JsonGetEmptyToken&(j)
+
+    ___JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_VALUE
+    t.primType = JSONTOK_PRIM_NULL
+
+    ___JsonPutToken j, idx, t
+
+    JsonTokenCreateNull& = idx
+END FUNCTION
+
+FUNCTION JsonTokenCreateKey& (j AS Json, k AS STRING, inner AS LONG)
+    DIM idx AS LONG, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenCreateKey& = JsonHadError: EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, inner) THEN JsonTokenCreateKey& = JsonHadError: EXIT FUNCTION
+
+    IF JsonTokenGetType&(j, inner) = JSONTOK_TYPE_KEY THEN
+        JsonHadError = JSON_ERR_TokenWrongType
+        JsonError = "A Json Token of type Key was passed as the value token for a key, this is invalid"
+        JsonTokenCreateKey& = JsonHadError
+        EXIT FUNCTION
+    END IF
+
+    idx = ___JsonGetEmptyToken&(j)
+
+    ___JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_KEY
+
+    t.value = _MEMNEW(LEN(k))
+    _MEMPUT t.value, t.value.OFFSET, k
+
+    ___JsonTokenAddChild t, inner
+
+    ___JsonPutToken j, idx, t
+
+    JsonTokenCreateKey& = idx
+END FUNCTION
+
+FUNCTION JsonTokenCreateArray& (j AS Json)
+    DIM idx AS LONG, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenCreateArray& = JsonHadError: EXIT FUNCTION
+
+    idx = ___JsonGetEmptyToken&(j)
+
+    ___JsonGetToken j, idx, t
+
+    t.typ = JSONTOK_TYPE_ARRAY
+
+    ___JsonPutToken j, idx, t
+
+    JsonTokenCreateArray& = idx
+END FUNCTION
+
+SUB JsonTokenArrayAdd (j AS Json, arrayIdx AS LONG, childidx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT SUB
+
+    IF NOT ___JsonIsValidToken&(j, arrayIdx) THEN EXIT SUB
+    IF NOT ___JsonIsRightType&(j, arrayIdx, JSONTOK_TYPE_ARRAY) THEN EXIT SUB
+
+    IF NOT ___JsonIsValidToken&(j, childidx) THEN EXIT SUB
+    IF JsonTokenGetType&(j, childidx) = JSONTOK_TYPE_KEY THEN
+        JsonHadError = JSON_ERR_TokenWrongType
+        JsonError = "A Json Token of type Key was passed to ArrayAdd. Array's cannot contain Key tokens"
+        EXIT SUB
+    END IF
+
+    ___JsonGetToken j, arrayIdx, t
+    ___JsonTokenAddChild t, childidx
+    ___JsonPutToken j, arrayIdx, t
+END SUB
+
+SUB JsonTokenArrayAddAll (j AS Json, arrayIdx AS LONG, childidx() AS LONG)
+    DIM i AS LONG
+    FOR i = LBOUND(childidx) TO UBOUND(childidx)
+        JsonTokenArrayAdd j, arrayIdx, childidx(i)
+        IF JsonHadError THEN EXIT SUB
+    NEXT
+END SUB
+
+FUNCTION JsonTokenCreateObject& (j AS Json)
+    DIM idx AS LONG, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonTokenCreateObject& = JsonHadError: EXIT FUNCTION
+
+    idx = ___JsonGetEmptyToken&(j)
+
+    ___JsonGetToken j, idx, t
+    t.typ = JSONTOK_TYPE_OBJECT
+    ___JsonPutToken j, idx, t
+
+    JsonTokenCreateObject& = idx
+END FUNCTION
+
+SUB JsonTokenObjectAdd (j AS Json, objectIdx AS LONG, childidx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT SUB
+
+    IF NOT ___JsonIsValidToken&(j, objectIdx) THEN EXIT SUB
+    IF NOT ___JsonIsRightType&(j, objectIdx, JSONTOK_TYPE_OBJECT) THEN EXIT SUB
+
+    IF NOT ___JsonIsValidToken&(j, childidx) THEN EXIT SUB
+    IF NOT ___JsonIsRightType&(j, childidx, JSONTOK_TYPE_KEY) THEN EXIT SUB
+
+    ___JsonGetToken j, objectIdx, t
+    ___JsonTokenAddChild t, childidx
+    ___JsonPutToken j, objectIdx, t
+END SUB
+
+SUB JsonTokenObjectAddAll (j AS Json, objectIdx AS LONG, childidx() AS LONG)
+    DIM i AS LONG
+    FOR i = LBOUND(childidx) TO UBOUND(childidx)
+        JsonTokenObjectAdd j, objectIdx, childidx(i)
+        IF JsonHadError THEN EXIT SUB
+    NEXT
+END SUB
+
+SUB JsonSetRootToken (j AS Json, idx AS LONG)
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT SUB
+    IF NOT ___JsonIsValidToken&(j, idx) THEN EXIT SUB
+
+    j.RootToken = idx
+END SUB
+
+FUNCTION JsonGetRootToken& (j AS Json)
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonGetRootToken& = JsonHadError: EXIT FUNCTION
+
+    JsonGetRootToken& = j.RootToken
+END FUNCTION
+
+TYPE ___JsonFmtState
+    format AS JsonFormat
+    indent AS LONG
+END TYPE
+
+FUNCTION ___JsonRenderInternal$ (j AS Json, idx AS LONG, state AS ___JsonFmtState)
+    DIM res AS STRING, count AS _OFFSET, i AS _OFFSET, t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, idx) THEN EXIT FUNCTION
+
+    ___JsonGetToken j, idx, t
+
+    SELECT CASE t.typ
+        CASE JSONTOK_TYPE_OBJECT:
+            res = res + "{"
+            IF state.format.Indented THEN res = res + CHR$(10)
+
+            state.indent = state.indent + 1
+
+            count = ___JsonTokenGetChildCount%&(t)
+            WHILE i < count
+                IF state.format.Indented THEN res = res + SPACE$(state.indent * 2)
+                res = res + ___JsonRenderInternal$(j, ___JsonTokenGetChild&(t, i), state)
+
+                i = i + 1
+                IF i < count THEN res = res + ","
+                IF state.format.Indented THEN res = res + CHR$(10)
+            WEND
+            state.indent = state.indent - 1
+
+            IF state.format.Indented THEN res = res + SPACE$(state.indent * 2)
+            res = res + "}"
+
+        CASE JSONTOK_TYPE_ARRAY:
+            res = res + "["
+            IF state.format.Indented THEN res = res + CHR$(10)
+
+            state.indent = state.indent + 1
+
+            count = ___JsonTokenGetChildCount%&(t)
+            WHILE i < count
+                IF state.format.Indented THEN res = res + SPACE$(state.indent * 2)
+                res = res + ___JsonRenderInternal$(j, ___JsonTokenGetChild&(t, i), state)
+
+                i = i + 1
+                IF i < count THEN res = res + ","
+                IF state.format.Indented THEN res = res + CHR$(10)
+            WEND
+            state.indent = state.indent - 1
+
+            IF state.format.Indented THEN res = res + SPACE$(state.indent * 2)
+            res = res + "]"
+
+        CASE JSONTOK_TYPE_VALUE:
+            SELECT CASE t.primType
+                CASE JSONTOK_PRIM_STRING:
+                    res = ___JsonAddQuotes$(___JsonEscapeString$(___JsonGetRawStrValue$(j, t)))
+
+                CASE JSONTOK_PRIM_NULL:
+                    res = "null"
+
+                CASE JSONTOK_PRIM_NUMBER:
+                    res = _TRIM$(STR$(t.intPart))
+                    IF t.fracPart <> 0 THEN res = res + _TRIM$(STR$(t.fracPart))
+                    IF t.expPart <> 0 THEN res = res + "e" + _TRIM$(STR$(t.expPart))
+
+                CASE JSONTOK_PRIM_BOOL:
+                    IF t.intPart THEN res = "true" ELSE res = "false"
+
+                CASE ELSE:
+                    ' FIXME: This is very unlikely, but we should have better error reporting here
+                    res = "UNKNOWN"
+
+            END SELECT
+
+        CASE JSONTOK_TYPE_KEY:
+            res = ___JsonAddQuotes$(___JsonEscapeString$(___JsonGetRawStrValue$(j, t))) + ":"
+            IF state.format.Indented THEN res = res + " "
+            res = res + ___JsonRenderInternal$(j, ___JsonTokenGetChild&(t, 0), state)
+
+    END SELECT
+
+    ___JsonRenderInternal$ = res
+END FUNCTION
+
+FUNCTION JsonRender$ (j AS Json)
+    DIM state AS ___JsonFmtState
+
+    JsonRender$ = ___JsonRenderInternal$(j, j.RootToken, state)
+END FUNCTION
+
+FUNCTION JsonRenderToken$ (j AS Json, idx AS LONG)
+    DIM state AS ___JsonFmtState
+    state.format.Indented = -1
+
+    JsonRenderToken$ = ___JsonRenderInternal$(j, idx, state)
+END FUNCTION
+
+FUNCTION JsonRenderFormatted$ (j AS Json, format AS JsonFormat)
+    DIM state AS ___JsonFmtState
+    state.format = format
+
+    JsonRenderFormatted$ = ___JsonRenderInternal$(j, j.RootToken, state)
+END FUNCTION
+
+FUNCTION JsonRenderTokenFormatted$ (j AS Json, idx AS LONG, format AS JsonFormat)
+    DIM state AS ___JsonFmtState
+    state.format = format
+
+    JsonRenderTokenFormatted$ = ___JsonRenderInternal$(j, idx, state)
+END FUNCTION
+
+FUNCTION ___JsonGetRawStrValue$ (j AS Json, t AS jsontok)
+    j = j 'clear unused variable warning
+    IF t.value.OFFSET <> 0 THEN
+        DIM res AS STRING
+
+        res = SPACE$(t.value.SIZE)
+        _MEMGET t.value, t.value.OFFSET, res
+        ___JsonGetRawStrValue$ = res
+    END IF
+END FUNCTION
+
+FUNCTION JsonTokenGetValueStr$ (j AS Json, idx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, idx) THEN EXIT FUNCTION
+
+    IF JsonTokenGetType&(j, idx) <> JSONTOK_TYPE_VALUE AND JsonTokenGetType&(j, idx) <> JSONTOK_TYPE_KEY THEN
+        JsonHadError = JSON_ERR_TokenWrongType
+        JsonError = "Json Token was passed to function requiring type 'Key' Or 'Value' but is actually type: '" + ___JsonTokenTypeString$(JsonTokenGetType&(j, idx))
+        EXIT FUNCTION
+    END IF
+
+    ___JsonGetToken j, idx, t
+
+    IF t.typ = JSONTOK_TYPE_KEY THEN
+        JsonTokenGetValueStr$ = ___JsonGetRawStrValue$(j, t)
+    ELSEIF t.typ = JSONTOK_TYPE_VALUE THEN
+        SELECT CASE t.primType
+            CASE JSONTOK_PRIM_STRING:
+                JsonTokenGetValueStr$ = ___JsonGetRawStrValue$(j, t)
+
+            CASE JSONTOK_PRIM_NUMBER:
+                IF t.fracPart = 0 THEN
+                    JsonTokenGetValueStr$ = _TRIM$(STR$(t.intPart))
+                ELSE
+                    JsonTokenGetValueStr$ = _TRIM$(STR$(JsonTokenGetValueDouble#(j, idx)))
+                END IF
+
+            CASE JSONTOK_PRIM_BOOL:
+                IF t.intPart THEN
+                    JsonTokenGetValueStr$ = "true"
+                ELSE
+                    JsonTokenGetValueStr$ = "false"
+                END IF
+
+            CASE JSONTOK_PRIM_NULL:
+                JsonTokenGetValueStr$ = "null"
+        END SELECT
+    END IF
+END FUNCTION
+
+FUNCTION JsonTokenGetValueBool& (j AS Json, idx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, idx) THEN EXIT FUNCTION
+    IF NOT ___JsonIsRightPrimType&(j, idx, JSONTOK_PRIM_BOOL) THEN EXIT FUNCTION
+
+    ___JsonGetToken j, idx, t
+
+    JsonTokenGetValueBool& = t.intPart
+END FUNCTION
+
+FUNCTION JsonTokenGetValueInteger&& (j AS Json, idx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, idx) THEN EXIT FUNCTION
+    IF NOT ___JsonIsRightPrimType&(j, idx, JSONTOK_PRIM_NUMBER) THEN EXIT FUNCTION
+
+    ___JsonGetToken j, idx, t
+
+    JsonTokenGetValueInteger&& = t.intPart
+END FUNCTION
+
+FUNCTION JsonTokenGetValueDouble# (j AS Json, idx AS LONG)
+    DIM t AS jsontok
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, idx) THEN EXIT FUNCTION
+    IF NOT ___JsonIsRightPrimType&(j, idx, JSONTOK_PRIM_NUMBER) THEN EXIT FUNCTION
+
+    ___JsonGetToken j, idx, t
+
+    JsonTokenGetValueDouble# = t.intPart + t.fracPart
+END FUNCTION
+
+TYPE ___JsonQLex
+    curIdx AS LONG
+
+    index AS LONG
+    keyName AS STRING
+END TYPE
+
+FUNCTION ___JsonQueryLex& (query AS STRING, lex AS ___JsonQLex)
+    DIM startIdx AS LONG
+
+    IF lex.curIdx > LEN(query) THEN
+        ___JsonQueryLex& = ___JSON_QLEX_End
+        EXIT FUNCTION
+    END IF
+
+    IF ASC(query, lex.curIdx) = ASC(".") THEN
+        ___JsonQueryLex& = ___JSON_QLEX_Dot
+        lex.curIdx = lex.curIdx + 1
+        EXIT FUNCTION
+    END IF
+
+    IF ASC(query, lex.curIdx) = ASC("(") THEN
+        DIM missingEndParen AS LONG
+
+        lex.curIdx = lex.curIdx + 1
+        startIdx = lex.curIdx
+
+        WHILE lex.curIdx <= LEN(query)
+            IF NOT ___JsonIsDigit(ASC(query, lex.curIdx)) THEN EXIT WHILE
+            lex.curIdx = lex.curIdx + 1
+        WEND
+
+        IF startIdx = lex.curIdx THEN
+            ___JsonSetError JSON_ERR_BadQuery, "Expected digit at position:" + STR$(lex.curIdx)
+            EXIT FUNCTION
+        END IF
+
+        IF lex.curIdx > LEN(query) THEN
+            missingEndParen = -1
+        ELSEIF ASC(query, lex.curIdx) <> ASC(")") THEN
+            missingEndParen = -1
+        END IF
+
+        IF missingEndParen THEN
+            ___JsonSetError JSON_ERR_BadQuery, "Expected ')' at position:" + STR$(lex.curIdx)
+            EXIT FUNCTION
+        END IF
+
+        lex.index = VAL(MID$(query, startIdx, lex.curIdx - startIdx))
+        ___JsonQueryLex& = ___JSON_QLEX_Index
+        lex.curIdx = lex.curIdx + 1
+        EXIT FUNCTION
+    END IF
+
+    IF ASC(query, lex.curIdx) = ASC("'") THEN
+        DIM keyName AS STRING
+
+        DO WHILE ASC(query, lex.curIdx) <> ASC("'") OR lex.curIdx > LEN(query)
+            IF ASC(query, lex.curIdx) = ASC("\") THEN
+                lex.curIdx = lex.curIdx + 1
+                IF lex.curIdx > LEN(query) THEN EXIT DO
+
+                IF ASC(query, lex.curIdx) <> ASC("'") THEN
+                    ___JsonSetError JSON_ERR_BadQuery, "Unexpected escape character at postion:" + STR$(lex.curIdx)
+                    EXIT FUNCTION
+                END IF
+
+                keyName = keyName + "'"
+            ELSE
+                keyName = keyName + CHR$(ASC(query, lex.curIdx))
+            END IF
+
+            lex.curIdx = lex.curIdx + 1
+        LOOP
+
+        IF lex.curIdx > LEN(query) THEN
+            ___JsonSetError JSON_ERR_BadQuery, "Missing ending ' quote at position:" + STR$(lex.curIdx)
+            EXIT FUNCTION
+        END IF
+
+        lex.keyName = keyName
+        ___JsonQueryLex& = ___JSON_QLEX_Key
+        EXIT FUNCTION
+    END IF
+
+    ' unquoted key name
+    startIdx = lex.curIdx
+    DO WHILE lex.curIdx <= LEN(query)
+        IF ASC(query, lex.curIdx) = ASC(".") OR ASC(query, lex.curIdx) = ASC("(") THEN EXIT DO
+
+        lex.curIdx = lex.curIdx + 1
+    LOOP
+
+    lex.keyName = MID$(query, startIdx, lex.curIdx - startIdx)
+    ___JsonQueryLex& = ___JSON_QLEX_Key
+END FUNCTION
+
+FUNCTION JsonQueryFrom& (j AS Json, startToken AS LONG, query AS STRING)
+    DIM lex AS ___JsonQLex, curTok AS LONG, first AS LONG
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonQueryFrom& = JsonHadError: EXIT FUNCTION
+    IF NOT ___JsonIsValidToken&(j, startToken) THEN JsonQueryFrom& = JsonHadError: EXIT FUNCTION
+
+    lex.curIdx = 1
+    curTok = startToken
+    first = -1
+
+    DIM tok AS LONG
+    tok = ___JsonQueryLex&(query, lex)
+    IF JsonHadError THEN JsonQueryFrom& = JsonHadError: EXIT FUNCTION
+    DO
+        ' Array tokens can come one after another
+        WHILE tok = ___JSON_QLEX_Index
+            IF JsonTokenGetType&(j, curTok) <> JSONTOK_TYPE_ARRAY THEN
+                ___JsonSetError JSON_ERR_BadQuery, "Array bounds were used on a non-array token, at position:" + STR$(lex.curIdx)
+                JsonQueryFrom& = JSON_ERR_BadQuery
+                EXIT FUNCTION
+            END IF
+
+            curTok = JsonTokenGetChild&(j, curTok, lex.index)
+            IF JsonHadError THEN JsonQueryFrom& = JsonHadError: EXIT FUNCTION
+            tok = ___JsonQueryLex&(query, lex)
+            IF JsonHadError THEN JsonQueryFrom& = JsonHadError: EXIT FUNCTION
+            first = 0
+        WEND
+
+        IF tok = ___JSON_QLEX_End THEN EXIT DO
+
+        ' Dot must separate array/key
+        IF NOT first THEN
+            IF tok <> ___JSON_QLEX_Dot THEN
+                ___JsonSetError JSON_ERR_BadQuery, "Expected dot before key name, at position:" + STR$(lex.curIdx)
+                JsonQueryFrom& = JSON_ERR_BadQuery
+                EXIT FUNCTION
+            END IF
+
+            ' Token after dot must be a key, not array
+            tok = ___JsonQueryLex&(query, lex)
+            IF JsonHadError THEN JsonQueryFrom& = JsonHadError: EXIT FUNCTION
+            IF tok <> ___JSON_QLEX_Key THEN
+                ___JsonSetError JSON_ERR_BadQuery, "Expected key name after dot, at position:" + STR$(lex.curIdx)
+                JsonQueryFrom& = JSON_ERR_BadQuery
+                EXIT FUNCTION
+            END IF
+        END IF
+        first = 0
+
+        ' Key's cannot follow each other, they need to either be separated by a dot, or edn with an array index
+        WHILE tok = ___JSON_QLEX_Key
+            DIM found AS LONG, child AS LONG
+            found = -1
+
+            FOR child = 0 TO JsonTokenTotalChildren&(j, curTok) - 1
+                DIM c AS LONG
+                c = JsonTokenGetChild&(j, curTok, child)
+
+                IF JsonTokenGetType&(j, c) <> JSONTOK_TYPE_KEY THEN _CONTINUE
+
+                IF JsonTokenGetValueStr$(j, c) = lex.keyName THEN
+                    found = JsonTokenGetChild&(j, c, 0) ' Get the child of the key node
+                    EXIT FOR
+                END IF
+            NEXT
+
+            IF found = -1 THEN
+                ___JsonSetError JSON_ERR_KeyNotFound, "Key " + ___JsonAddQuotes$(lex.keyName) + " not found!"
+                JsonQueryFrom& = JSON_ERR_KeyNotFound
+                EXIT FUNCTION
+            END IF
+
+            curTok = found
+
+            tok = ___JsonQueryLex&(query, lex)
+            IF JsonHadError THEN JsonQueryFrom& = JsonHadError: EXIT FUNCTION
+            IF tok = ___JSON_QLEX_Key THEN
+                ___JsonSetError JSON_ERR_BadQuery, "Unexpected key, at position:" + STR$(lex.curIdx)
+                JsonQueryFrom& = JSON_ERR_BadQuery
+                EXIT FUNCTION
+            END IF
+        WEND
+    LOOP
+
+    JsonQueryFrom& = curTok
+END FUNCTION
+
+FUNCTION JsonQuery& (j AS Json, query AS STRING)
+    JsonQuery& = JsonQueryFrom&(j, j.RootToken, query)
+END FUNCTION
+
+' Returns the value of the token the query refers too
+FUNCTION jsonQueryFromValue$ (j AS Json, startToken AS LONG, query AS STRING)
+    DIM t AS LONG
+    t = JsonQueryFrom&(j, startToken, query)
+
+    IF JsonHadError THEN EXIT FUNCTION
+
+    jsonQueryFromValue$ = JsonTokenGetValueStr$(j, t)
+END FUNCTION
+
+' Returns the value of the token the query refers too
+FUNCTION JsonQueryValue$ (j AS Json, query AS STRING)
+    DIM t AS LONG
+    t = JsonQuery&(j, query)
+
+    IF JsonHadError THEN EXIT FUNCTION
+
+    JsonQueryValue$ = JsonTokenGetValueStr$(j, t)
+END FUNCTION
+
+FUNCTION ___JsonTokenTypeString$ (typ AS _BYTE)
+    SELECT CASE typ
+        CASE JSONTOK_TYPE_OBJECT: ___JsonTokenTypeString$ = "Object"
+        CASE JSONTOK_TYPE_ARRAY: ___JsonTokenTypeString$ = "Array"
+        CASE JSONTOK_TYPE_KEY: ___JsonTokenTypeString$ = "Key"
+        CASE JSONTOK_TYPE_VALUE: ___JsonTokenTypeString$ = "Value"
+    END SELECT
+END FUNCTION
+
+FUNCTION ___JsonTokenPrimTypeString$ (primType AS _BYTE)
+    SELECT CASE primType
+        CASE JSONTOK_PRIM_STRING: ___JsonTokenPrimTypeString$ = "String"
+        CASE JSONTOK_PRIM_BOOL: ___JsonTokenPrimTypeString$ = "Bool"
+        CASE JSONTOK_PRIM_NUMBER: ___JsonTokenPrimTypeString$ = "Number"
+        CASE JSONTOK_PRIM_NULL: ___JsonTokenPrimTypeString$ = "Null"
+    END SELECT
+END FUNCTION
+
+FUNCTION ___JsonIsDigit& (chr AS LONG)
+    ___JsonIsDigit& = chr >= ASC("0") AND chr <= ASC("9")
+END FUNCTION
+
+SUB ___JsonSetError (ero AS LONG, txt AS STRING)
+    JsonHadError = ero
+    JsonError = txt
+END SUB
+
+FUNCTION ___JsonIsWhiteSpace& (chr AS _BYTE)
+    ___JsonIsWhiteSpace& = chr = &H20 OR chr = &H09 OR chr = &H0A OR chr = &H0D
+END FUNCTION
+
+TYPE ___JsonLexer
+    prevNextIdx AS LONG
+    nextIdx AS LONG
+
+    startIdx AS LONG
+    endIdx AS LONG
+
+    intPart AS _INTEGER64
+    fracPart AS DOUBLE
+    expPart AS _INTEGER64
+
+    bool AS _BYTE
+END TYPE
+
+FUNCTION ___JsonLexString& (json AS STRING, lexer AS ___JsonLexer)
+    DIM stringEnd AS LONG
+
+    stringEnd = lexer.nextIdx
+
+    ' FIXME: The string can have UTF-8 characters, we need to skip them
+    WHILE stringEnd < LEN(json)
+        DIM chr AS _BYTE
+        stringEnd = stringEnd + 1
+        chr = ASC(json, stringEnd)
+
+        IF chr = 34 THEN
+            lexer.startIdx = lexer.nextIdx + 1
+            lexer.endIdx = stringEnd - 1
+            lexer.nextIdx = lexer.endIdx + 2
+
+            ___JsonLexString& = ___JSON_LEX_String
+            EXIT FUNCTION
+        END IF
+
+        IF chr = ASC("\") THEN
+            stringEnd = stringEnd + 1
+            ' FIXME: Verify escaped character is allowed
+        END IF
+    WEND
+
+    ___JsonSetError JSON_ERR_Invalid, "Missing end quote for string starting at position" + STR$(lexer.nextIdx)
+    ___JsonLexString& = ___JSON_LEX_End
+END FUNCTION
+
+FUNCTION ___JsonLexNull& (json AS STRING, lexer AS ___JsonLexer)
+    IF MID$(json, lexer.nextIdx, 4) = "null" THEN
+        lexer.nextIdx = lexer.nextIdx + 4
+        ___JsonLexNull& = ___JSON_LEX_Null
+        EXIT FUNCTION
+    END IF
+
+    ___JsonSetError JSON_ERR_Invalid, "Expected 'null' at position" + STR$(lexer.nextIdx)
+    ___JsonLexNull& = ___JSON_LEX_End
+END FUNCTION
+
+FUNCTION ___JsonLexNumber& (json AS STRING, lexer AS ___JsonLexer)
+    DIM curIdx AS LONG, isNegative AS _BYTE, valStart AS LONG
+    curIdx = lexer.nextIdx
+    lexer.intPart = 0
+    lexer.fracPart = 0
+    lexer.expPart = 0
+
+    ' Leading minus
+    IF ASC(json, curIdx) = ASC("-") THEN curIdx = curIdx + 1: isNegative = -1
+
+    ' Make sure there's a digit after the minus sign
+    IF NOT ___JsonIsDigit(ASC(json, curIdx)) THEN
+        ___JsonSetError JSON_ERR_Invalid, "Expected digit at" + STR$(curIdx)
+        ___JsonLexNumber& = ___JSON_LEX_End
+        EXIT FUNCTION
+    END IF
+
+    ' Skip all digits in the integer part
+    valStart = curIdx
+    WHILE curIdx <= LEN(json)
+        IF NOT ___JsonIsDigit(ASC(json, curIdx)) THEN EXIT WHILE
+        curIdx = curIdx + 1
+    WEND
+
+    IF curIdx > LEN(json) THEN GOTO returnNumber
+
+    lexer.intPart = VAL(MID$(json, valStart, curIdx - valStart))
+    IF isNegative THEN lexer.intPart = -lexer.intPart
+
+    ' Decimal part
+    IF ASC(json, curIdx) = ASC(".") THEN
+        valStart = curIdx
+        curIdx = curIdx + 1
+
+        IF NOT ___JsonIsDigit(ASC(json, curIdx)) THEN
+            ___JsonSetError JSON_ERR_Invalid, "Expected digit after decimal point at" + STR$(curIdx - 1)
+            ___JsonLexNumber& = ___JSON_LEX_End
+            EXIT FUNCTION
+        END IF
+
+        ' Skip all digits in the decimal part
+        WHILE curIdx <= LEN(json)
+            IF NOT ___JsonIsDigit(ASC(json, curIdx)) THEN EXIT WHILE
+            curIdx = curIdx + 1
+        WEND
+
+        IF curIdx > LEN(json) THEN GOTO returnNumber
+
+        ' The decimal point is included, so this produces a floating point value
+        lexer.fracPart = VAL(MID$(json, valStart, curIdx - valStart))
+    END IF
+
+    ' Exponent part
+    IF ASC(json, curIdx) = ASC("e") OR ASC(json, curIdx) = ASC("E") THEN
+        curIdx = curIdx + 1
+
+        ' The exponent can be positive or negative
+        isNegative = 0
+        IF ASC(json, curIdx) = ASC("+") THEN curIdx = curIdx + 1
+        IF ASC(json, curIdx) = ASC("-") THEN curIdx = curIdx + 1: isNegative = -1
+
+        IF NOT ___JsonIsDigit(ASC(json, curIdx)) THEN
+            ___JsonSetError JSON_ERR_Invalid, "Expected digit at" + STR$(curIdx)
+            ___JsonLexNumber& = ___JSON_LEX_End
+            EXIT FUNCTION
+        END IF
+
+        ' Skip all digits in the decimal part
+        valStart = curIdx
+        WHILE curIdx <= LEN(json)
+            IF NOT ___JsonIsDigit(ASC(json, curIdx)) THEN EXIT WHILE
+            curIdx = curIdx + 1
+        WEND
+
+        IF curIdx > LEN(json) THEN GOTO returnNumber
+
+        lexer.expPart = VAL(MID$(json, valStart, curIdx - valStart))
+        IF isNegative THEN lexer.expPart = -lexer.expPart
+    END IF
+
+    returnNumber:
+    lexer.startIdx = lexer.nextIdx
+    lexer.endIdx = curIdx - 1
+    lexer.nextIdx = curIdx
+
+    ___JsonLexNumber& = ___JSON_LEX_Number
+END FUNCTION
+
+' endIdx indicates the value of the bool, not the ending index (since it's more
+' useful to know the actual value rather than the string)
+FUNCTION ___JsonLexBool& (json AS STRING, lexer AS ___JsonLexer)
+    lexer.startIdx = lexer.nextIdx
+
+    IF MID$(json, lexer.nextIdx, 4) = "true" THEN
+        lexer.bool = -1
+        lexer.endIdx = lexer.startIdx + 3
+        lexer.nextIdx = lexer.nextIdx + 4
+        ___JsonLexBool& = ___JSON_LEX_Bool
+        EXIT FUNCTION
+    END IF
+
+    IF MID$(json, lexer.nextIdx, 5) = "false" THEN
+        lexer.bool = 0
+        lexer.endIdx = lexer.startIdx + 4
+        lexer.nextIdx = lexer.nextIdx + 5
+        ___JsonLexBool& = ___JSON_LEX_Bool
+        EXIT FUNCTION
+    END IF
+
+    ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position" + STR$(lexer.nextIdx + 1)
+    ___JsonLexBool& = ___JSON_LEX_End
+END FUNCTION
+
+' Returns the next token starting at nextIdx, skipping whitespace
+FUNCTION ___JsonLex& (json AS STRING, lexer AS ___JsonLexer)
+    lexer.prevNextIdx = lexer.nextIdx
+    IF lexer.nextIdx > LEN(json) THEN lexer.startIdx = lexer.nextIdx: ___JsonLex& = ___JSON_LEX_End: EXIT FUNCTION
+
+    ' Skip to next non-whitespace character
+    WHILE ___JsonIsWhiteSpace&(ASC(json, lexer.nextIdx))
+        lexer.nextIdx = lexer.nextIdx + 1
+        IF lexer.nextIdx > LEN(json) THEN lexer.startIdx = lexer.nextIdx: ___JsonLex& = ___JSON_LEX_End: EXIT FUNCTION
+    WEND
+
+    DIM chr AS _BYTE
+    chr = ASC(json, lexer.nextIdx)
+
+    ' String
+    IF chr = 34 THEN ___JsonLex& = ___JsonLexString&(json, lexer): EXIT FUNCTION
+    IF chr = ASC("n") THEN ___JsonLex& = ___JsonLexNull&(json, lexer): EXIT FUNCTION
+    IF chr = ASC("t") OR chr = ASC("f") THEN ___JsonLex& = ___JsonLexBool&(json, lexer): EXIT FUNCTION
+    IF ___JsonIsDigit(chr) OR chr = ASC("-") THEN ___JsonLex& = ___JsonLexNumber&(json, lexer): EXIT FUNCTION
+
+    IF chr = ASC(",") THEN
+        lexer.startIdx = lexer.nextIdx: lexer.endIdx = lexer.nextIdx: lexer.nextIdx = lexer.nextIdx + 1
+        ___JsonLex& = ___JSON_LEX_Comma
+        EXIT FUNCTION
+    END IF
+
+    IF chr = ASC(":") THEN
+        lexer.startIdx = lexer.nextIdx: lexer.endIdx = lexer.nextIdx: lexer.nextIdx = lexer.nextIdx + 1
+        ___JsonLex& = ___JSON_LEX_Colon
+        EXIT FUNCTION
+    END IF
+
+    IF chr = ASC("{") THEN
+        lexer.startIdx = lexer.nextIdx: lexer.endIdx = lexer.nextIdx: lexer.nextIdx = lexer.nextIdx + 1
+        ___JsonLex& = ___JSON_LEX_LeftBrace
+        EXIT FUNCTION
+    END IF
+
+    IF chr = ASC("[") THEN
+        lexer.startIdx = lexer.nextIdx: lexer.endIdx = lexer.nextIdx: lexer.nextIdx = lexer.nextIdx + 1
+        ___JsonLex& = ___JSON_LEX_LeftBracket
+        EXIT FUNCTION
+    END IF
+
+    IF chr = ASC("}") THEN
+        lexer.startIdx = lexer.nextIdx: lexer.endIdx = lexer.nextIdx: lexer.nextIdx = lexer.nextIdx + 1
+        ___JsonLex& = ___JSON_LEX_RightBrace
+        EXIT FUNCTION
+    END IF
+
+    IF chr = ASC("]") THEN
+        lexer.startIdx = lexer.nextIdx: lexer.endIdx = lexer.nextIdx: lexer.nextIdx = lexer.nextIdx + 1
+        ___JsonLex& = ___JSON_LEX_RightBracket
+        EXIT FUNCTION
+    END IF
+
+    ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position" + STR$(lexer.nextIdx) + ": '" + CHR$(chr) + "'"
+    ___JsonLex& = ___JSON_LEX_End
+END FUNCTION
+
+FUNCTION ___JsonParseValue& (json AS STRING, j AS Json, lexer AS ___JsonLexer, curTok AS LONG)
+    SELECT CASE curTok
+        CASE ___JSON_LEX_LeftBrace:
+            ___JsonParseValue& = ___JsonParseObject(json, j, lexer, curTok)
+
+        CASE ___JSON_LEX_LeftBracket:
+            ___JsonParseValue& = ___JsonParseArray(json, j, lexer, curTok)
+
+        CASE ___JSON_LEX_Null:
+            ___JsonParseValue& = JsonTokenCreateNull&(j)
+
+        CASE ___JSON_LEX_Number:
+            ___JsonParseValue& = JsonTokenCreateNumber&(j, lexer.intPart, lexer.fracPart, lexer.expPart)
+
+        CASE ___JSON_LEX_Bool:
+            ___JsonParseValue& = JsonTokenCreateBool&(j, lexer.bool)
+
+        CASE ___JSON_LEX_String:
+            ___JsonParseValue& = JsonTokenCreateString&(j, ___JsonUnescapeString$(MID$(json, lexer.startIdx, lexer.endIdx - lexer.startIdx + 1)))
+
+        CASE ELSE:
+            IF JsonHadError = JSON_ERR_Success THEN ___JsonSetError JSON_ERR_Invalid, "Unexpected token at position" + STR$(lexer.startIdx)
+            ___JsonParseValue& = JSON_ERR_Invalid
+    END SELECT
+END FUNCTION
+
+FUNCTION ___JsonParseObject& (json AS STRING, j AS Json, lexer AS ___JsonLexer, curTok AS LONG)
+    DIM objToken AS LONG, first AS LONG
+    IF curTok <> ___JSON_LEX_LeftBrace THEN
+        IF JsonHadError = JSON_ERR_Success THEN ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position:" + STR$(lexer.startIdx)
+        ___JsonParseObject& = JSON_ERR_Invalid
+        EXIT FUNCTION
+    END IF
+
+    objToken = JsonTokenCreateObject&(j)
+    first = -1
+
+    DO
+        curTok = ___JsonLex&(json, lexer)
+
+        IF curTok = ___JSON_LEX_RightBrace THEN EXIT DO
+
+        IF NOT first THEN
+            IF curTok <> ___JSON_LEX_Comma THEN
+                IF JsonHadError = JSON_ERR_Success THEN ___JsonSetError JSON_ERR_Invalid, "Unexpected character at position:" + STR$(lexer.startIdx)
+                ___JsonParseObject& = JSON_ERR_Invalid
+                EXIT FUNCTION
+            END IF
+            curTok = ___JsonLex&(json, lexer)
+        END IF
+        first = 0
+
+        IF curTok <> ___JSON_LEX_String THEN
+            IF JsonHadError = JSON_ERR_Success THEN ___JsonSetError JSON_ERR_Invalid, "Expected key name at position:" + STR$(lexer.startIdx)
+            ___JsonParseObject& = JSON_ERR_Invalid
+            EXIT FUNCTION
+        END IF
+
+        DIM keyToken AS LONG, valueToken AS LONG
+        DIM keyName AS STRING
+        keyName = ___JsonUnescapeString$(MID$(json, lexer.startIdx, lexer.endIdx - lexer.startIdx + 1))
+
+        curTok = ___JsonLex&(json, lexer)
+        IF curTok <> ___JSON_LEX_Colon THEN
+            ___JsonSetError JSON_ERR_Invalid, "Expected colon at position:" + STR$(lexer.prevNextIdx)
+            ___JsonParseObject& = JSON_ERR_Invalid
+            EXIT FUNCTION
+        END IF
+
+        curTok = ___JsonLex&(json, lexer)
+        valueToken = ___JsonParseValue&(json, j, lexer, curTok)
+        IF valueToken = JSON_ERR_Invalid THEN ___JsonParseObject& = JSON_ERR_Invalid: EXIT FUNCTION
+
+        keyToken = JsonTokenCreateKey&(j, keyName, valueToken)
+        JsonTokenObjectAdd j, objToken, keyToken
+    LOOP
+
+    ___JsonParseObject& = objToken
+END FUNCTION
+
+FUNCTION ___JsonParseArray& (json AS STRING, j AS Json, lexer AS ___JsonLexer, curTok AS LONG)
+    DIM arrToken AS LONG, first AS LONG
+    IF curTok <> ___JSON_LEX_LeftBracket THEN ___JsonParseArray& = JSON_ERR_Invalid: EXIT FUNCTION
+
+    arrToken = JsonTokenCreateArray&(j)
+
+    first = -1
+    DO
+        curTok = ___JsonLex&(json, lexer)
+        IF curTok = ___JSON_LEX_RightBracket THEN EXIT DO
+
+        IF NOT first THEN
+            IF curTok <> ___JSON_LEX_Comma THEN
+                ___JsonSetError JSON_ERR_Invalid, "Expected comma at position:" + STR$(lexer.startIdx)
+                ___JsonParseArray& = JSON_ERR_Invalid
+                EXIT FUNCTION
+            END IF
+            curTok = ___JsonLex&(json, lexer)
+        END IF
+        first = 0
+
+        DIM valueToken AS LONG
+        valueToken = ___JsonParseValue&(json, j, lexer, curTok)
+        IF valueToken = JSON_ERR_Invalid THEN ___JsonParseArray& = JSON_ERR_Invalid: EXIT FUNCTION
+
+        JsonTokenArrayAdd j, arrToken, valueToken
+    LOOP
+
+    ___JsonParseArray& = arrToken
+END FUNCTION
+
+FUNCTION JsonParse& (j AS Json, json AS STRING)
+    DIM lexer AS ___JsonLexer, curTok AS LONG, result AS LONG, lastPos AS LONG
+    lexer.nextIdx = 1
+
+    ___JsonResetError
+    IF NOT ___JsonIsInitialized&(j) THEN JsonParse& = JSON_ERR_NotInitialized: EXIT FUNCTION
+
+    curTok = ___JsonLex&(json, lexer)
+    result = ___JsonParseValue&(json, j, lexer, curTok)
+
+    IF result = JSON_ERR_Invalid THEN JsonParse& = JsonHadError: EXIT FUNCTION
+
+    lastPos = lexer.nextIdx
+    curTok = ___JsonLex&(json, lexer)
+
+    IF curTok <> ___JSON_LEX_End THEN
+        ___JsonSetError JSON_ERR_Invalid, "Unexpected characters after end of JSON at position:" + STR$(lastPos)
+        JsonParse& = JSON_ERR_Invalid
+        EXIT FUNCTION
+    END IF
+
+    JsonSetRootToken j, result
+    JsonParse& = JSON_ERR_Success
+END FUNCTION
+
+FUNCTION ___JsonAddQuotes$ (s AS STRING)
+    ___JsonAddQuotes$ = CHR$(34) + s + CHR$(34)
+END FUNCTION
+

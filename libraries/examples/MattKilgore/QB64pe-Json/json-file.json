@@ -1,0 +1,18 @@
+{
+    "stringKey": "value1",
+    "numberKey": 20,
+    "boolKey": true,
+    "arrayKey": [
+        20, 30, 40
+    ],
+    "objectKey": {
+        "objectInnerKey": {
+            "objectInnerKey": {
+                "innerKey": true
+            },
+            "objectInnerKey2": {
+                "innerKey": false
+            }
+        }
+    }
+}
