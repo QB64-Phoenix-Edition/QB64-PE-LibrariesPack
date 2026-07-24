@@ -5,4 +5,4 @@ Simply download the **Source code** archive from the [latest stable release](htt
 
 For later convenience you should now first build the **Library Explorer** application, do so by loading the `LibraryExplorer.bas` source from the `LibExpSource` folder into the IDE and compile it via the F11 key (Make EXE only). Look at the IDE status area to see where the executable was saved. If it's in your QB64-PE main folder then it's Ok, otherwise please move the executable manually into the QB64-PE main folder. After successful compiling you no longer need the `LibExpSource` folder and you can safely delete it from your QB64-PE main folder again, if you want.
 
-For more information on the **Libraries Pack** and its usage please click into the `libraries` folder in the listing above and look at the [README file](./libraries/README.md) there.
+For more indepth information on the **Libraries Pack** and its usage look at the [ReadMe](./libraries/README.md) file in the `libraries` folder.

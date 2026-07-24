@@ -1,23 +1,29 @@
 ## You wanna contribute to the Libraries Pack?
-Perfect, as said earlier dropping in more library files should be easy enough, once you understood the layout of the `libraries` folder. The much harder part is to make sure the library meets the requirements for inclusion into the Pack first, for that check out the sections below. You should also be familiar with GitHub and its related tools, if you're not then just skip #1 and #6 of the following list.
+Perfect, as already said in the [ReadMe](README.md) document, dropping in more library files should be easy enough, once you understood the layout of the `libraries` folder. The much harder part is to make sure the library meets the requirements for inclusion into the Pack first, which is best done in your local QB64-PE installation.
 
-1. Make yourself a clone/fork of our [QB64-PE Libraries Pack](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack) repository.
-2. In your cloned/forked repository (or local installation if not using GitHub) make a new folder for the `author` inside each of the four sub-folders `descriptors`, `documents`, `examples` and `includes` if the author is not already in the list.
-3. Inside the `author` folders make a sub-folder for the `libraryname`, but only in the `documents`, `examples` and `includes` branches this time.
-4. In the `author` folder of the `descriptors` branch create a new INI file `libraryname.ini` and fill it with the respective data. The easiest is probably to copy the INI of another library, rename it accordingly and exchange its information (see format details below).
-5. If the new author is a known forum member, then get his avatar picture and specify it in the INI file. If no personalized avatar is available, then leave the INI entry blank. In alternative you may use the avatar entry to specify a dedicated logo of 100x100 pixels for a library. All images must be saved in the `descriptors/author` folder of the respective library author.
-6. Open a **Pull Request** in your cloned/forked repository to request a merge of your made changes back into the parent repository.
+1. Make sure you have installed the Libraries Pack from the [latest repository snapshot](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack/archive/refs/heads/main.zip).
+2. **For the following steps #3, #4 and #6 make sure to use the very same upper/lower case spelling for `author` and `libraryname` in all places, that's very important for Linux.**
+3. In your `libraries` folder make a new folder for the `author` inside each of the four sub-folders `descriptors`, `documents`, `examples` and `includes` if the author is not already in the list.
+4. Inside the `author` folders make a new sub-folder for the `libraryname`, but only in `documents`, `examples` and `includes` this time.
+5. Drop in your new library files: documentation, examples and includes.
+6. Inside the `author` folder in the `descriptors` folder create a new INI file `libraryname.ini` and fill it with the respective data (see [Format Details](#the-library-descriptor-ini-format-is-easy-and-straight-forward) below).
+7. If the author is a known forum member, then get his avatar picture and specify it in the INI file. If no personalized avatar is available, then leave the INI entry blank. In alternative you may also use the avatar entry to specify a dedicated logo of 100x100 pixels for a library. The images must be dropped into the `descriptors/author` folder too.
+8. **Now make sure everything complies to the [Requirements List](#what-are-the-requirements-for-inclusion-of-a-library) detailed below.**
+9. When done, then pack your entire `libraries` folder and post the archive in the [GitHub Discussion](https://qb64phoenix.com/forum/forumdisplay.php?fid=42) Forum. Any developer will then check and incorporate your work into the GitHub repository.
 
-#### When contributing without using GitHub:
-First make sure you have the [latest repository snapshot](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack/archive/refs/heads/main.zip) of the Libraries Pack, then just as initially said, drop in your library and make it work locally on your system according to the rules detailed below. When done, then pack the entire `libraries` folder, post the archive in the [GitHub Discussion](https://qb64phoenix.com/forum/forumdisplay.php?fid=42) Forum and ask for a developer (RhoSigma, a740g, DSMan195276, grymmjack, SMcNeill) to do the GitHub stuff.
+In alternative, if you're familiar with GitHub, then you may also publish your work into your private fork of our [QB64-PE Libraries Pack](https://github.com/QB64-Phoenix-Edition/QB64-PE-LibrariesPack) repository and make a **Pull Request** from there.
 
-#### The Library Descriptor INI format is easy and straight forward:
+---
+---
+---
+
+### The Library Descriptor INI format is easy and straight forward:
 ```ini
 [LIBRARY DETAILS]
 FullName="Full name/title of the library"
 Version="1.0 (optional DD-MMM-YYYY date)"
 License="license name (optional license link)"
-ShortDesc="A short description of the library, its purpose etc. (max. 450-500 chars)."
+ShortDesc="A short precise description of the library, its purpose etc. (max. 450-500 chars)."
 FullDocs=full_documentation_filename
 Author="User name, (optional real name) & optional other contributors"
 Avatar=optional_author_forum_avatar_filename
@@ -27,19 +33,22 @@ IncAtTop=library_BI_filename
 IncAfterMain=library_BAS_filename
 IncAtBottom=library_BM_filename
 ```
-Not used/required file entries just remain blank. Note that all file names are to be given without quotes (even if the file name has spaces) and also without any path specification, as files are all in its defined known places and the paths are hardcoded inside QB64-PE and the Library Explorer application. However, make sure that the written cases of all created files and folders do exactly match and also the given file names in the INI file match that. That is because of the usual case sensitivity of Linux file systems, where a file called `Foo.ini` is a different file than `foo.ini` and `FOO.ini`, same is valid for folder names. Not paying enough attention here may lead to errors due to not found files or folders on Linux systems.
+- all file names are to be given without quotes, even if the file name has spaces
+- no path specification is required, as files are all in its defined known places
+- **written upper/lower cases of all files and folders must match exactly because of Linux**
+- not used/required file entries just remain blank, but should still exist
 
-Why is a hardcoded folder layout enforced here, wouldn't it be better to allow more freedom here and rather providing full path info in the INI files instead?
-- The `libraries` folder is treated just like QB64-PE's `internal` folder. It has its defined layout, so that the compiler knows where to look for files and data.
-- The folder must remain clean and machine maintainable. Allowing personal freedom in the folder layout tends to make the place messy pretty quickly, as each user has his own habits and preferences.
+Go back to the [Base List](#you-wanna-contribute-to-the-libraries-pack) above.
+
+---
 
 ### What are the requirements for inclusion of a library?
 To avoid rejection of a library the following things are considered mandatory:
-1. The author of the library must be known at least by its username (real name is optional) and also the license under which the library was released. All that's easy if it's your own library. A library should always be listed under the original author name, even if other people contributed to it or revised the library for inclusion into the Pack.
+1. The author of the library must be known at least by its username (real name is optional) and also the license under which the library was released. A library should always be listed under the original author name, even if other people contributed to it or revised the library for inclusion into the Pack.
 2. At least a rudimentary documentation must be provided, because nobody uses a library where he must diggin' into the code first to understand it's purpose and usage. See a740g's QBDS libraries for a good minimal documentation. For more complex libraries a more comprehensive documentation is of advantage, such as in RhoSigma's and TerryRitchi's libraries. The file format should be TXT, MD, PDF or HTML.
-3. At least one example must be provided. All examples should use **upper case keywords** and must work without unexpected runtime error popups from all possible compile locations, i.e. especially when they read/write any asset files. See `examples/QB64-PE/SampleLib/FindAssets.bas` for an example how to do that.
-4. The library code itself should use **upper case keywords** as well and must follow the **Library coding standards** outlined below. The library code may consist of 3 general parts/files, the **AtTop**, the **AfterMain** and the **AtBottom** parts, take a closer look to the `QB64-PE/SampleLib` and its examples to learn what must go in which part.<br>
-**Note:** Since **QB64-PE v4.4.0** it's possible to interleave main level code and SUB/FUNCTION definitions, so you may join the **AtBottom** file into the **AtTop** file now, if you want. However, **AfterMain** code such as GOSUB routines or ERROR handlers should remain in its own file for simplicity. If you otherwise also join it into the **AtTop** file, then make sure to place a GOTO before the GOSUB/ERROR routines to skip over it. Not doing so let's programs run into them whithout warning and results in "RETURN without GOSUB" and/or "RESUME without ERROR" failures.
+3. At least one example must be provided. All examples should use **upper case keywords** and must work without unexpected runtime error popups from all possible compile locations. That is, especially when they read/write files, then these files should be placed into the example's source folder. See `examples/QB64-PE/SampleLib/GetSrcFold.bas` for the unified code example to determine the folder regardless of the EXE location.
+4. The library code itself should use **upper case keywords** as well and must follow the **[Library coding standards](#library-coding-standards)** outlined below. The library code may consist of 3 general parts/files, the **AtTop**, the **AfterMain** and the **AtBottom** parts, take a closer look to the `QB64-PE/SampleLib` and its examples to learn what must go in which part.<br>
+**Note:** Since **QB64-PE v4.4.0** it's possible to interleave main level code and SUB/FUNCTION definitions, so you may join the **AtBottom** file into the **AtTop** file now, if you want. However, **AfterMain** code (if used) such as GOSUB routines or ERROR handlers should remain in its own file.
 5. One of the library parts/files must contain the code below to enforce **QB64-PE v4.3.0 or up** for use in the Libraries Pack. It's best to place it in the first part/file included to give the error as soon as possible. Also every example should contain the same code right before the $USELIBRARY line.<br>
 **Important:** If your library depends on the new code interleaving feature, then the code below must be adapted to check for **v4.4.0** instead.
     ```vb
@@ -47,7 +56,10 @@ To avoid rejection of a library the following things are considered mandatory:
         $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
     $END IF
     ```
-6. After you dropped all files in place, perform a final check. The library can't have any name clashes with any of the other libraries in the Pack. Load the `libraries/CheckAll.bas` program into the IDE, add the new library and you'll see if the IDE remains happy or starts throwing errors. Also save the `CheckAll.bas` program with the new added library. If your code has platform or 32/64bits dependent code switched on/off by pre-compiler $IF..$ELSE..$ENDIF blocks, then make sure to perform the test on **all possible** platform/bits combinations.
+6. After all requirements are met and everything works as expected, perform a final **but important** check. The new library can't have any name clashes with any of the other libraries already in the Pack. Load the `libraries/CheckAll.bas` program into the IDE and make sure syntax checking is active. Then add the new library into the list and you'll see if the IDE remains happy or starts throwing errors. If your code has platform or 32/64bits dependent code switched on/off by pre-compiler $IF..$ELSE..$ENDIF blocks, then make sure to perform the test on **all possible** platform/bits combinations. When done, then save the `CheckAll.bas` program with the new added library.
+7. Congratulations, your work is now ready for incorporation into the offical Libraries Pack. Go back to the [Base List](#you-wanna-contribute-to-the-libraries-pack) and continue with step #9.
+
+---
 
 ### Library coding standards
 - **Every library part/file must have the $INCLUDEONCE metacommand in it to avoid accidental multiple inclusions.**
@@ -67,7 +79,7 @@ To avoid rejection of a library the following things are considered mandatory:
   - Another possibility for more diversity could be to add a single letter as prefix, e.g. "cName" for CONSTs, "vName" for variables, "tName" for TYPEs, "pName" for SUB/FUNCTION parameters etc..
   - The reality is, there are too many uncertainties to be able to set a clear rule here, so the library should use **unique names** wherever possible, it may use prefixes on desire or not.
   - In the very end not all the burden can be put on the library author alone here, to make sure there will never be any name conflicts when using his library, finally the end user of a library will hopefully have his own brain and should be smart enough to do his own part to avoid name conflicts.
-  - So far so good, but at least **one thing must be made sure by the library author**. The library can't have any name clashes with any of the other libraries in the Pack. Follow #6 in the "Requirements List" above to check that.
+  - So far so good, but at least **one thing must be made sure by the library author**. The library can't have any name clashes with any of the other libraries in the Pack. Follow #6 in the [Requirements List](#what-are-the-requirements-for-inclusion-of-a-library) above to check that.
 
 - **After talking that much about descriptive names, of course the library should also use them for labels, especially for DATA labels used in conjunction with RESTORE. Those labels are different from GOTO/GOSUB labels as they are visible in the whole program, even if they are defined locally inside a SUB/FUNCTION, i.e.:**
   - DATA labels must be treated like DIM SHARED variables, it's possible in the main program to RESTORE to and read DATA defined locally in a SUB/FUNCTION and also every SUB/FUNCTION can read DATA defined in the main program or any other SUB/FUNCTION.
@@ -86,3 +98,5 @@ To avoid rejection of a library the following things are considered mandatory:
   - _DEST, _SOURCE, _BLEND, _PRINTMODE, COLOR, visible screen, and lots more can be altered while in a routine, but unless that's the intended purpose of the routine, it must be reset.
 
 - **Also none of the library include files should leave the compiler in $CHECKING:OFF mode, there must be a matching $CHECKING:ON for each :OFF. If in doubt, then an additional $CHECKING:ON placed in the very last line of each library file is a good safety measure.**
+
+Go back to the [Requirements List](#what-are-the-requirements-for-inclusion-of-a-library) above.
