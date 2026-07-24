@@ -19,28 +19,28 @@ $END IF
 
 $USELIBRARY:'MattKilgore/QB64pe-Json'
 
-'--- Find the assets depending on the example's location.
+'--- Find QB64-PE and Example source folders depending on EXE location.
 '-----
-'The next 3 lines must hold the exact source file and asset path names,
-'i.e. the names and the use of upper/lower case must match, so that it
-'works on case sensitive Linux filesystems. The use of slash or backslash
-'doesn't matter in this context.
-DIM exSource$: exSource$ = "Serialize-Deserialize.bas" 'this example's source file
-DIM asDirSrc$: asDirSrc$ = "" 'path source dir ==> assets dir
-DIM asDirDef$: asDirDef$ = "libraries\examples\MattKilgore\QB64pe-Json" 'path QB64-PE dir ==> assets dir
-DIM assetDir$, qb64Dir$
+'Fill example$ and library$ with the exact names, i.e. the use of upper/lower
+'case must match, so that it works on case sensitive Linux filesystems.
+DIM example$: example$ = "Serialize-Deserialize.bas" 'this example's source file name
+DIM library$: library$ = "MattKilgore/QB64pe-Json" 'the library's name (as in $USELIBRARY)
+DIM qbDir$, srcDir$ 'filled automatically (with trailing slash)
 '-----
-IF _FILEEXISTS(exSource$) THEN
-    assetDir$ = asDirSrc$ 'compiled to "Source Folder"
+IF _FILEEXISTS(example$) THEN
+    srcDir$ = _CWD$ 'compiled to "Source Folder"
+    qbDir$ = LEFT$(srcDir$, LEN(srcDir$) - LEN(library$) - 20)
 ELSEIF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
-    assetDir$ = asDirDef$ 'compiled to the QB64-PE folder (default)
+    qbDir$ = _CWD$ 'compiled to the QB64-PE folder (default)
+    srcDir$ = qbDir$ + "libraries/examples/" + library$ + "/"
 ELSE
     'The example was compiled to a user selected location, we have
     'to ask the user to give us a hint.
-    qb64Dir$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
-    IF LEN(qb64Dir$) > 0 _ANDALSO (_FILEEXISTS(qb64Dir$ + "\qb64pe.exe") _ORELSE _FILEEXISTS(qb64Dir$ + "\qb64pe")) THEN
-        'Now we can set our path building on the QB64-PE folder.
-        assetDir$ = qb64Dir$ + "\" + asDirDef$
+    qbDir$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
+    IF LEN(qbDir$) > 0 _ANDALSO (_FILEEXISTS(qbDir$ + "/qb64pe.exe") _ORELSE _FILEEXISTS(qbDir$ + "/qb64pe")) THEN
+        'Now we can set our paths building on the selected folder.
+        qbDir$ = qbDir$ + "/"
+        srcDir$ = qbDir$ + "libraries/examples/" + library$ + "/"
     ELSE
         'The user didn't respond correctly, end with error message.
         PRINT
@@ -49,8 +49,8 @@ ELSE
         END
     END IF
 END IF
-IF LEN(assetDir$) THEN CHDIR assetDir$
-'Now our current location (_CWD$) is correctly set to the assets folder.
+CHDIR srcDir$ 'Change into the example's source folder, in alternative
+'             'use qbDir$ or srcDir$ directly where applicable.
 '-----------------------------------------------------
 
 TYPE PokemonStats

@@ -12,9 +12,9 @@
 '=== character instead.
 '=====
 '=== If you don't have the Arial Unicode MS font, then goto
-'===  https://www.download-free-fonts.com/details/88978/arial-unicode-ms
-'=== for free download. Install the font or just drop it anywhere and
-'=== change the _LOADFONT line below accordingly.
+'===  https://github.com/marduklev/skin.swan-alpha/blob/master/fonts/arialuni.ttf
+'=== and click the download symbol (right/bottom). Install the font or
+'=== just drop it anywhere and adjust the _LOADFONT line below accordingly.
 '=====================================================================
 
 $IF VERSION < 4.3.0 THEN

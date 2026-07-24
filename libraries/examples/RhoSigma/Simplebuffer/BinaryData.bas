@@ -33,23 +33,39 @@ $USELIBRARY:'RhoSigma/Simplebuffer'
 
 _TITLE "Simplebuffers binary data handling"
 
-'--- Find the root of the program's source folder.
+'--- Find QB64-PE and Example source folders depending on EXE location.
 '-----
-IF _FILEEXISTS("BinaryData.bas") THEN
-    root$ = ""
+'Fill example$ and library$ with the exact names, i.e. the use of upper/lower
+'case must match, so that it works on case sensitive Linux filesystems.
+DIM example$: example$ = "BinaryData.bas" 'this example's source file name
+DIM library$: library$ = "RhoSigma/Simplebuffer" 'the library's name (as in $USELIBRARY)
+DIM qbDir$, srcDir$ 'filled automatically (with trailing slash)
+'-----
+IF _FILEEXISTS(example$) THEN
+    srcDir$ = _CWD$ 'compiled to "Source Folder"
+    qbDir$ = LEFT$(srcDir$, LEN(srcDir$) - LEN(library$) - 20)
 ELSEIF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
-    root$ = "libraries\examples\RhoSigma\Simplebuffer\"
+    qbDir$ = _CWD$ 'compiled to the QB64-PE folder (default)
+    srcDir$ = qbDir$ + "libraries/examples/" + library$ + "/"
 ELSE
-    qbfo$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
-    IF LEN(qbfo$) > 0 _ANDALSO (_FILEEXISTS(qbfo$ + "\qb64pe.exe") _ORELSE _FILEEXISTS(qbfo$ + "\qb64pe")) THEN
-        root$ = qbfo$ + "\libraries\examples\RhoSigma\Simplebuffer\"
+    'The example was compiled to a user selected location, we have
+    'to ask the user to give us a hint.
+    qbDir$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
+    IF LEN(qbDir$) > 0 _ANDALSO (_FILEEXISTS(qbDir$ + "/qb64pe.exe") _ORELSE _FILEEXISTS(qbDir$ + "/qb64pe")) THEN
+        'Now we can set our paths building on the selected folder.
+        qbDir$ = qbDir$ + "/"
+        srcDir$ = qbDir$ + "libraries/examples/" + library$ + "/"
     ELSE
+        'The user didn't respond correctly, end with error message.
         PRINT
-        PRINT "ERROR: Can't locate the program's source folder, please run again"
-        PRINT "       and select your QB64-PE folder when ask for it."
+        PRINT "ERROR: Can't locate required assets, please run again and"
+        PRINT "       select your QB64-PE folder when ask for it."
         END
     END IF
 END IF
+CHDIR srcDir$ 'Change into the example's source folder, in alternative
+'             'use qbDir$ or srcDir$ directly where applicable.
+'-----------------------------------------------------
 
 '--- define an UDT and fill it with some nonsense
 '-----
@@ -89,7 +105,7 @@ outBuf% = CreateBuf% 'init the buffer
 DIM outUDT AS _MEM
 outUDT = _MEM(friends())
 PutBufMemData outBuf%, outUDT 'put entire friends UDT array in buffer
-BufToFile outBuf%, root$ + "usertype.dat"
+BufToFile outBuf%, "usertype.dat"
 _MEMFREE outUDT
 DisposeBuf outBuf% 'destroy buffer
 ERASE friends 'destroy UDT array
@@ -99,7 +115,7 @@ ERASE friends 'destroy UDT array
 '--- array data, not the array initialized above
 '-----
 REDIM readback(2) AS Person 'new UDT array
-inBuf% = FileToBuf%(root$ + "usertype.dat") 'load file into buffer
+inBuf% = FileToBuf%("usertype.dat") 'load file into buffer
 DIM inUDT AS _MEM
 inUDT = _MEM(readback())
 GetBufMemData inBuf%, inUDT 'get data back into another UDT array
@@ -137,14 +153,14 @@ outBuf% = CreateBuf% 'init the buffer
 DIM outIMG AS _MEM
 outIMG = _MEMIMAGE(_DEST) 'we'll now save our corlorful printed screen from above
 PutBufMemData outBuf%, outIMG
-BufToFile outBuf%, root$ + "image.dat"
+BufToFile outBuf%, "image.dat"
 _MEMFREE outIMG
 DisposeBuf outBuf% 'destroy buffer
 CLS: COLOR 15: PRINT: PRINT "with the next keypress we reload the saved screen...": SLEEP
 
 '--- reload and restore saved image data, using _MEMIMAGE
 '-----
-inBuf% = FileToBuf%(root$ + "image.dat") 'load file into buffer
+inBuf% = FileToBuf%("image.dat") 'load file into buffer
 DIM inIMG AS _MEM
 inIMG = _MEMIMAGE(_DEST) 'our screen write page again
 GetBufMemData inBuf%, inIMG 'get data back into the screen
@@ -162,7 +178,7 @@ FOR i% = 0 TO 15: a%(i%) = i% + 65: NEXT i% 'fill array
 DIM outARR AS _MEM
 outARR = _MEM(a%())
 PutBufMemData outBuf%, outARR 'put entire array at once
-BufToFile outBuf%, root$ + "array.dat"
+BufToFile outBuf%, "array.dat"
 _MEMFREE outARR
 DisposeBuf outBuf% 'destroy buffer
 ERASE a% 'destroy array
@@ -170,7 +186,7 @@ ERASE a% 'destroy array
 '--- get back the saved array data
 '-----
 REDIM b%(15)
-inBuf% = FileToBuf%(root$ + "array.dat") 'load file into buffer
+inBuf% = FileToBuf%("array.dat") 'load file into buffer
 DIM inARR AS _MEM
 inARR = _MEM(b%())
 GetBufMemData inBuf%, inARR 'get data back into another array
@@ -188,7 +204,7 @@ ERASE b% 'destroy array
 '--- that's all folks
 '-----
 PRINT: PRINT "You may also have a look in the created .dat files in the folder:"
-PRINT _IIF(LEN(qbfo$) > 0, "", _CWD$) + root$
+PRINT _CWD$
 PRINT: PRINT "done... (you may then safely delete the .dat files)"
 END
 

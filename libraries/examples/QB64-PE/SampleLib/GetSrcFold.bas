@@ -1,23 +1,34 @@
-'INI Manager - demo 1
+'Get source folder example.
 '
-'syntax: Ini_WriteSetting file$, section$, key$, value$
-
-'write a new key/value pair to an .ini file or update an existing
-'if the file doesn't exist, it'll be created.
-'----------------------------------------------------------------
+'The user may either compile a program to its "Source Folder" or to the
+'default location. The latter may even be changed to any location since
+'QB64-PE v4.3.0 and up.
+'
+'The requirements in the Contributors.md document say, that all examples
+'must work without unexpected runtime error popups from all locations.
+'
+'For most self-contained examples this should not be a problem, but as
+'soon as external files are involved you need to know the exact path to
+'avoid errors when opening files or loading sounds/images etc.
+'
+'As the Libraries Pack has a well defined order, we can dertermine the
+'QB64-PE and the source folder of each example very easy just by knowing
+'its name and the library it belongs to.
+'
+'This example shows the unified way to locate these folders, which should
+'be used for all examples in the QB64-PE Libraries Pack.
+'=====================================================
 
 $IF VERSION < 4.3.0 THEN
     $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
 $END IF
 
-$USELIBRARY:'FellippeHeitor/IniManager'
-
 '--- Find QB64-PE and Example source folders depending on EXE location.
 '-----
 'Fill example$ and library$ with the exact names, i.e. the use of upper/lower
 'case must match, so that it works on case sensitive Linux filesystems.
-DIM example$: example$ = "IniDemo1.bas" 'this example's source file name
-DIM library$: library$ = "FellippeHeitor/IniManager" 'the library's name (as in $USELIBRARY)
+DIM example$: example$ = "GetSrcFold.bas" 'this example's source file name
+DIM library$: library$ = "QB64-PE/SampleLib" 'the library's name (as in $USELIBRARY)
 DIM qbDir$, srcDir$ 'filled automatically (with trailing slash)
 '-----
 IF _FILEEXISTS(example$) THEN
@@ -46,41 +57,15 @@ CHDIR srcDir$ 'Change into the example's source folder, in alternative
 '             'use qbDir$ or srcDir$ directly where applicable.
 '-----------------------------------------------------
 
-'(brackets in section names are optional; will be added automatically anyway)
-Ini_WriteSetting "test.ini", "[general]", "version", "Beta 4"
-GOSUB Status
-
-'subsequent calls don't need to mention the file again
-Ini_WriteSetting "", "general", "date", DATE$
-GOSUB Status
-
-Ini_WriteSetting "", "general", "time", TIME$
-GOSUB Status
-
-Ini_WriteSetting "", "credits", "author", "Fellippe Heitor"
-GOSUB Status
-
-Ini_WriteSetting "", "contact", "email", "fellippe@qb64.org"
-GOSUB Status
-
-Ini_WriteSetting "", "contact", "twitter", "@FellippeHeitor"
-GOSUB Status
-
-PRINT "File created/updated. I'll wait for you to check it with your editor of choice."
-PRINT "Hit any key to continue..."
-PRINT
-a$ = INPUT$(1)
-
-Ini_WriteSetting "", "general", "version", "Beta 4 - check the repo"
-GOSUB Status
-
-PRINT "File updated again. Go check it if you will."
+'--- Do stuff with our located assets.
+'-----
+SCREEN _NEWIMAGE(640, 400, 32)
+i& = _LOADIMAGE("QB64-PE.png", 32)
+IF i& < -1 THEN
+    _PUTIMAGE (270, 150), i&
+    _FREEIMAGE i&
+ELSE
+    PRINT "Can't load image..."
+END IF
 END
-
-Status:
-'NOTE: If you would check dot values of the __ini TYPE inside a SUB or FUNCTION,
-'      then remember to explicitly do a SHARED __ini in the respective routine.
-COLOR 7: PRINT Ini_GetInfo$
-COLOR 15: PRINT __ini.lastSection$; __ini.lastKey$: PRINT
-RETURN
 

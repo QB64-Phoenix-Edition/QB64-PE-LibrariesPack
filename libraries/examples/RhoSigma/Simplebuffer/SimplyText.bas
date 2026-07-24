@@ -26,23 +26,39 @@ $END IF
 
 $USELIBRARY:'RhoSigma/Simplebuffer'
 
-'--- Find the root of the program's source folder.
+'--- Find QB64-PE and Example source folders depending on EXE location.
 '-----
-IF _FILEEXISTS("SimplyText.bas") THEN
-    root$ = ""
+'Fill example$ and library$ with the exact names, i.e. the use of upper/lower
+'case must match, so that it works on case sensitive Linux filesystems.
+DIM example$: example$ = "SimplyText.bas" 'this example's source file name
+DIM library$: library$ = "RhoSigma/Simplebuffer" 'the library's name (as in $USELIBRARY)
+DIM qbDir$, srcDir$ 'filled automatically (with trailing slash)
+'-----
+IF _FILEEXISTS(example$) THEN
+    srcDir$ = _CWD$ 'compiled to "Source Folder"
+    qbDir$ = LEFT$(srcDir$, LEN(srcDir$) - LEN(library$) - 20)
 ELSEIF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
-    root$ = "libraries\examples\RhoSigma\Simplebuffer\"
+    qbDir$ = _CWD$ 'compiled to the QB64-PE folder (default)
+    srcDir$ = qbDir$ + "libraries/examples/" + library$ + "/"
 ELSE
-    qbfo$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
-    IF LEN(qbfo$) > 0 _ANDALSO (_FILEEXISTS(qbfo$ + "\qb64pe.exe") _ORELSE _FILEEXISTS(qbfo$ + "\qb64pe")) THEN
-        root$ = qbfo$ + "\libraries\examples\RhoSigma\Simplebuffer\"
+    'The example was compiled to a user selected location, we have
+    'to ask the user to give us a hint.
+    qbDir$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
+    IF LEN(qbDir$) > 0 _ANDALSO (_FILEEXISTS(qbDir$ + "/qb64pe.exe") _ORELSE _FILEEXISTS(qbDir$ + "/qb64pe")) THEN
+        'Now we can set our paths building on the selected folder.
+        qbDir$ = qbDir$ + "/"
+        srcDir$ = qbDir$ + "libraries/examples/" + library$ + "/"
     ELSE
+        'The user didn't respond correctly, end with error message.
         PRINT
-        PRINT "ERROR: Can't locate the program's source folder, please run again"
-        PRINT "       and select your QB64-PE folder when ask for it."
+        PRINT "ERROR: Can't locate required assets, please run again and"
+        PRINT "       select your QB64-PE folder when ask for it."
         END
     END IF
 END IF
+CHDIR srcDir$ 'Change into the example's source folder, in alternative
+'             'use qbDir$ or srcDir$ directly where applicable.
+'-----------------------------------------------------
 
 '--- Set title and print the program's version string.
 '-----
@@ -52,7 +68,7 @@ COLOR 9: PRINT VersionSimplyText$: PRINT: COLOR 7
 '--- the usual file based read
 '-----
 COLOR 12: PRINT "reading lines from file (delayed 0.2 sec.) ...": PRINT: COLOR 7
-OPEN root$ + "SimplyText.bas" FOR INPUT AS #1
+OPEN "SimplyText.bas" FOR INPUT AS #1
 WHILE NOT EOF(1)
     LINE INPUT #1, l$
     PRINT l$
@@ -66,7 +82,7 @@ CLS
 '-----
 COLOR 9: PRINT VersionSimplyText$: PRINT: COLOR 7
 COLOR 12: PRINT "reading lines from buffer (delayed 0.2 sec.) ...": PRINT: COLOR 7
-bh% = FileToBuf%(root$ + "SimplyText.bas")
+bh% = FileToBuf%("SimplyText.bas")
 ConvBufToNativeEol bh%
 WHILE NOT EndOfBuf%(bh%)
     PRINT ReadBufLine$(bh%)

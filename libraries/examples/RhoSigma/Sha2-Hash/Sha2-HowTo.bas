@@ -25,23 +25,39 @@ $END IF
 
 $USELIBRARY:'RhoSigma/Sha2-Hash'
 
-'--- Find the root of the program's source folder.
+'--- Find QB64-PE and Example source folders depending on EXE location.
 '-----
-IF _FILEEXISTS("Sha2-HowTo.bas") THEN
-    root$ = ""
+'Fill example$ and library$ with the exact names, i.e. the use of upper/lower
+'case must match, so that it works on case sensitive Linux filesystems.
+DIM example$: example$ = "Sha2-HowTo.bas" 'this example's source file name
+DIM library$: library$ = "RhoSigma/Sha2-Hash" 'the library's name (as in $USELIBRARY)
+DIM qbDir$, srcDir$ 'filled automatically (with trailing slash)
+'-----
+IF _FILEEXISTS(example$) THEN
+    srcDir$ = _CWD$ 'compiled to "Source Folder"
+    qbDir$ = LEFT$(srcDir$, LEN(srcDir$) - LEN(library$) - 20)
 ELSEIF _FILEEXISTS("qb64pe.exe") _ORELSE _FILEEXISTS("qb64pe") THEN
-    root$ = "libraries\examples\RhoSigma\Sha2-Hash\"
+    qbDir$ = _CWD$ 'compiled to the QB64-PE folder (default)
+    srcDir$ = qbDir$ + "libraries/examples/" + library$ + "/"
 ELSE
-    qbfo$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
-    IF LEN(qbfo$) > 0 _ANDALSO (_FILEEXISTS(qbfo$ + "\qb64pe.exe") _ORELSE _FILEEXISTS(qbfo$ + "\qb64pe")) THEN
-        root$ = qbfo$ + "\libraries\examples\RhoSigma\Sha2-Hash\"
+    'The example was compiled to a user selected location, we have
+    'to ask the user to give us a hint.
+    qbDir$ = _SELECTFOLDERDIALOG$("Please locate your QB64-PE main folder...")
+    IF LEN(qbDir$) > 0 _ANDALSO (_FILEEXISTS(qbDir$ + "/qb64pe.exe") _ORELSE _FILEEXISTS(qbDir$ + "/qb64pe")) THEN
+        'Now we can set our paths building on the selected folder.
+        qbDir$ = qbDir$ + "/"
+        srcDir$ = qbDir$ + "libraries/examples/" + library$ + "/"
     ELSE
+        'The user didn't respond correctly, end with error message.
         PRINT
-        PRINT "ERROR: Can't locate the program's source folder, please run again"
-        PRINT "       and select your QB64-PE folder when ask for it."
+        PRINT "ERROR: Can't locate required assets, please run again and"
+        PRINT "       select your QB64-PE folder when ask for it."
         END
     END IF
 END IF
+CHDIR srcDir$ 'Change into the example's source folder, in alternative
+'             'use qbDir$ or srcDir$ directly where applicable.
+'-----------------------------------------------------
 
 '--- Set title and print the program's version string.
 '-----
@@ -52,7 +68,7 @@ COLOR 9: PRINT VersionSha2HowTo$: COLOR 7
 '--- and then pass it to the FUNCTION GetStringSHA2$().
 '-----
 file$ = "Sha2-HowTo.bas"
-OPEN root$ + file$ FOR BINARY AS #1
+OPEN file$ FOR BINARY AS #1
 a$ = SPACE$(LOF(1))
 GET #1, , a$
 CLOSE #1
@@ -66,7 +82,7 @@ PRINT ":  "; GetStringSHA2$(a$)
 PRINT
 PRINT "and now the same file, but using the file digest function directly ..."
 PRINT "SHA2 Digest of file "; CHR$(34); file$; CHR$(34)
-PRINT ":  "; GetFileSHA2$(root$ + file$)
+PRINT ":  "; GetFileSHA2$(file$)
 
 '--- Here's a quick try with a simple predefined literal string.
 '-----
