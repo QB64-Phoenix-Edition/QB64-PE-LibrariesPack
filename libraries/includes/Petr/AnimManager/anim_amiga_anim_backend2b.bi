@@ -275,66 +275,66 @@ TYPE AmgAnimStore
 END TYPE
 
 ' Shared dynamic array: AmgAnimItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-REDIM SHARED AmgAnimItems(0) AS AmgAnimStore
+REDIM SHARED AmgAnimItems(0 TO 0) AS AmgAnimStore
 ' Shared dynamic array: AmgAnimFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-REDIM SHARED AmgAnimFrames(0) AS AmgAnimFrameInfo
+REDIM SHARED AmgAnimFrames(0 TO 0) AS AmgAnimFrameInfo
 ' Shared dynamic array: AmgAnimFileNames is resized here to hold the parallel array that remembers the source filename for each active entry.
-REDIM SHARED AmgAnimFileNames(0) AS STRING
+REDIM SHARED AmgAnimFileNames(0 TO 0) AS STRING
 ' Shared dynamic array: AmgAnimErrorTexts is resized here to hold the text storage for the last human-readable error message.
-REDIM SHARED AmgAnimErrorTexts(0) AS STRING
+REDIM SHARED AmgAnimErrorTexts(0 TO 0) AS STRING
 
 ' Shared dynamic array: AmgAnimCanvasMem is resized here to hold one cached _MEM handle per live canvas image.
-REDIM SHARED AmgAnimCanvasMem(0) AS _MEM
+REDIM SHARED AmgAnimCanvasMem(0 TO 0) AS _MEM
 ' Shared variable: AmgAnimFrameCountUsed stores the total number of frames available for the current animation.
 DIM SHARED AmgAnimFrameCountUsed AS LONG
 
 ' Shared dynamic array: AmgAnimSnapshotMeta is resized here to hold the working value for Amiga animation snapshot meta.
-REDIM SHARED AmgAnimSnapshotMeta(0) AS AmgAnimSnapshotStore
+REDIM SHARED AmgAnimSnapshotMeta(0 TO 0) AS AmgAnimSnapshotStore
 ' Shared variable: AmgAnimSnapshotMetaUsed stores the flag telling whether the current slot or record is in use.
 DIM SHARED AmgAnimSnapshotMetaUsed AS LONG
 
 ' Shared dynamic array: amg_anim_buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED amg_anim_buf(0) AS _UNSIGNED _BYTE
+REDIM SHARED amg_anim_buf(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared variable: amg_anim_file_size stores the working value for Amiga animation file size.
 DIM SHARED amg_anim_file_size AS _UNSIGNED LONG
 
 ' Shared dynamic array: amg_anim_data_pool is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED amg_anim_data_pool(0) AS _UNSIGNED _BYTE
+REDIM SHARED amg_anim_data_pool(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared variable: amg_anim_data_pool_used stores the flag telling whether the current slot or record is in use.
 DIM SHARED amg_anim_data_pool_used AS LONG
 
 ' Shared dynamic array: amg_anim_planar_pool is resized here to hold the working value for Amiga animation planar pool.
-REDIM SHARED amg_anim_planar_pool(0) AS _UNSIGNED _BYTE
+REDIM SHARED amg_anim_planar_pool(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared variable: amg_anim_planar_pool_used stores the flag telling whether the current slot or record is in use.
 DIM SHARED amg_anim_planar_pool_used AS LONG
 
 ' Shared dynamic array: amg_anim_chunky_pool is resized here to hold the working value for Amiga animation chunky pool.
-REDIM SHARED amg_anim_chunky_pool(0) AS _UNSIGNED _BYTE
+REDIM SHARED amg_anim_chunky_pool(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared variable: amg_anim_chunky_pool_used stores the flag telling whether the current slot or record is in use.
 DIM SHARED amg_anim_chunky_pool_used AS LONG
 
 ' Shared dynamic array: amg_anim_pixels_pool is resized here to hold the working value for Amiga animation pixels pool.
-REDIM SHARED amg_anim_pixels_pool(0) AS _UNSIGNED LONG
+REDIM SHARED amg_anim_pixels_pool(0 TO 0) AS _UNSIGNED LONG
 ' Shared variable: amg_anim_pixels_pool_used stores the flag telling whether the current slot or record is in use.
 DIM SHARED amg_anim_pixels_pool_used AS LONG
 
 ' Shared dynamic array: amg_anim_palette_pool is resized here to hold the palette storage or palette index used during indexed-color decoding.
-REDIM SHARED amg_anim_palette_pool(0) AS AmgAnimRGB8
+REDIM SHARED amg_anim_palette_pool(0 TO 0) AS AmgAnimRGB8
 ' Shared variable: amg_anim_palette_pool_used stores the flag telling whether the current slot or record is in use.
 DIM SHARED amg_anim_palette_pool_used AS LONG
 
 ' Shared dynamic array: amg_anim_scratch_planar_base is resized here to hold the working value for Amiga animation scratch planar base.
-REDIM SHARED amg_anim_scratch_planar_base(0) AS _UNSIGNED _BYTE
+REDIM SHARED amg_anim_scratch_planar_base(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared dynamic array: amg_anim_scratch_planar_a is resized here to hold the working value for Amiga animation scratch planar a.
-REDIM SHARED amg_anim_scratch_planar_a(0) AS _UNSIGNED _BYTE
+REDIM SHARED amg_anim_scratch_planar_a(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared dynamic array: amg_anim_scratch_planar_b is resized here to hold the working value for Amiga animation scratch planar b.
-REDIM SHARED amg_anim_scratch_planar_b(0) AS _UNSIGNED _BYTE
+REDIM SHARED amg_anim_scratch_planar_b(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared dynamic array: amg_anim_scratch_chunky is resized here to hold the working value for Amiga animation scratch chunky.
-REDIM SHARED amg_anim_scratch_chunky(0) AS _UNSIGNED _BYTE
+REDIM SHARED amg_anim_scratch_chunky(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared dynamic array: amg_anim_scratch_pixels is resized here to hold the working value for Amiga animation scratch pixels.
-REDIM SHARED amg_anim_scratch_pixels(0) AS _UNSIGNED LONG
+REDIM SHARED amg_anim_scratch_pixels(0 TO 0) AS _UNSIGNED LONG
 ' Shared dynamic array: amg_anim_scratch_pal is resized here to hold the working value for Amiga animation scratch pal.
-REDIM SHARED amg_anim_scratch_pal(0) AS AmgAnimRGB8
+REDIM SHARED amg_anim_scratch_pal(0 TO 0) AS AmgAnimRGB8
 ' Shared variable: amg_anim_scratch_planar_size stores the working value for Amiga animation scratch planar size.
 DIM SHARED amg_anim_scratch_planar_size AS LONG
 ' Shared variable: amg_anim_scratch_chunky_size stores the working value for Amiga animation scratch chunky size.
@@ -344,9 +344,9 @@ DIM SHARED amg_anim_scratch_pal_size AS LONG
 ' Shared variable: amg_anim_scratch_pixels_size stores the working value for Amiga animation scratch pixels size.
 DIM SHARED amg_anim_scratch_pixels_size AS LONG
 ' Shared dynamic array: amg_anim_plane_pack_lo stores packed 4-pixel contributions for planar-to-chunky rendering, low half.
-REDIM SHARED amg_anim_plane_pack_lo(0) AS _UNSIGNED LONG
+REDIM SHARED amg_anim_plane_pack_lo(0 TO 0) AS _UNSIGNED LONG
 ' Shared dynamic array: amg_anim_plane_pack_hi stores packed 4-pixel contributions for planar-to-chunky rendering, high half.
-REDIM SHARED amg_anim_plane_pack_hi(0) AS _UNSIGNED LONG
+REDIM SHARED amg_anim_plane_pack_hi(0 TO 0) AS _UNSIGNED LONG
 ' Shared variable: amg_anim_plane_pack_ready stores whether the planar render lookup tables were initialized.
 DIM SHARED amg_anim_plane_pack_ready AS LONG
 

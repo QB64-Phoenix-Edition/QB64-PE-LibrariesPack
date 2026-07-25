@@ -119,13 +119,13 @@ TYPE AnimCacheFrameStore
 END TYPE
 
 ' Shared dynamic array: AnimItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-REDIM SHARED AnimItems(0) AS AnimStore
+REDIM SHARED AnimItems(0 TO 0) AS AnimStore
 ' Shared dynamic array: AnimFileNames is resized here to hold the parallel array that remembers the source filename for each active entry.
-REDIM SHARED AnimFileNames(0) AS STRING
+REDIM SHARED AnimFileNames(0 TO 0) AS STRING
 ' Shared dynamic array: AnimErrorTexts is resized here to hold the text storage for the last human-readable error message.
-REDIM SHARED AnimErrorTexts(0) AS STRING
+REDIM SHARED AnimErrorTexts(0 TO 0) AS STRING
 ' Shared dynamic array: AnimCacheFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-REDIM SHARED AnimCacheFrames(0) AS AnimCacheFrameStore
+REDIM SHARED AnimCacheFrames(0 TO 0) AS AnimCacheFrameStore
 ' Shared variable: AnimCacheBytesUsed stores the running total of cache memory currently consumed.
 DIM SHARED AnimCacheBytesUsed AS _UNSIGNED _INTEGER64
 ' Shared variable: AnimCacheBytesBudget stores the memory budget that limits how much frame cache this module may keep.

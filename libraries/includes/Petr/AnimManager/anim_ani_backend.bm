@@ -111,11 +111,11 @@ FUNCTION AniOpenLimit& (fileName AS STRING, maxWidth AS LONG, maxHeight AS LONG,
     DIM oneErr AS STRING
 
     ' dynamic array: buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM buf(0) AS _UNSIGNED _BYTE
+    REDIM buf(0 TO 0) AS _UNSIGNED _BYTE
     ' dynamic array: seqRaw is resized here to hold the working value for seq raw.
-    REDIM seqRaw(0) AS LONG
+    REDIM seqRaw(0 TO 0) AS LONG
     ' dynamic array: rateRaw is resized here to hold the working value for rate raw.
-    REDIM rateRaw(0) AS LONG
+    REDIM rateRaw(0 TO 0) AS LONG
 
     AniOpenLimit = -1
     slotId = -1
@@ -474,7 +474,7 @@ SUB AniProbe (fileName AS STRING, ok AS INTEGER, isAni AS INTEGER, widthPx AS LO
     DIM bottomExtent AS LONG
 
     ' dynamic array: buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM buf(0) AS _UNSIGNED _BYTE
+    REDIM buf(0 TO 0) AS _UNSIGNED _BYTE
 
     ok = 0
     isAni = 0
@@ -1580,11 +1580,11 @@ FUNCTION AniDecodeDibCursor% (buf() AS _UNSIGNED _BYTE, imageOfs AS LONG, imageS
     DIM imgMem AS _MEM
 
     ' dynamic array: palR is resized here to hold the working value for pal r.
-    REDIM palR(0) AS LONG
+    REDIM palR(0 TO 0) AS LONG
     ' dynamic array: palG is resized here to hold the working value for pal g.
-    REDIM palG(0) AS LONG
+    REDIM palG(0 TO 0) AS LONG
     ' dynamic array: palB is resized here to hold the working value for pal b.
-    REDIM palB(0) AS LONG
+    REDIM palB(0 TO 0) AS LONG
 
     AniDecodeDibCursor = 0
     errText = ""

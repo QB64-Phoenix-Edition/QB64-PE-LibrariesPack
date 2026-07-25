@@ -199,11 +199,11 @@ END TYPE
 ' Shared store for opened animations
 ' =========================================================
 ' Shared dynamic array: FlicItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-REDIM SHARED FlicItems(0) AS FlicStore
+REDIM SHARED FlicItems(0 TO 0) AS FlicStore
 ' Shared dynamic array: FlicFileNames is resized here to hold the parallel array that remembers the source filename for each active entry.
-REDIM SHARED FlicFileNames(0) AS STRING
+REDIM SHARED FlicFileNames(0 TO 0) AS STRING
 ' Shared dynamic array: FlicErrorTexts is resized here to hold the text storage for the last human-readable error message.
-REDIM SHARED FlicErrorTexts(0) AS STRING
+REDIM SHARED FlicErrorTexts(0 TO 0) AS STRING
 
 ' =========================================================
 ' Shared decoded state pools
@@ -213,15 +213,15 @@ REDIM SHARED FlicPaletteData(0 TO 255, 0 TO 0) AS RGBColorType
 ' Shared dynamic array: FlicPalette32Data is resized here to hold the palette storage or palette index used during indexed-color decoding.
 REDIM SHARED FlicPalette32Data(0 TO 255, 0 TO 0) AS _UNSIGNED LONG
 ' Shared dynamic array: FlicPixelData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED FlicPixelData(0) AS _UNSIGNED _BYTE
+REDIM SHARED FlicPixelData(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared dynamic array: FlicFrameOffsets64 is resized here to hold the working value for FLIC frame offsets 64.
-REDIM SHARED FlicFrameOffsets64(0) AS _INTEGER64
+REDIM SHARED FlicFrameOffsets64(0 TO 0) AS _INTEGER64
 ' Shared dynamic array: FlicRow32Data is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED FlicRow32Data(0) AS _UNSIGNED LONG
+REDIM SHARED FlicRow32Data(0 TO 0) AS _UNSIGNED LONG
 ' Shared dynamic array: FlicSnapshotMeta is resized here to hold the working value for FLIC snapshot meta.
-REDIM SHARED FlicSnapshotMeta(0) AS FlicSnapshotStore
+REDIM SHARED FlicSnapshotMeta(0 TO 0) AS FlicSnapshotStore
 ' Shared dynamic array: FlicSnapshotPixels is resized here to hold the working value for FLIC snapshot pixels.
-REDIM SHARED FlicSnapshotPixels(0) AS _UNSIGNED _BYTE
+REDIM SHARED FlicSnapshotPixels(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared dynamic array: FlicSnapshotPalette is resized here to hold the palette storage or palette index used during indexed-color decoding.
 REDIM SHARED FlicSnapshotPalette(0 TO 255, 0 TO 0) AS RGBColorType
 
@@ -229,7 +229,7 @@ REDIM SHARED FlicSnapshotPalette(0 TO 255, 0 TO 0) AS RGBColorType
 ' Shared file storage and frame decode view
 ' =========================================================
 ' Shared dynamic array: FlicFileData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED FlicFileData(0) AS _UNSIGNED _BYTE
+REDIM SHARED FlicFileData(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared variable: FlicFileDataNext stores the buffer that holds raw, packed, or decoded byte data.
 DIM SHARED FlicFileDataNext AS LONG
 ' Shared variable: FlicFileDataCapacity stores the buffer that holds raw, packed, or decoded byte data.
@@ -247,11 +247,11 @@ DIM SHARED FlicSlotCapacity AS LONG
 ' Shared scratch buffers for file IO and fast clears
 ' =========================================================
 ' Shared dynamic array: FlicIoChunkData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED FlicIoChunkData(0) AS _UNSIGNED _BYTE
+REDIM SHARED FlicIoChunkData(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared dynamic array: FlicIoTailData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED FlicIoTailData(0) AS _UNSIGNED _BYTE
+REDIM SHARED FlicIoTailData(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared dynamic array: FlicZeroFillData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED FlicZeroFillData(0) AS _UNSIGNED _BYTE
+REDIM SHARED FlicZeroFillData(0 TO 0) AS _UNSIGNED _BYTE
 ' Shared variable: FlicIoChunkCapacity stores the working value for FLIC io chunk capacity.
 DIM SHARED FlicIoChunkCapacity AS LONG
 ' Shared variable: FlicIoTailCapacity stores the working value for FLIC io tail capacity.

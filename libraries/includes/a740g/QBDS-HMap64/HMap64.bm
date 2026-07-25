@@ -37,7 +37,7 @@ END SUB
 ''' @brief Delete the hash map and free all associated memory.
 ''' @param map The hash map to clear.
 SUB HMap64_Free (map() AS HMap64)
-    REDIM map(0) AS HMap64
+    REDIM map(0 TO 0) AS HMap64
 END SUB
 
 ''' @brief Return the current capacity of the hash map.

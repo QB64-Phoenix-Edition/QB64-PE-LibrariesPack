@@ -131,27 +131,27 @@ TYPE Gif89aSnapshotStore
 END TYPE
 
 ' Shared dynamic array: Gif89aFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-REDIM SHARED Gif89aFrames(0) AS Gif89aFrameStore
+REDIM SHARED Gif89aFrames(0 TO 0) AS Gif89aFrameStore
 ' Shared dynamic array: Gif89aItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-REDIM SHARED Gif89aItems(0) AS Gif89aStore
+REDIM SHARED Gif89aItems(0 TO 0) AS Gif89aStore
 ' Shared dynamic array: Gif89aRawData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED Gif89aRawData(0) AS STRING
+REDIM SHARED Gif89aRawData(0 TO 0) AS STRING
 ' Shared dynamic array: Gif89aErrorTexts is resized here to hold the text storage for the last human-readable error message.
-REDIM SHARED Gif89aErrorTexts(0) AS STRING
+REDIM SHARED Gif89aErrorTexts(0 TO 0) AS STRING
 ' Shared dynamic array: Gif89aDecodePrefix is resized here to hold the working value for GIF89A decode prefix.
-REDIM SHARED Gif89aDecodePrefix(0) AS LONG
+REDIM SHARED Gif89aDecodePrefix(0 TO 0) AS LONG
 ' Shared dynamic array: Gif89aDecodeSuffix is resized here to hold the working value for GIF89A decode suffix.
-REDIM SHARED Gif89aDecodeSuffix(0) AS INTEGER
+REDIM SHARED Gif89aDecodeSuffix(0 TO 0) AS INTEGER
 ' Shared dynamic array: Gif89aDecodeStack is resized here to hold the working value for GIF89A decode stack.
-REDIM SHARED Gif89aDecodeStack(0) AS INTEGER
+REDIM SHARED Gif89aDecodeStack(0 TO 0) AS INTEGER
 ' Shared dynamic array: Gif89aFrameIndexScratch is resized here to hold the working value for GIF89A frame index scratch.
-REDIM SHARED Gif89aFrameIndexScratch(0) AS INTEGER
+REDIM SHARED Gif89aFrameIndexScratch(0 TO 0) AS INTEGER
 ' Shared dynamic array: Gif89aDrawIndexScratch is resized here to hold the working value for GIF89A draw index scratch.
-REDIM SHARED Gif89aDrawIndexScratch(0) AS INTEGER
+REDIM SHARED Gif89aDrawIndexScratch(0 TO 0) AS INTEGER
 ' Shared dynamic array: Gif89aPaletteRgbaScratch is resized here to hold the palette storage or palette index used during indexed-color decoding.
-REDIM SHARED Gif89aPaletteRgbaScratch(0) AS _UNSIGNED LONG
+REDIM SHARED Gif89aPaletteRgbaScratch(0 TO 0) AS _UNSIGNED LONG
 ' Shared dynamic array: Gif89aSnapshotMeta is resized here to hold the working value for GIF89A snapshot meta.
-REDIM SHARED Gif89aSnapshotMeta(0) AS Gif89aSnapshotStore
+REDIM SHARED Gif89aSnapshotMeta(0 TO 0) AS Gif89aSnapshotStore
 ' Shared variable: Gif89aFrameTail stores the working value for GIF89A frame tail.
 DIM SHARED Gif89aFrameTail AS LONG
 ' Shared variable: Gif89aSnapshotMetaNext stores the working value for GIF89A snapshot meta next.

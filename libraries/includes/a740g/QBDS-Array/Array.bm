@@ -31,7 +31,7 @@ END SUB
 ''' @brief Delete the array and free all associated memory.
 ''' @param array The array to free.
 SUB Array_Free (array() AS Array)
-    REDIM array(0) AS Array
+    REDIM array(0 TO 0) AS Array
 END SUB
 
 ''' @brief Return the current capacity of the array.

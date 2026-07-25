@@ -31,7 +31,7 @@ END SUB
 ''' @brief Delete the set and free all associated memory.
 ''' @param set The set to free.
 SUB HSet_Free (set() AS HSet)
-    REDIM set(0) AS HSet
+    REDIM set(0 TO 0) AS HSet
 END SUB
 
 ''' @brief Return the current capacity of the set's underlying array.

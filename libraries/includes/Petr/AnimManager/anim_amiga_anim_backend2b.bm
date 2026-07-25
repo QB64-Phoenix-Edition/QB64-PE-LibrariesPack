@@ -21,9 +21,9 @@ FUNCTION AmgAnimOpenLimit& (fileName AS STRING, maxWidth AS LONG, maxHeight AS L
     ' Variable: anim stores the working value for animation.
     DIM anim AS AmgAnimInfo
     ' dynamic array: frames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-    REDIM frames(0) AS AmgAnimFrameInfo
+    REDIM frames(0 TO 0) AS AmgAnimFrameInfo
     ' dynamic array: pal is resized here to hold the working value for pal.
-    REDIM pal(0) AS AmgAnimRGB8
+    REDIM pal(0 TO 0) AS AmgAnimRGB8
     ' Variable: ok stores the success flag returned by the current routine.
     DIM ok AS LONG
     ' Variable: slotId stores the working value for slot id.
@@ -231,9 +231,9 @@ SUB AmgAnimProbe (fileName AS STRING, ok AS INTEGER, isAnim AS INTEGER, widthPx 
     ' Variable: anim stores the working value for animation.
     DIM anim AS AmgAnimInfo
     ' dynamic array: frames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-    REDIM frames(0) AS AmgAnimFrameInfo
+    REDIM frames(0 TO 0) AS AmgAnimFrameInfo
     ' dynamic array: pal is resized here to hold the working value for pal.
-    REDIM pal(0) AS AmgAnimRGB8
+    REDIM pal(0 TO 0) AS AmgAnimRGB8
     ' Variable: okLong stores the working value for ok long.
     DIM okLong AS LONG
 
@@ -1152,9 +1152,9 @@ FUNCTION AmgAnimLoadFileToDataPool& (fileName AS STRING, ok AS LONG)
     DIM dataMem AS _MEM
 
     ' dynamic array: ioBuf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM ioBuf(0) AS _UNSIGNED _BYTE
+    REDIM ioBuf(0 TO 0) AS _UNSIGNED _BYTE
     ' dynamic array: tailBuf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM tailBuf(0) AS _UNSIGNED _BYTE
+    REDIM tailBuf(0 TO 0) AS _UNSIGNED _BYTE
 
     ok = 0
     AmgAnimLoadFileToDataPool = -1
@@ -1271,7 +1271,7 @@ SUB AmgAnimLoadIndex (anim AS AmgAnimInfo, frames() AS AmgAnimFrameInfo, pal() A
 
     ' Start with an empty frame array and grow it while scanning.
     ' This avoids a full extra pass through the file just to count frames.
-    REDIM frames(0) AS AmgAnimFrameInfo
+    REDIM frames(0 TO 0) AS AmgAnimFrameInfo
     CALL AmgAnimScanAnimFormGrow(formDataOfs, formSize - 4, anim, frames(), pal())
 END SUB
 
@@ -1339,7 +1339,7 @@ SUB AmgAnimScanAnimFormGrow (formDataOfs AS _UNSIGNED _INTEGER64, formSize AS _U
         END IF
     ELSE
         anim.frameCount = 0
-        REDIM frames(0) AS AmgAnimFrameInfo
+        REDIM frames(0 TO 0) AS AmgAnimFrameInfo
     END IF
 END SUB
 
@@ -1730,9 +1730,9 @@ SUB AmgAnimPlanarToChunky (anim AS AmgAnimInfo, planar() AS _UNSIGNED _BYTE, chu
     ' Variable: rowBase stores the row pointer, row buffer, or row index used for image processing.
     DIM rowBase AS LONG
     ' Array: planeBase stores the working value for plane base.
-    DIM planeBase(7) AS LONG
+    DIM planeBase(0 TO 7) AS LONG
     ' Array: pb stores the working value for pb.
-    DIM pb(7) AS _UNSIGNED _BYTE
+    DIM pb(0 TO 7) AS _UNSIGNED _BYTE
     ' Variable: baseX stores the working value for base x.
     DIM baseX AS LONG
     ' Variable: rowPixelBase stores the row pointer, row buffer, or row index used for image processing.
@@ -2422,7 +2422,7 @@ SUB AmgAnimDecodeILBMBodyToPlanar (anim AS AmgAnimInfo, bodyOfs AS _UNSIGNED _IN
     ' Variable: planarMem stores the memory handle or memory-related helper value.
     DIM planarMem AS _MEM
     ' dynamic array: rowBuf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM rowBuf(0) AS _UNSIGNED _BYTE
+    REDIM rowBuf(0 TO 0) AS _UNSIGNED _BYTE
 
     totalPlanar = anim.rowBytes * anim.h * anim.nPlanes
     bodyEnd = bodyOfs + bodySize
@@ -2534,7 +2534,7 @@ END SUB
 ' Parameters: anim = working value for animation; dltaOfs = working value for dlta ofs; dltaSize = working value for dlta size; planar = working value for planar.
 SUB AmgAnimApplyDLTAOp5 (anim AS AmgAnimInfo, dltaOfs AS _UNSIGNED _INTEGER64, dltaSize AS _UNSIGNED LONG, planar() AS _UNSIGNED _BYTE)
     ' Array: ptrTable stores the working value for ptr table.
-    DIM ptrTable(15) AS _UNSIGNED LONG
+    DIM ptrTable(0 TO 15) AS _UNSIGNED LONG
     ' Variable: p stores the generic pointer or position value.
     DIM p AS LONG
     ' Variable: col stores the column index or color-related value.
@@ -2660,9 +2660,9 @@ END SUB
 ' Parameters: anim = working value for animation; dltaOfs = working value for dlta ofs; dltaSize = working value for dlta size; anhdBits = working value for anhd bits; planar = working value for planar.
 SUB AmgAnimApplyDLTAOp7 (anim AS AmgAnimInfo, dltaOfs AS _UNSIGNED _INTEGER64, dltaSize AS _UNSIGNED LONG, anhdBits AS _UNSIGNED LONG, planar() AS _UNSIGNED _BYTE)
     ' Array: opPtrTable stores the working value for op ptr table.
-    DIM opPtrTable(7) AS _UNSIGNED LONG
+    DIM opPtrTable(0 TO 7) AS _UNSIGNED LONG
     ' Array: dataPtrTable stores the buffer that holds raw, packed, or decoded byte data.
-    DIM dataPtrTable(7) AS _UNSIGNED LONG
+    DIM dataPtrTable(0 TO 7) AS _UNSIGNED LONG
     ' Variable: p stores the generic pointer or position value.
     DIM p AS LONG
     ' Variable: col stores the column index or color-related value.
@@ -2694,7 +2694,7 @@ SUB AmgAnimApplyDLTAOp7 (anim AS AmgAnimInfo, dltaOfs AS _UNSIGNED _INTEGER64, d
     ' Variable: b stores the color component or packed color helper used during image conversion.
     DIM b AS _UNSIGNED _BYTE
     ' Array: valueBytes stores the working value for value bytes.
-    DIM valueBytes(3) AS _UNSIGNED _BYTE
+    DIM valueBytes(0 TO 3) AS _UNSIGNED _BYTE
     ' Variable: bufOfs stores the working value for buf ofs.
     DIM bufOfs AS _UNSIGNED _INTEGER64
     ' Variable: dltaEnd stores the working value for dlta end.
@@ -2912,7 +2912,7 @@ SUB AmgAnimRenderChunkyFrameMem (animId AS LONG, anim AS AmgAnimInfo, pal() AS A
     ' Variable: pixelCount stores the count used to size or iterate the current data set.
     DIM pixelCount AS LONG
     ' Array: pal32 stores the working value for pal 32.
-    DIM pal32(255) AS _UNSIGNED LONG
+    DIM pal32(0 TO 255) AS _UNSIGNED LONG
     ' Variable: i stores the general-purpose loop index.
     DIM i AS LONG
 
@@ -3039,8 +3039,8 @@ SUB AmgAnimInitPlanarRenderLUT ()
     mul2 = 65536
     mul3 = 16777216
 
-    REDIM amg_anim_plane_pack_lo(2047) AS _UNSIGNED LONG
-    REDIM amg_anim_plane_pack_hi(2047) AS _UNSIGNED LONG
+    REDIM amg_anim_plane_pack_lo(0 TO 2047) AS _UNSIGNED LONG
+    REDIM amg_anim_plane_pack_hi(0 TO 2047) AS _UNSIGNED LONG
 
     ' Loop purpose: build one lookup slice per bitplane.
     ' The loop order matters because later statements expect the data to be visited sequentially.
@@ -3084,7 +3084,7 @@ SUB AmgAnimRenderPlanarFrameMem (animId AS LONG, anim AS AmgAnimInfo, pal() AS A
     ' Variable: rowBase stores the row pointer, row buffer, or row index used for image processing.
     DIM rowBase AS LONG
     ' Array: planeBase stores the working value for plane base.
-    DIM planeBase(7) AS LONG
+    DIM planeBase(0 TO 7) AS LONG
     ' Variable: baseX stores the working value for base x.
     DIM baseX AS LONG
     ' Variable: pixelCount stores the count used to size or iterate the current data set.
@@ -3092,7 +3092,7 @@ SUB AmgAnimRenderPlanarFrameMem (animId AS LONG, anim AS AmgAnimInfo, pal() AS A
     ' Variable: frameMem stores the memory handle or memory-related helper value.
     DIM frameMem AS _MEM
     ' Array: pal32 stores the working value for pal 32.
-    DIM pal32(255) AS _UNSIGNED LONG
+    DIM pal32(0 TO 255) AS _UNSIGNED LONG
     ' Variable: i stores the general-purpose loop index.
     DIM i AS LONG
     ' Variable: fullByteCount stores how many complete 8-pixel source bytes are needed for the row width.
@@ -3312,9 +3312,9 @@ FUNCTION AmgAnimGetFrameCountInternal& (fileName AS STRING)
     ' Variable: anim stores the working value for animation.
     DIM anim AS AmgAnimInfo
     ' dynamic array: frames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-    REDIM frames(0) AS AmgAnimFrameInfo
+    REDIM frames(0 TO 0) AS AmgAnimFrameInfo
     ' dynamic array: pal is resized here to hold the working value for pal.
-    REDIM pal(0) AS AmgAnimRGB8
+    REDIM pal(0 TO 0) AS AmgAnimRGB8
     ' Variable: ok stores the success flag returned by the current routine.
     DIM ok AS LONG
 
@@ -3514,7 +3514,7 @@ SUB AmgAnimCopyPoolPaletteToLocal (srcStart AS LONG, colorCount AS LONG, pal() A
     DIM i AS LONG
     IF colorCount <= 0 THEN
         ' dynamic array: pal is resized here to hold the working value for pal.
-        REDIM pal(0) AS AmgAnimRGB8
+        REDIM pal(0 TO 0) AS AmgAnimRGB8
         EXIT SUB
     END IF
     ' dynamic array: pal is resized here to hold the working value for pal.
@@ -3702,7 +3702,7 @@ FUNCTION AmgAnimPrepareBaseState% (animId AS LONG)
     ' Variable: anim stores the working value for animation.
     DIM anim AS AmgAnimInfo
     ' dynamic array: pal is resized here to hold the working value for pal.
-    REDIM pal(0) AS AmgAnimRGB8
+    REDIM pal(0 TO 0) AS AmgAnimRGB8
     ' Variable: totalPlanar stores the working value for total planar.
     DIM totalPlanar AS LONG
     ' Variable: totalChunky stores the working value for total chunky.
@@ -3741,7 +3741,7 @@ FUNCTION AmgAnimRenderFrameToCanvas% (animId AS LONG, frameNumber AS LONG)
     ' Variable: anim stores the working value for animation.
     DIM anim AS AmgAnimInfo
     ' dynamic array: pal is resized here to hold the working value for pal.
-    REDIM pal(0) AS AmgAnimRGB8
+    REDIM pal(0 TO 0) AS AmgAnimRGB8
     ' Variable: totalPlanar stores the working value for total planar.
     DIM totalPlanar AS LONG
     ' Variable: totalChunky stores the working value for total chunky.

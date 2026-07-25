@@ -92,17 +92,17 @@ TYPE ApngStore
 END TYPE
 
 ' Shared dynamic array: ApngFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-REDIM SHARED ApngFrames(0) AS ApngFrameStore
+REDIM SHARED ApngFrames(0 TO 0) AS ApngFrameStore
 ' Shared dynamic array: ApngFrameData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED ApngFrameData(0) AS STRING
+REDIM SHARED ApngFrameData(0 TO 0) AS STRING
 ' Shared dynamic array: ApngItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-REDIM SHARED ApngItems(0) AS ApngStore
+REDIM SHARED ApngItems(0 TO 0) AS ApngStore
 ' Shared dynamic array: ApngHeaderChunks is resized here to hold the working value for APNG header chunks.
-REDIM SHARED ApngHeaderChunks(0) AS STRING
+REDIM SHARED ApngHeaderChunks(0 TO 0) AS STRING
 ' Shared dynamic array: ApngIhdrData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-REDIM SHARED ApngIhdrData(0) AS STRING
+REDIM SHARED ApngIhdrData(0 TO 0) AS STRING
 ' Shared dynamic array: ApngErrorTexts is resized here to hold the text storage for the last human-readable error message.
-REDIM SHARED ApngErrorTexts(0) AS STRING
+REDIM SHARED ApngErrorTexts(0 TO 0) AS STRING
 
 ' Shared variable: ApngItemCapacity stores the working value for APNG item capacity.
 DIM SHARED ApngItemCapacity AS LONG

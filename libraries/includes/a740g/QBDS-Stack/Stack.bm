@@ -33,7 +33,7 @@ END SUB
 ''' @brief Delete the stack and free all associated memory.
 ''' @param stack The stack to clear.
 SUB Stack_Free (stack() AS Stack)
-    REDIM stack(0) AS Stack
+    REDIM stack(0 TO 0) AS Stack
 END SUB
 
 ''' @brief Return the current capacity of the stack.

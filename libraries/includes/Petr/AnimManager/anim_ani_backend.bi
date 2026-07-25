@@ -78,13 +78,13 @@ TYPE AniStore
 END TYPE
 
 ' Shared dynamic array: AniFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-REDIM SHARED AniFrames(0) AS AniFrameStore
+REDIM SHARED AniFrames(0 TO 0) AS AniFrameStore
 ' Shared dynamic array: AniSteps is resized here to hold the working value for ANI steps.
-REDIM SHARED AniSteps(0) AS AniStepStore
+REDIM SHARED AniSteps(0 TO 0) AS AniStepStore
 ' Shared dynamic array: AniItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-REDIM SHARED AniItems(0) AS AniStore
+REDIM SHARED AniItems(0 TO 0) AS AniStore
 ' Shared dynamic array: AniErrorTexts is resized here to hold the text storage for the last human-readable error message.
-REDIM SHARED AniErrorTexts(0) AS STRING
+REDIM SHARED AniErrorTexts(0 TO 0) AS STRING
 ' Shared variable: AniItemCapacity stores the working value for ANI item capacity.
 DIM SHARED AniItemCapacity AS LONG
 ' Shared variable: AniFrameCapacity stores the working value for ANI frame capacity.

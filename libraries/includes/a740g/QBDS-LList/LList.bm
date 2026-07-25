@@ -33,7 +33,7 @@ END SUB
 ''' @brief Delete the list and free all associated memory.
 ''' @param lst The list to clear.
 SUB LList_Free (lst() AS LList)
-    REDIM lst(0) AS LList
+    REDIM lst(0 TO 0) AS LList
 END SUB
 
 ''' @brief Return the current capacity of the list.

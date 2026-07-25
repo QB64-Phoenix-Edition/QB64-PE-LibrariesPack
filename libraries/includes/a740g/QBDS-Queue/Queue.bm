@@ -31,7 +31,7 @@ END SUB
 ''' @brief Delete the queue and free all associated memory.
 ''' @param q The queue to free.
 SUB Queue_Free (q() AS Queue)
-    REDIM q(0) AS Queue
+    REDIM q(0 TO 0) AS Queue
 END SUB
 
 ''' @brief Return the current capacity of the queue.
