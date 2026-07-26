@@ -1232,7 +1232,7 @@ FUNCTION Gif89aAllocSnapshotMetaBlock& (snapshotCount AS LONG)
             newCapacity = newCapacity * 2
         LOOP
         ' dynamic array: Gif89aSnapshotMeta is resized here to hold the working value for GIF89A snapshot meta.
-        REDIM _PRESERVE Gif89aSnapshotMeta(newCapacity - 1) AS Gif89aSnapshotStore
+        REDIM _PRESERVE Gif89aSnapshotMeta(0 TO newCapacity - 1) AS Gif89aSnapshotStore
         Gif89aSnapshotMetaCapacity = newCapacity
     END IF
 

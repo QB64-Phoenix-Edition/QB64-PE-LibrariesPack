@@ -307,7 +307,7 @@ FUNCTION pipecom& (cmd AS STRING, stdout AS STRING, stderr AS STRING)
             END IF
 
             ' This is our file descriptor set for select()
-            DIM AS _INTEGER64 read_fds(FD_SET_ARRAY_MAX_INDEX)
+            DIM AS _INTEGER64 read_fds(0 TO FD_SET_ARRAY_MAX_INDEX)
 
             ' Main read loop:
             ' We use select() to monitor both pipes at once.

@@ -655,12 +655,12 @@ FUNCTION AmgAnimAllocSlot& ()
 
     oldTop = UBOUND(AmgAnimItems)
     ' dynamic array: AmgAnimItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-    REDIM _PRESERVE AmgAnimItems(oldTop + 1) AS AmgAnimStore
+    REDIM _PRESERVE AmgAnimItems(0 TO oldTop + 1) AS AmgAnimStore
     ' dynamic array: AmgAnimFileNames is resized here to hold the parallel array that remembers the source filename for each active entry.
-    REDIM _PRESERVE AmgAnimFileNames(oldTop + 1) AS STRING
+    REDIM _PRESERVE AmgAnimFileNames(0 TO oldTop + 1) AS STRING
     ' dynamic array: AmgAnimErrorTexts is resized here to hold the text storage for the last human-readable error message.
-    REDIM _PRESERVE AmgAnimErrorTexts(oldTop + 1) AS STRING
-    REDIM _PRESERVE AmgAnimCanvasMem(oldTop + 1) AS _MEM
+    REDIM _PRESERVE AmgAnimErrorTexts(0 TO oldTop + 1) AS STRING
+    REDIM _PRESERVE AmgAnimCanvasMem(0 TO oldTop + 1) AS _MEM
     AmgAnimAllocSlot = oldTop + 1
 END FUNCTION
 
@@ -742,7 +742,7 @@ FUNCTION AmgAnimAppendFrameBlock& (frameCount AS LONG)
 
     IF neededTop > UBOUND(AmgAnimFrames) THEN
         ' dynamic array: AmgAnimFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-        REDIM _PRESERVE AmgAnimFrames(neededTop) AS AmgAnimFrameInfo
+        REDIM _PRESERVE AmgAnimFrames(0 TO neededTop) AS AmgAnimFrameInfo
     END IF
 
     AmgAnimFrameCountUsed = startIndex + frameCount
@@ -782,7 +782,7 @@ FUNCTION AmgAnimAllocSnapshotMetaBlock& (snapshotCount AS LONG)
     neededTop = startIndex + snapshotCount - 1
     IF neededTop > UBOUND(AmgAnimSnapshotMeta) THEN
         ' dynamic array: AmgAnimSnapshotMeta is resized here to hold the working value for Amiga animation snapshot meta.
-        REDIM _PRESERVE AmgAnimSnapshotMeta(neededTop) AS AmgAnimSnapshotStore
+        REDIM _PRESERVE AmgAnimSnapshotMeta(0 TO neededTop) AS AmgAnimSnapshotStore
     END IF
 
     ' Loop purpose: use indexValue as a counter/index while the routine processes a repeated set of values.
@@ -1050,7 +1050,7 @@ FUNCTION AmgAnimAllocDataBlock& (byteCount AS LONG)
 
     IF neededTop > UBOUND(amg_anim_data_pool) THEN
         ' dynamic array: amg_anim_data_pool is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        REDIM _PRESERVE amg_anim_data_pool(neededTop) AS _UNSIGNED _BYTE
+        REDIM _PRESERVE amg_anim_data_pool(0 TO neededTop) AS _UNSIGNED _BYTE
     END IF
 
     amg_anim_data_pool_used = startIndex + byteCount
@@ -1178,7 +1178,7 @@ FUNCTION AmgAnimLoadFileToDataPool& (fileName AS STRING, ok AS LONG)
     chunkSize = 262144
     IF fileLen < chunkSize THEN chunkSize = fileLen
     ' dynamic array: ioBuf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM ioBuf(chunkSize - 1) AS _UNSIGNED _BYTE
+    REDIM ioBuf(0 TO chunkSize - 1) AS _UNSIGNED _BYTE
 
     dataMem = _MEM(amg_anim_data_pool())
     readPos = 0
@@ -1196,7 +1196,7 @@ FUNCTION AmgAnimLoadFileToDataPool& (fileName AS STRING, ok AS LONG)
 
     IF bytesLeft > 0 THEN
         ' dynamic array: tailBuf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        REDIM tailBuf(bytesLeft - 1) AS _UNSIGNED _BYTE
+        REDIM tailBuf(0 TO bytesLeft - 1) AS _UNSIGNED _BYTE
         GET #fh, readPos + 1, tailBuf()
         _MEMPUT dataMem, dataMem.OFFSET + writeOfs, tailBuf()
     END IF
@@ -1230,7 +1230,7 @@ SUB AmgAnimLoadFileToBuffer (fileName AS STRING, ok AS LONG)
 
     amg_anim_file_size = fileLen
     ' dynamic array: amg_anim_buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM amg_anim_buf(amg_anim_file_size - 1) AS _UNSIGNED _BYTE
+    REDIM amg_anim_buf(0 TO amg_anim_file_size - 1) AS _UNSIGNED _BYTE
     GET #fh, 1, amg_anim_buf()
     CLOSE #fh
 
@@ -1319,7 +1319,7 @@ SUB AmgAnimScanAnimFormGrow (formDataOfs AS _UNSIGNED _INTEGER64, formSize AS _U
                     ELSE
                         newCapacity = frameCapacity * 2 + 1
                     END IF
-                    REDIM _PRESERVE frames(newCapacity) AS AmgAnimFrameInfo
+                    REDIM _PRESERVE frames(0 TO newCapacity) AS AmgAnimFrameInfo
                     frameCapacity = newCapacity
                 END IF
 
@@ -1335,7 +1335,7 @@ SUB AmgAnimScanAnimFormGrow (formDataOfs AS _UNSIGNED _INTEGER64, formSize AS _U
     IF frameIndex >= 0 THEN
         anim.frameCount = frameIndex + 1
         IF frameIndex < UBOUND(frames) THEN
-            REDIM _PRESERVE frames(frameIndex) AS AmgAnimFrameInfo
+            REDIM _PRESERVE frames(0 TO frameIndex) AS AmgAnimFrameInfo
         END IF
     ELSE
         anim.frameCount = 0
@@ -1654,7 +1654,7 @@ SUB AmgAnimReadCMAPAt (ofs AS _UNSIGNED _INTEGER64, size AS _UNSIGNED LONG, pal(
     IF count <= 0 THEN EXIT SUB
 
     ' dynamic array: pal is resized here to hold the working value for pal.
-    REDIM pal(count - 1) AS AmgAnimRGB8
+    REDIM pal(0 TO count - 1) AS AmgAnimRGB8
     bufOfs = ofs
 
     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
@@ -2430,7 +2430,7 @@ SUB AmgAnimDecodeILBMBodyToPlanar (anim AS AmgAnimInfo, bodyOfs AS _UNSIGNED _IN
 
     IF anim.rowBytes <= 0 THEN EXIT SUB
     ' dynamic array: rowBuf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM rowBuf(anim.rowBytes - 1) AS _UNSIGNED _BYTE
+    REDIM rowBuf(0 TO anim.rowBytes - 1) AS _UNSIGNED _BYTE
 
     IF compression = 0 THEN
         ' Loop purpose: iterate through image rows or vertical positions.
@@ -2923,7 +2923,7 @@ SUB AmgAnimRenderChunkyFrameMem (animId AS LONG, anim AS AmgAnimInfo, pal() AS A
     IF pixelCount <= 0 THEN EXIT SUB
     IF pixelCount <> amg_anim_scratch_pixels_size THEN
         ' dynamic array: amg_anim_scratch_pixels is resized here to hold the working value for Amiga animation scratch pixels.
-        REDIM amg_anim_scratch_pixels(pixelCount - 1) AS _UNSIGNED LONG
+        REDIM amg_anim_scratch_pixels(0 TO pixelCount - 1) AS _UNSIGNED LONG
         amg_anim_scratch_pixels_size = pixelCount
     END IF
 
@@ -3121,7 +3121,7 @@ SUB AmgAnimRenderPlanarFrameMem (animId AS LONG, anim AS AmgAnimInfo, pal() AS A
     IF pixelCount <= 0 THEN EXIT SUB
     IF pixelCount <> amg_anim_scratch_pixels_size THEN
         ' dynamic array: amg_anim_scratch_pixels is resized here to hold the working value for Amiga animation scratch pixels.
-        REDIM amg_anim_scratch_pixels(pixelCount - 1) AS _UNSIGNED LONG
+        REDIM amg_anim_scratch_pixels(0 TO pixelCount - 1) AS _UNSIGNED LONG
         amg_anim_scratch_pixels_size = pixelCount
     END IF
 
@@ -3362,7 +3362,7 @@ FUNCTION AmgAnimAllocPlanarBlock& (byteCount AS LONG)
 
     IF neededTop > UBOUND(amg_anim_planar_pool) THEN
         ' dynamic array: amg_anim_planar_pool is resized here to hold the working value for Amiga animation planar pool.
-        REDIM _PRESERVE amg_anim_planar_pool(neededTop) AS _UNSIGNED _BYTE
+        REDIM _PRESERVE amg_anim_planar_pool(0 TO neededTop) AS _UNSIGNED _BYTE
     END IF
 
     amg_anim_planar_pool_used = startIndex + byteCount
@@ -3386,7 +3386,7 @@ FUNCTION AmgAnimAllocChunkyBlock& (byteCount AS LONG)
 
     IF neededTop > UBOUND(amg_anim_chunky_pool) THEN
         ' dynamic array: amg_anim_chunky_pool is resized here to hold the working value for Amiga animation chunky pool.
-        REDIM _PRESERVE amg_anim_chunky_pool(neededTop) AS _UNSIGNED _BYTE
+        REDIM _PRESERVE amg_anim_chunky_pool(0 TO neededTop) AS _UNSIGNED _BYTE
     END IF
 
     amg_anim_chunky_pool_used = startIndex + byteCount
@@ -3410,7 +3410,7 @@ FUNCTION AmgAnimAllocPixelsBlock& (pixelCount AS LONG)
 
     IF neededTop > UBOUND(amg_anim_pixels_pool) THEN
         ' dynamic array: amg_anim_pixels_pool is resized here to hold the working value for Amiga animation pixels pool.
-        REDIM _PRESERVE amg_anim_pixels_pool(neededTop) AS _UNSIGNED LONG
+        REDIM _PRESERVE amg_anim_pixels_pool(0 TO neededTop) AS _UNSIGNED LONG
     END IF
 
     amg_anim_pixels_pool_used = startIndex + pixelCount
@@ -3434,7 +3434,7 @@ FUNCTION AmgAnimAllocPaletteBlock& (colorCount AS LONG)
 
     IF neededTop > UBOUND(amg_anim_palette_pool) THEN
         ' dynamic array: amg_anim_palette_pool is resized here to hold the palette storage or palette index used during indexed-color decoding.
-        REDIM _PRESERVE amg_anim_palette_pool(neededTop) AS AmgAnimRGB8
+        REDIM _PRESERVE amg_anim_palette_pool(0 TO neededTop) AS AmgAnimRGB8
     END IF
 
     amg_anim_palette_pool_used = startIndex + colorCount
@@ -3446,30 +3446,30 @@ END FUNCTION
 SUB AmgAnimEnsureScratchCapacity (planarSize AS LONG, chunkySize AS LONG, palSize AS LONG)
     IF planarSize > amg_anim_scratch_planar_size THEN
         ' dynamic array: amg_anim_scratch_planar_base is resized here to hold the working value for Amiga animation scratch planar base.
-        REDIM amg_anim_scratch_planar_base(planarSize - 1) AS _UNSIGNED _BYTE
+        REDIM amg_anim_scratch_planar_base(0 TO planarSize - 1) AS _UNSIGNED _BYTE
         ' dynamic array: amg_anim_scratch_planar_a is resized here to hold the working value for Amiga animation scratch planar a.
-        REDIM amg_anim_scratch_planar_a(planarSize - 1) AS _UNSIGNED _BYTE
+        REDIM amg_anim_scratch_planar_a(0 TO planarSize - 1) AS _UNSIGNED _BYTE
         ' dynamic array: amg_anim_scratch_planar_b is resized here to hold the working value for Amiga animation scratch planar b.
-        REDIM amg_anim_scratch_planar_b(planarSize - 1) AS _UNSIGNED _BYTE
+        REDIM amg_anim_scratch_planar_b(0 TO planarSize - 1) AS _UNSIGNED _BYTE
         amg_anim_scratch_planar_size = planarSize
     END IF
 
     IF chunkySize > amg_anim_scratch_chunky_size THEN
         ' dynamic array: amg_anim_scratch_chunky is resized here to hold the working value for Amiga animation scratch chunky.
-        REDIM amg_anim_scratch_chunky(chunkySize - 1) AS _UNSIGNED _BYTE
+        REDIM amg_anim_scratch_chunky(0 TO chunkySize - 1) AS _UNSIGNED _BYTE
         amg_anim_scratch_chunky_size = chunkySize
     END IF
 
     IF chunkySize > amg_anim_scratch_pixels_size THEN
         ' dynamic array: amg_anim_scratch_pixels is resized here to hold the working value for Amiga animation scratch pixels.
-        REDIM amg_anim_scratch_pixels(chunkySize - 1) AS _UNSIGNED LONG
+        REDIM amg_anim_scratch_pixels(0 TO chunkySize - 1) AS _UNSIGNED LONG
         amg_anim_scratch_pixels_size = chunkySize
     END IF
 
     IF palSize <= 0 THEN palSize = 1
     IF palSize > amg_anim_scratch_pal_size THEN
         ' dynamic array: amg_anim_scratch_pal is resized here to hold the working value for Amiga animation scratch pal.
-        REDIM amg_anim_scratch_pal(palSize - 1) AS AmgAnimRGB8
+        REDIM amg_anim_scratch_pal(0 TO palSize - 1) AS AmgAnimRGB8
         amg_anim_scratch_pal_size = palSize
     END IF
 END SUB
@@ -3518,7 +3518,7 @@ SUB AmgAnimCopyPoolPaletteToLocal (srcStart AS LONG, colorCount AS LONG, pal() A
         EXIT SUB
     END IF
     ' dynamic array: pal is resized here to hold the working value for pal.
-    REDIM pal(colorCount - 1) AS AmgAnimRGB8
+    REDIM pal(0 TO colorCount - 1) AS AmgAnimRGB8
     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.
     FOR i = 0 TO colorCount - 1
@@ -3604,7 +3604,7 @@ SUB AmgAnimCopyLocalPaletteToScratch (pal() AS AmgAnimRGB8)
 
     IF colorCount > amg_anim_scratch_pal_size THEN
         ' dynamic array: amg_anim_scratch_pal is resized here to hold the working value for Amiga animation scratch pal.
-        REDIM amg_anim_scratch_pal(colorCount - 1) AS AmgAnimRGB8
+        REDIM amg_anim_scratch_pal(0 TO colorCount - 1) AS AmgAnimRGB8
         amg_anim_scratch_pal_size = colorCount
     END IF
 
@@ -3623,7 +3623,7 @@ SUB AmgAnimCopyScratchPaletteToLocal (colorCount AS LONG, pal() AS AmgAnimRGB8)
 
     IF colorCount <= 0 THEN colorCount = 1
     ' dynamic array: pal is resized here to hold the working value for pal.
-    REDIM pal(colorCount - 1) AS AmgAnimRGB8
+    REDIM pal(0 TO colorCount - 1) AS AmgAnimRGB8
 
     ' Loop purpose: use indexValue as a counter/index while the routine processes a repeated set of values.
     ' The loop order matters because later statements expect the data to be visited sequentially.

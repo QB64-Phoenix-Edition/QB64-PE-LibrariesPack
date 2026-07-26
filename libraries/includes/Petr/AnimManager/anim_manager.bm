@@ -821,7 +821,7 @@ FUNCTION AnimAllocCacheBlock& (frameCount AS LONG)
         neededTop = frameCount - 1
         IF neededTop > UBOUND(AnimCacheFrames) THEN
             ' dynamic array: AnimCacheFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-            REDIM _PRESERVE AnimCacheFrames(neededTop) AS AnimCacheFrameStore
+            REDIM _PRESERVE AnimCacheFrames(0 TO neededTop) AS AnimCacheFrameStore
         END IF
         AnimAllocCacheBlock = startIndex
         EXIT FUNCTION
@@ -830,7 +830,7 @@ FUNCTION AnimAllocCacheBlock& (frameCount AS LONG)
     startIndex = UBOUND(AnimCacheFrames) + 1
     neededTop = startIndex + frameCount - 1
     ' dynamic array: AnimCacheFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-    REDIM _PRESERVE AnimCacheFrames(neededTop) AS AnimCacheFrameStore
+    REDIM _PRESERVE AnimCacheFrames(0 TO neededTop) AS AnimCacheFrameStore
     AnimAllocCacheBlock = startIndex
 END FUNCTION
 
@@ -1488,11 +1488,11 @@ FUNCTION AnimAllocSlot& ()
     NEXT i
 
     ' dynamic array: AnimItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-    REDIM _PRESERVE AnimItems(UBOUND(AnimItems) + 1) AS AnimStore
+    REDIM _PRESERVE AnimItems(0 TO UBOUND(AnimItems) + 1) AS AnimStore
     ' dynamic array: AnimFileNames is resized here to hold the parallel array that remembers the source filename for each active entry.
-    REDIM _PRESERVE AnimFileNames(UBOUND(AnimFileNames) + 1) AS STRING
+    REDIM _PRESERVE AnimFileNames(0 TO UBOUND(AnimFileNames) + 1) AS STRING
     ' dynamic array: AnimErrorTexts is resized here to hold the text storage for the last human-readable error message.
-    REDIM _PRESERVE AnimErrorTexts(UBOUND(AnimErrorTexts) + 1) AS STRING
+    REDIM _PRESERVE AnimErrorTexts(0 TO UBOUND(AnimErrorTexts) + 1) AS STRING
     AnimAllocSlot = UBOUND(AnimItems)
 END FUNCTION
 

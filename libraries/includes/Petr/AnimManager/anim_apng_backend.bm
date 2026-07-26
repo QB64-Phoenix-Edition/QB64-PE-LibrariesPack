@@ -27,13 +27,13 @@ SUB ApngEnsureItemCapacity (neededIndex AS LONG)
     LOOP
 
     ' dynamic array: ApngItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-    REDIM _PRESERVE ApngItems(newCapacity) AS ApngStore
+    REDIM _PRESERVE ApngItems(0 TO newCapacity) AS ApngStore
     ' dynamic array: ApngHeaderChunks is resized here to hold the working value for APNG header chunks.
-    REDIM _PRESERVE ApngHeaderChunks(newCapacity) AS STRING
+    REDIM _PRESERVE ApngHeaderChunks(0 TO newCapacity) AS STRING
     ' dynamic array: ApngIhdrData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM _PRESERVE ApngIhdrData(newCapacity) AS STRING
+    REDIM _PRESERVE ApngIhdrData(0 TO newCapacity) AS STRING
     ' dynamic array: ApngErrorTexts is resized here to hold the text storage for the last human-readable error message.
-    REDIM _PRESERVE ApngErrorTexts(newCapacity) AS STRING
+    REDIM _PRESERVE ApngErrorTexts(0 TO newCapacity) AS STRING
     ApngItemCapacity = newCapacity
 END SUB
 
@@ -57,9 +57,9 @@ SUB ApngEnsureFrameCapacity (neededIndex AS LONG)
     LOOP
 
     ' dynamic array: ApngFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-    REDIM _PRESERVE ApngFrames(newCapacity) AS ApngFrameStore
+    REDIM _PRESERVE ApngFrames(0 TO newCapacity) AS ApngFrameStore
     ' dynamic array: ApngFrameData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM _PRESERVE ApngFrameData(newCapacity) AS STRING
+    REDIM _PRESERVE ApngFrameData(0 TO newCapacity) AS STRING
     ApngFrameCapacity = newCapacity
 END SUB
 
@@ -116,7 +116,7 @@ FUNCTION ApngOpen& (fileName AS STRING)
     DIM frameStart AS LONG
     ' Variable: frameCounter stores the total number of frames available for the current animation.
     DIM frameCounter AS LONG
-    
+
     ApngOpen = -1
     ApngInitStorageIfNeeded
     IF _FILEEXISTS(fileName) = 0 THEN EXIT FUNCTION

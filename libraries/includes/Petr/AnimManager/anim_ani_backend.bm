@@ -146,7 +146,7 @@ FUNCTION AniOpenLimit& (fileName AS STRING, maxWidth AS LONG, maxHeight AS LONG,
     END IF
 
     ' dynamic array: buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM buf(fileLen - 1) AS _UNSIGNED _BYTE
+    REDIM buf(0 TO fileLen - 1) AS _UNSIGNED _BYTE
     GET #fileNum, 1, buf()
     CLOSE #fileNum
 
@@ -176,7 +176,7 @@ FUNCTION AniOpenLimit& (fileName AS STRING, maxWidth AS LONG, maxHeight AS LONG,
                 rateCount = chunkSize \ 4
                 IF rateCount > 0 THEN
                     ' dynamic array: rateRaw is resized here to hold the working value for rate raw.
-                    REDIM rateRaw(rateCount - 1) AS LONG
+                    REDIM rateRaw(0 TO rateCount - 1) AS LONG
                     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
                     ' The loop order matters because later statements expect the data to be visited sequentially.
                     FOR i = 0 TO rateCount - 1
@@ -188,7 +188,7 @@ FUNCTION AniOpenLimit& (fileName AS STRING, maxWidth AS LONG, maxHeight AS LONG,
                 seqCount = chunkSize \ 4
                 IF seqCount > 0 THEN
                     ' dynamic array: seqRaw is resized here to hold the working value for seq raw.
-                    REDIM seqRaw(seqCount - 1) AS LONG
+                    REDIM seqRaw(0 TO seqCount - 1) AS LONG
                     ' Loop purpose: use i as a counter/index while the routine processes a repeated set of values.
                     ' The loop order matters because later statements expect the data to be visited sequentially.
                     FOR i = 0 TO seqCount - 1
@@ -503,7 +503,7 @@ SUB AniProbe (fileName AS STRING, ok AS INTEGER, isAni AS INTEGER, widthPx AS LO
     END IF
 
     ' dynamic array: buf is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM buf(fileLen - 1) AS _UNSIGNED _BYTE
+    REDIM buf(0 TO fileLen - 1) AS _UNSIGNED _BYTE
     GET #fileNum, 1, buf()
     CLOSE #fileNum
 
@@ -1051,9 +1051,9 @@ FUNCTION AniAllocSlot& ()
             newTop = AniItemCapacity * 2 + 1
         END IF
         ' dynamic array: AniItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-        REDIM _PRESERVE AniItems(newTop) AS AniStore
+        REDIM _PRESERVE AniItems(0 TO newTop) AS AniStore
         ' dynamic array: AniErrorTexts is resized here to hold the text storage for the last human-readable error message.
-        REDIM _PRESERVE AniErrorTexts(newTop) AS STRING
+        REDIM _PRESERVE AniErrorTexts(0 TO newTop) AS STRING
         AniItemCapacity = newTop
     END IF
 
@@ -1079,7 +1079,7 @@ FUNCTION AniAllocFrameBlock& (frameCount AS LONG)
     IF UBOUND(AniFrames) = 0 AND AniFrames(0).Used = 0 THEN
         startIndex = 0
         neededTop = frameCount - 1
-        IF neededTop > UBOUND(AniFrames) THEN REDIM _PRESERVE AniFrames(neededTop) AS AniFrameStore
+        IF neededTop > UBOUND(AniFrames) THEN REDIM _PRESERVE AniFrames(0 TO neededTop) AS AniFrameStore
         AniFrameCapacity = UBOUND(AniFrames)
         AniAllocFrameBlock = startIndex
         EXIT FUNCTION
@@ -1100,7 +1100,7 @@ FUNCTION AniAllocFrameBlock& (frameCount AS LONG)
             END IF
         LOOP WHILE newTop < neededTop
         ' dynamic array: AniFrames is resized here to hold the dynamic array that stores per-frame data or cached frame metadata.
-        REDIM _PRESERVE AniFrames(newTop) AS AniFrameStore
+        REDIM _PRESERVE AniFrames(0 TO newTop) AS AniFrameStore
         AniFrameCapacity = newTop
     END IF
 
@@ -1126,7 +1126,7 @@ FUNCTION AniAllocStepBlock& (stepCount AS LONG)
     IF UBOUND(AniSteps) = 0 AND AniSteps(0).Used = 0 THEN
         startIndex = 0
         neededTop = stepCount - 1
-        IF neededTop > UBOUND(AniSteps) THEN REDIM _PRESERVE AniSteps(neededTop) AS AniStepStore
+        IF neededTop > UBOUND(AniSteps) THEN REDIM _PRESERVE AniSteps(0 TO neededTop) AS AniStepStore
         AniStepCapacity = UBOUND(AniSteps)
         AniAllocStepBlock = startIndex
         EXIT FUNCTION
@@ -1147,7 +1147,7 @@ FUNCTION AniAllocStepBlock& (stepCount AS LONG)
             END IF
         LOOP WHILE newTop < neededTop
         ' dynamic array: AniSteps is resized here to hold the working value for ANI steps.
-        REDIM _PRESERVE AniSteps(newTop) AS AniStepStore
+        REDIM _PRESERVE AniSteps(0 TO newTop) AS AniStepStore
         AniStepCapacity = newTop
     END IF
 
@@ -1661,11 +1661,11 @@ FUNCTION AniDecodeDibCursor% (buf() AS _UNSIGNED _BYTE, imageOfs AS LONG, imageS
         END IF
 
         ' dynamic array: palR is resized here to hold the working value for pal r.
-        REDIM palR(paletteCount - 1) AS LONG
+        REDIM palR(0 TO paletteCount - 1) AS LONG
         ' dynamic array: palG is resized here to hold the working value for pal g.
-        REDIM palG(paletteCount - 1) AS LONG
+        REDIM palG(0 TO paletteCount - 1) AS LONG
         ' dynamic array: palB is resized here to hold the working value for pal b.
-        REDIM palB(paletteCount - 1) AS LONG
+        REDIM palB(0 TO paletteCount - 1) AS LONG
 
         ' Loop purpose: step through palette entries so indexed colors can be read or rebuilt.
         ' The loop order matters because later statements expect the data to be visited sequentially.

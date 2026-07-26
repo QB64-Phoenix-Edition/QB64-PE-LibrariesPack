@@ -755,11 +755,11 @@ FUNCTION FlicAllocSlot& ()
             newTop = FlicSlotCapacity * 2 + 1
         END IF
         ' dynamic array: FlicItems is resized here to hold the dynamic table that stores one record per live object handled by this module.
-        REDIM _PRESERVE FlicItems(newTop) AS FlicStore
+        REDIM _PRESERVE FlicItems(0 TO newTop) AS FlicStore
         ' dynamic array: FlicFileNames is resized here to hold the parallel array that remembers the source filename for each active entry.
-        REDIM _PRESERVE FlicFileNames(newTop) AS STRING
+        REDIM _PRESERVE FlicFileNames(0 TO newTop) AS STRING
         ' dynamic array: FlicErrorTexts is resized here to hold the text storage for the last human-readable error message.
-        REDIM _PRESERVE FlicErrorTexts(newTop) AS STRING
+        REDIM _PRESERVE FlicErrorTexts(0 TO newTop) AS STRING
         ' dynamic array: FlicPaletteData is resized here to hold the palette storage or palette index used during indexed-color decoding.
         REDIM _PRESERVE FlicPaletteData(0 TO 255, 0 TO newTop) AS RGBColorType
         ' dynamic array: FlicPalette32Data is resized here to hold the palette storage or palette index used during indexed-color decoding.
@@ -930,7 +930,7 @@ FUNCTION FlicAllocFileBlock& (byteCount AS _INTEGER64)
             newCapacity = newCapacity * 2
         LOOP
         ' dynamic array: FlicFileData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        REDIM _PRESERVE FlicFileData(newCapacity - 1) AS _UNSIGNED _BYTE
+        REDIM _PRESERVE FlicFileData(0 TO newCapacity - 1) AS _UNSIGNED _BYTE
         FlicFileDataCapacity = newCapacity
     END IF
 
@@ -1029,7 +1029,7 @@ FUNCTION FlicAllocPixelBlock& (pixelCount AS LONG)
             newCapacity = newCapacity * 2
         LOOP
         ' dynamic array: FlicPixelData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        REDIM _PRESERVE FlicPixelData(newCapacity - 1) AS _UNSIGNED _BYTE
+        REDIM _PRESERVE FlicPixelData(0 TO newCapacity - 1) AS _UNSIGNED _BYTE
         FlicPixelDataCapacity = newCapacity
     END IF
 
@@ -1066,7 +1066,7 @@ FUNCTION FlicAllocFrameBlock& (frameCount AS LONG)
             newCapacity = newCapacity * 2
         LOOP
         ' dynamic array: FlicFrameOffsets64 is resized here to hold the working value for FLIC frame offsets 64.
-        REDIM _PRESERVE FlicFrameOffsets64(newCapacity - 1) AS _INTEGER64
+        REDIM _PRESERVE FlicFrameOffsets64(0 TO newCapacity - 1) AS _INTEGER64
         FlicFrameOffsetsCapacity = newCapacity
     END IF
 
@@ -1122,7 +1122,7 @@ FUNCTION FlicAllocSnapshotMetaBlock& (snapshotCount AS LONG, pixelCount AS LONG)
             newCapacity = newCapacity * 2
         LOOP
         ' dynamic array: FlicSnapshotMeta is resized here to hold the working value for FLIC snapshot meta.
-        REDIM _PRESERVE FlicSnapshotMeta(newCapacity - 1) AS FlicSnapshotStore
+        REDIM _PRESERVE FlicSnapshotMeta(0 TO newCapacity - 1) AS FlicSnapshotStore
         FlicSnapshotMetaCapacity = newCapacity
     END IF
 
@@ -1140,7 +1140,7 @@ FUNCTION FlicAllocSnapshotMetaBlock& (snapshotCount AS LONG, pixelCount AS LONG)
             newCapacity = newCapacity * 2
         LOOP
         ' dynamic array: FlicSnapshotPalette is resized here to hold the palette storage or palette index used during indexed-color decoding.
-        REDIM _PRESERVE FlicSnapshotPalette(0 TO 255, newCapacity - 1) AS RGBColorType
+        REDIM _PRESERVE FlicSnapshotPalette(0 TO 255, 0 TO newCapacity - 1) AS RGBColorType
         FlicSnapshotPaletteCapacity = newCapacity
     END IF
 
@@ -1158,7 +1158,7 @@ FUNCTION FlicAllocSnapshotMetaBlock& (snapshotCount AS LONG, pixelCount AS LONG)
             newCapacity = newCapacity * 2
         LOOP
         ' dynamic array: FlicSnapshotPixels is resized here to hold the working value for FLIC snapshot pixels.
-        REDIM _PRESERVE FlicSnapshotPixels(newCapacity - 1) AS _UNSIGNED _BYTE
+        REDIM _PRESERVE FlicSnapshotPixels(0 TO newCapacity - 1) AS _UNSIGNED _BYTE
         FlicSnapshotPixelsCapacity = newCapacity
     END IF
 
@@ -1335,7 +1335,7 @@ FUNCTION FlicEnsureIoChunkBuffer% (requiredBytes AS LONG)
     IF requiredBytes < 1 THEN EXIT FUNCTION
     IF FlicIoChunkCapacity <> requiredBytes THEN
         ' dynamic array: FlicIoChunkData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        REDIM FlicIoChunkData(requiredBytes - 1) AS _UNSIGNED _BYTE
+        REDIM FlicIoChunkData(0 TO requiredBytes - 1) AS _UNSIGNED _BYTE
         FlicIoChunkCapacity = requiredBytes
     END IF
     FlicEnsureIoChunkBuffer% = -1
@@ -1349,7 +1349,7 @@ FUNCTION FlicEnsureIoTailBuffer% (requiredBytes AS LONG)
     IF requiredBytes < 1 THEN EXIT FUNCTION
     IF FlicIoTailCapacity <> requiredBytes THEN
         ' dynamic array: FlicIoTailData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        REDIM FlicIoTailData(requiredBytes - 1) AS _UNSIGNED _BYTE
+        REDIM FlicIoTailData(0 TO requiredBytes - 1) AS _UNSIGNED _BYTE
         FlicIoTailCapacity = requiredBytes
     END IF
     FlicEnsureIoTailBuffer% = -1
@@ -1363,7 +1363,7 @@ FUNCTION FlicEnsureZeroFillBuffer% (requiredBytes AS LONG)
     IF requiredBytes < 1 THEN EXIT FUNCTION
     IF FlicZeroFillCapacity <> requiredBytes THEN
         ' dynamic array: FlicZeroFillData is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-        REDIM FlicZeroFillData(requiredBytes - 1) AS _UNSIGNED _BYTE
+        REDIM FlicZeroFillData(0 TO requiredBytes - 1) AS _UNSIGNED _BYTE
         FlicZeroFillCapacity = requiredBytes
     END IF
     FlicEnsureZeroFillBuffer% = -1
@@ -1376,7 +1376,7 @@ SUB FlicEnsureRow32Buffer (pixelCount AS LONG)
     IF pixelCount = FlicRow32Capacity THEN EXIT SUB
 
     ' dynamic array: FlicRow32Data is resized here to hold the buffer that holds raw, packed, or decoded byte data.
-    REDIM FlicRow32Data(pixelCount - 1) AS _UNSIGNED LONG
+    REDIM FlicRow32Data(0 TO pixelCount - 1) AS _UNSIGNED LONG
     FlicRow32Capacity = pixelCount
 END SUB
 
