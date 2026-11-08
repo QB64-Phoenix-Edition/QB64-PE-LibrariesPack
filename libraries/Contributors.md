@@ -56,7 +56,7 @@ To avoid rejection of a library the following things are considered mandatory:
         $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
     $END IF
     ```
-6. After all requirements are met and everything works as expected, perform a final **but important** check. The new library can't have any name clashes with any of the other libraries already in the Pack. Load the `libraries/CheckAll.bas` program into the IDE and make sure syntax checking is active. Then add the new library into the list and you'll see if the IDE remains happy or starts throwing errors. If your code has platform or 32/64bits dependent code switched on/off by pre-compiler $IF..$ELSE..$ENDIF blocks, then make sure to perform the test on **all possible** platform/bits combinations. When done, then save the `CheckAll.bas` program with the new added library.
+6. After all requirements are met and everything works as expected, perform a final **but important** check. The new library can't have any name clashes with any of the other libraries already in the Pack. Load the `libraries/CheckAll.bas` program into the IDE and make sure syntax checking is active. Then add the new library into the list and you'll see if the IDE remains happy or starts throwing errors or warnings. If your code has platform or 32/64bits dependent code switched on/off by pre-compiler $IF..$ELSE..$ENDIF blocks, then make sure to perform the test on **all possible** platform/bits combinations. When done, then save the `CheckAll.bas` program with the new added library.
 7. Congratulations, your work is now ready for incorporation into the offical Libraries Pack. Go back to the [Base List](#you-wanna-contribute-to-the-libraries-pack) and continue with step #9.
 
 ---

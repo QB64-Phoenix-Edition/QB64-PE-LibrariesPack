@@ -1,8 +1,10 @@
 'Check all libraries,
 'this program does nothing, it's just to check all libraries against
-'each other for name conflicts and/or undeclared variables. Just load it
-'into the IDE, there should be no errors, just the usual "..." and after
-'the syntax check finishes the "Ok" message in the status area.
+'each other for name conflicts and/or undeclared or unused variables.
+'Just load it into the IDE and make sure automatic syntax checking is
+'enabled or press SHIFT-F9 to manually trigger the checking. There
+'should be no errors or warnings, just the usual "..." and after the
+'syntax check finishes the "Ok" message in the status area.
 '=======================================================================
 
 $IF VERSION < 4.3.0 THEN
@@ -35,4 +37,7 @@ $USELIBRARY:'RhoSigma/Sha2-Hash'
 $USELIBRARY:'RhoSigma/Simplebuffer'
 $USELIBRARY:'SpriggsySpriggs/PipeCom'
 $USELIBRARY:'TerryRitchie/MenuLib'
+$USELIBRARY:'Tony3068/SPV-Handles'
+$USELIBRARY:'Tony3068/VID-Handles'
+$USELIBRARY:'Tony3068/VLC-Handles'
 
