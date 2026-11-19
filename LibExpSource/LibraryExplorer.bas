@@ -54,7 +54,7 @@ DIM SHARED CopyInc AS LONG
 DIM SHARED Avatar AS LONG
 
 ': External modules: ---------------------------------------------------------------
-$USELIBRARY:'FellippeHeitor/IniManager'
+$USELIBRARY:'FellippeHeitor/INI-Manager'
 '$INCLUDE:'InForm/InForm.bi'
 '$INCLUDE:'InForm/xp.uitheme'
 '$INCLUDE:'LibraryExplorer.frm'
@@ -545,11 +545,11 @@ SUB __UI_ValueChanged (id AS LONG)
             usr$ = GetItem$(AuthorsList, Control(AuthorsList).Value)
             lib$ = GetItem$(LibrariesList, Control(LibrariesList).Value)
             ini$ = "descriptors/" + usr$ + "/" + lib$ + ".ini"
-            Text(FullName) = Ini_ReadSetting$(ini$, "[LIBRARY DETAILS]", "FullName")
-            Text(Version) = Ini_ReadSetting$(ini$, "[LIBRARY DETAILS]", "Version")
-            Text(License) = Ini_ReadSetting$(ini$, "[LIBRARY DETAILS]", "License")
-            Text(Author) = Ini_ReadSetting$(ini$, "[LIBRARY DETAILS]", "Author")
-            doc$ = Ini_ReadSetting$(ini$, "[LIBRARY DETAILS]", "FullDocs")
+            Text(FullName) = ReadSetting$(ini$, "[LIBRARY DETAILS]", "FullName")
+            Text(Version) = ReadSetting$(ini$, "[LIBRARY DETAILS]", "Version")
+            Text(License) = ReadSetting$(ini$, "[LIBRARY DETAILS]", "License")
+            Text(Author) = ReadSetting$(ini$, "[LIBRARY DETAILS]", "Author")
+            doc$ = ReadSetting$(ini$, "[LIBRARY DETAILS]", "FullDocs")
             IF LEN(doc$) > 0 THEN
                 Text(FullDocs) = doc$
                 Control(ShowDocs).Disabled = False
@@ -559,7 +559,7 @@ SUB __UI_ValueChanged (id AS LONG)
             END IF
             Text(Include) = "$UseLibrary:'" + usr$ + "/" + lib$ + "'"
             LoadImage Control(Avatar), ""
-            avt$ = Ini_ReadSetting$(ini$, "[LIBRARY DETAILS]", "Avatar")
+            avt$ = ReadSetting$(ini$, "[LIBRARY DETAILS]", "Avatar")
             IF LEN(avt$) = 0 THEN
                 IF NOT _FILEEXISTS("descriptors/" + usr$ + "/avatar.png") THEN
                     _WRITEFILE "descriptors/" + usr$ + "/avatar.png", _EMBEDDED$("defAvatar")
@@ -569,7 +569,7 @@ SUB __UI_ValueChanged (id AS LONG)
             LoadImage Control(Avatar), "descriptors/" + usr$ + "/" + avt$
             IF _FILEEXISTS("descriptors/" + usr$ + "/avatar.png") THEN KILL "descriptors/" + usr$ + "/avatar.png"
             ResetList ShortDesc
-            txt$ = Ini_ReadSetting$(ini$, "[LIBRARY DETAILS]", "ShortDesc")
+            txt$ = ReadSetting$(ini$, "[LIBRARY DETAILS]", "ShortDesc")
             IF LEN(txt$) > 0 THEN
                 REDIM words$(0)
                 ub& = ParseLine&(txt$, " ", "", words$(), 0)

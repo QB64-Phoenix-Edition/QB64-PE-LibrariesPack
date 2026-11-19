@@ -1,23 +1,23 @@
 'INI Manager - demo 2
 '
-'syntax: var$ = Ini_ReadSetting(file$, "", "")
+'syntax: var$ = ReadSetting(file$, "", "")
 '
 'You can read all keys/values from an .ini file by calling
-'Ini_ReadSetting with empty section$ and key$ values.
+'ReadSetting with empty section$ and key$ values.
 '----------------------------------------------------------------
 
 $IF VERSION < 4.3.0 THEN
     $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
 $END IF
 
-$USELIBRARY:'FellippeHeitor/IniManager'
+$USELIBRARY:'FellippeHeitor/INI-Manager'
 
 '--- Find QB64-PE and Example source folders depending on EXE location.
 '-----
 'Fill example$ and library$ with the exact names, i.e. the use of upper/lower
 'case must match, so that it works on case sensitive Linux filesystems.
-DIM example$: example$ = "IniDemo2.bas" 'this example's source file name
-DIM library$: library$ = "FellippeHeitor/IniManager" 'the library's name (as in $USELIBRARY)
+DIM example$: example$ = "INI-Demo2.bas" 'this example's source file name
+DIM library$: library$ = "FellippeHeitor/INI-Manager" 'the library's name (as in $USELIBRARY)
 DIM qbDir$, srcDir$ 'filled automatically (with trailing slash)
 '-----
 IF _FILEEXISTS(example$) THEN
@@ -49,16 +49,16 @@ CHDIR srcDir$ 'Change into the example's source folder, in alternative
 COLOR 9
 PRINT "Fetch every key/value pair in the file:"
 DO
-    a$ = Ini_ReadSetting$("test.ini", "", "")
+    a$ = ReadSetting$("test.ini", "", "")
 
-    'NOTE: If you would check dot values of the __ini TYPE inside a SUB or FUNCTION,
-    '      then remember to explicitly do a SHARED __ini in the respective routine.
-    IF __ini.code = 1 THEN PRINT Ini_GetInfo$: END '__ini.code = 1 -> File not found
-    IF __ini.code = 10 THEN EXIT DO '__ini.code = 10 -> No more keys found
+    'NOTE: If you would check any INI state values inside a SUB or FUNCTION,
+    '      then those values must be explicitly SHARED in the respective routine.
+    IF IniCODE = 1 THEN PRINT IniINFO$: END 'IniCODE = 1 -> File not found
+    IF IniCODE = 10 THEN EXIT DO 'IniCODE = 10 -> No more keys found
 
     COLOR 7
-    PRINT __ini.lastSection$;
-    COLOR 15: PRINT __ini.lastKey$;
+    PRINT IniLastSection$;
+    COLOR 15: PRINT IniLastKey$;
     COLOR 4: PRINT "=";
     COLOR 2: PRINT a$
 LOOP
@@ -66,26 +66,26 @@ COLOR 9
 PRINT "End of file."
 
 '----------------------------------------------------------------
-'syntax: var$ = Ini_ReadSetting(file$, "[section]", "")
+'syntax: var$ = ReadSetting(file$, "[section]", "")
 '
 'You can read all keys/values from a specific section by calling
-'Ini_ReadSetting with an empty key$ value.
+'ReadSetting with an empty key$ value.
 '----------------------------------------------------------------
 PRINT
 COLOR 9
 PRINT "Fetch only section [contact]:"
 DO
-    a$ = Ini_ReadSetting$("test.ini", "contact", "")
+    a$ = ReadSetting$("test.ini", "contact", "")
 
-    'NOTE: If you would check dot values of the __ini TYPE inside a SUB or FUNCTION,
-    '      then remember to explicitly do a SHARED __ini in the respective routine.
-    IF __ini.code = 1 THEN PRINT Ini_GetInfo$: END '__ini.code = 1 -> File not found
-    IF __ini.code = 10 THEN EXIT DO '__ini.code = 10 -> No more keys found
-    IF __ini.code = 14 THEN PRINT Ini_GetInfo$: END '__ini.code = 14 -> Section not found
+    'NOTE: If you would check any INI state values inside a SUB or FUNCTION,
+    '      then those values must be explicitly SHARED in the respective routine.
+    IF IniCODE = 1 THEN PRINT IniINFO$: END 'IniCODE = 1 -> File not found
+    IF IniCODE = 10 THEN EXIT DO 'IniCODE = 10 -> No more keys found
+    IF IniCODE = 14 THEN PRINT IniINFO$: END 'IniCODE = 14 -> Section not found
 
     COLOR 7
-    PRINT __ini.lastSection$;
-    COLOR 15: PRINT __ini.lastKey$;
+    PRINT IniLastSection$;
+    COLOR 15: PRINT IniLastKey$;
     COLOR 4: PRINT "=";
     COLOR 2: PRINT a$
 LOOP
