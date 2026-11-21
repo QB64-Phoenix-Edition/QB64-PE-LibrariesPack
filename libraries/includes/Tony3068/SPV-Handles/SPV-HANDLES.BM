@@ -1312,9 +1312,6 @@ END FUNCTION
 '  (VID-HANDLES.BM does this for you with VIDPUT.)
 '=============================================================================
 
-CONST SPV_K_BMP_W = 320 ' K videos: bitmap width the bars are measured against
-CONST SPV_K_SIG_W = 270 ' K videos: width of the real picture in that bitmap
-
 FUNCTION SPVHINT$ (h AS LONG)
 SPVHINT = ""
 IF NOT SPV_VALID(h) THEN EXIT FUNCTION
@@ -1362,9 +1359,6 @@ END FUNCTION
 '  This is the Change_VideoFPS feature of the old SPV-VIDS player (U / D / R
 '  keys).  Audio is resampled to match, exactly like the old engine.
 '=============================================================================
-
-DIM SHARED SPVEX_PATH(1 TO SPV_MAX_VIDEOS) AS STRING
-DIM SHARED SPVEX_ORIG(1 TO SPV_MAX_VIDEOS) AS DOUBLE
 
 FUNCTION SPVNOMFPS# (h AS LONG)
 SPVNOMFPS = 0

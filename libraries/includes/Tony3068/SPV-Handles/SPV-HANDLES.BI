@@ -18,6 +18,9 @@ CONST SPV_PAUSED = 2
 CONST SPV_PCM8_TOFLOAT = 1! / 128!
 CONST SPV_PCM16_TOFLOAT = 1! / 32768!
 
+CONST SPV_K_BMP_W = 320 ' K videos: bitmap width the bars are measured against
+CONST SPV_K_SIG_W = 270 ' K videos: width of the real picture in that bitmap
+
 TYPE SPVH_HEADER
     ID AS STRING * 4
     VTYPE AS _UNSIGNED _BYTE
@@ -138,6 +141,9 @@ DIM SHARED SPV_P2(1 TO SPV_MAX_VIDEOS) AS _MEM
 DIM SHARED SPV_FMEM(1 TO SPV_MAX_VIDEOS) AS _MEM
 DIM SHARED SPV_SPRMEM(1 TO SPV_MAX_VIDEOS) AS _MEM
 DIM SHARED SPV_JIDX(1 TO SPV_MAX_VIDEOS) AS _MEM
+
+DIM SHARED SPVEX_PATH(1 TO SPV_MAX_VIDEOS) AS STRING
+DIM SHARED SPVEX_ORIG(1 TO SPV_MAX_VIDEOS) AS DOUBLE
 
 ' Shared scratch arrays.  They are only used inside one library call at a time
 ' (SPV_LOCK guarantees the timer can not interleave with them).
