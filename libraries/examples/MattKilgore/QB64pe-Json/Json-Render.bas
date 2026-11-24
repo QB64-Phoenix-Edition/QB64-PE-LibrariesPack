@@ -2,10 +2,6 @@
 ' This example displays the basics of parsing a JSON string and extracting the
 ' values of various entries in the JSON
 '
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 $USELIBRARY:'MattKilgore/QB64pe-Json'
 
 DIM j AS Json

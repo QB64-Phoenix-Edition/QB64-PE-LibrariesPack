@@ -6,10 +6,6 @@
 
 $INCLUDEONCE
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 CONST JSON_ERR_Success = 0
 CONST JSON_ERR_BadQuery = -1
 CONST JSON_ERR_OutOfRange = -2

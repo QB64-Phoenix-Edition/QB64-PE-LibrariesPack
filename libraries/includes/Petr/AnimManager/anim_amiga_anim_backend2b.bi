@@ -7,10 +7,6 @@
 
 $INCLUDEONCE
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 ' Constant: AMG_ANIM_FMT_ANIM is a Amiga ANIM/IFF constant used while parsing classic chunked animation data.
 CONST AMG_ANIM_FMT_ANIM = 1
 

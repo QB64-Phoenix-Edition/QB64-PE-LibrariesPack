@@ -17,10 +17,6 @@
 '=== just drop it anywhere and adjust the _LOADFONT line below accordingly.
 '=====================================================================
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 $USELIBRARY:'RhoSigma/Charsets'
 
 SCREEN _NEWIMAGE(800, 600, 32)

@@ -20,10 +20,6 @@
 '| any questions or suggestions. Thanx for your interest in my work. |
 '+-------------------------------------------------------------------+
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 $USELIBRARY:'RhoSigma/Simplebuffer'
 
 '--- Find QB64-PE and Example source folders depending on EXE location.

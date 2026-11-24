@@ -7,10 +7,6 @@
 
 $INCLUDEONCE
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 ' Constant: ANI_LOOP_FILE_DEFAULT is a ANI/RIFF constant used while parsing Windows animated cursor files.
 CONST ANI_LOOP_FILE_DEFAULT = -2
 ' Constant: ANI_LOOP_FOREVER is a ANI/RIFF constant used while parsing Windows animated cursor files.

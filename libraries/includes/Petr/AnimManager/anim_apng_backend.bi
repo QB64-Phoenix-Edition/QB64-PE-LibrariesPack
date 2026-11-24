@@ -7,10 +7,6 @@
 
 $INCLUDEONCE
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 ' Constant: APNG_FMT_PNG is a APNG/PNG-specific constant used while parsing or decoding chunked image data.
 CONST APNG_FMT_PNG = 1
 ' Constant: APNG_FMT_APNG is a APNG/PNG-specific constant used while parsing or decoding chunked image data.

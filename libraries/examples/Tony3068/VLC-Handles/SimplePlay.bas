@@ -1,7 +1,3 @@
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 $USELIBRARY:'Tony3068/VLC-Handles'
 
 DIM V AS LONG

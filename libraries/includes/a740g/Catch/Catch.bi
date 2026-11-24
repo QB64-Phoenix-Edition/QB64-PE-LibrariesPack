@@ -5,10 +5,6 @@
 
 $INCLUDEONCE
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 $IF _CONSOLE_ = 0 THEN
     $ERROR "For outputs the Catch library needs a '$CONSOLE' before '$USELIBRARY'"
 $END IF

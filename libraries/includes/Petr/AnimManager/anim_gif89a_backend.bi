@@ -7,10 +7,6 @@
 
 $INCLUDEONCE
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 ' Constant: GIF89A_FMT_GIF87A is a GIF-specific constant used while parsing or decoding GIF89A data.
 CONST GIF89A_FMT_GIF87A = 1
 ' Constant: GIF89A_FMT_GIF89A is a GIF-specific constant used while parsing or decoding GIF89A data.

@@ -19,9 +19,7 @@
 'be used for all examples in the QB64-PE Libraries Pack.
 '=====================================================
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
+
 
 '--- Find QB64-PE and Example source folders depending on EXE location.
 '-----
@@ -56,6 +54,8 @@ END IF
 CHDIR srcDir$ 'Change into the example's source folder, in alternative
 '             'use qbDir$ or srcDir$ directly where applicable.
 '-----------------------------------------------------
+
+
 
 '--- Do stuff with our located assets.
 '-----

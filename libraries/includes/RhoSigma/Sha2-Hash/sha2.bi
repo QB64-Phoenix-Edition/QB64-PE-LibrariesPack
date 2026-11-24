@@ -20,10 +20,6 @@
 
 $INCLUDEONCE
 
-$IF VERSION < 4.3.0 THEN
-    $ERROR "The Libraries Pack add-on needs at least QB64-PE v4.3.0"
-$END IF
-
 '--- Helper functions defined in sha2.h, which should sit along with
 '--- the respective .bi/.bm files.
 '-----
